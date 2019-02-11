@@ -6,6 +6,9 @@
 #ifndef CWD_UI_H
 #define CWD_UI_H
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 #include "cwd_ui.h"
 #include <stddef.h>
 #include <stdint.h>

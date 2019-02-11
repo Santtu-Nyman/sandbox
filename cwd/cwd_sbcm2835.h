@@ -9,6 +9,9 @@
 #ifndef CWD_SBCM2835_H
 #define CWD_SBCM2835_H
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 #include <errno.h>
 #include "bcm2835.h"
 
