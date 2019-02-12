@@ -40,21 +40,70 @@ void release_futex(int* futex)
 
 int create_thread(int (*entry)(void*), void* parameter, size_t stack_size)
 {
+	int error = 0;
 	long page_size = sysconf(_SC_PAGESIZE);
 	if (page_size == -1)
-		return errno;
+	{
+		error = errno;
+		return error;
+	}
 	stack_size = (stack_size + ((size_t)page_size - 1)) & ~((size_t)page_size - 1); 
-	void* stack = (void*)malloc(stack_size);
-	if (!stack)
-		return ENOMEM;
+	void* stack = mmap(0, stack_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (stack == MAP_FAILED)
+	{
+		error = errno;
+		return error;
+	}
 	int child_id = (int)clone(entry, (void*)((uintptr_t)stack + stack_size), CLONE_FILES | CLONE_FS | CLONE_SIGHAND | CLONE_THREAD | CLONE_VM, parameter, 0, 0, 0);
 	if (child_id == -1)
 	{
-		int clone_error = errno; 
-		free(stack);
-		return  clone_error;
+		error = errno; 
+		munmap(stack, stack_size);
+		return error;
 	}
+	return error;
+}
+
+int get_scheduling(int* policy, struct sched_param* parameters)
+{
+	int scheduling_policy = sched_getscheduler(0);
+	if (scheduling_policy == -1)
+		return errno;
+	if (sched_getparam (0, parameters) == -1)
+		return errno;
+	policy* = scheduling_policy;
 	return 0;
+}
+
+int set_scheduling(int policy, struct sched_param* parameters)
+{
+	return sched_setschedule(0, policy, parameters) == -1 ? errno : 0; 
+}
+
+void test_print_stuff()
+{
+	pid_t pid = (pid_t)syscall(SYS_getpid);
+	pid_t tid = (pid_t)syscall(SYS_gettid);
+	printf("PID %i TID %i scheduling policy ", pid, tid);
+	int policy = sched_getscheduler(0);
+	struct sched_param parameters;
+	switch (policy)
+	{
+		case SCHED_OTHER:
+			sched_getparam(0, parameters);
+			printf("normal with nice %i\n", nice(0));
+			break;
+		case SCHED_RR:
+			sched_getparam(0, parameters);
+			printf("round-robin with static priority %i\n", parameters.sched_priority);
+			break;
+		case SCHED_FIFO:
+		
+			printf("first-in, first-out with static priority %i\n", parameters.sched_priority);
+			break;
+		default:
+			printf("unknown\n");
+	}
 }
 
 void print_pid_and_tid()
