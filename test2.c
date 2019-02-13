@@ -127,6 +127,14 @@ int hello(void* parameter)
 	return 0;
 }
 
+void new_process_test()
+{
+	pid_t id = fork();
+	test_print_stuff();
+	if (!id)
+		exit(0);
+}
+
 int main(int argc, char** argv)
 {
 	int original_scheduling_policy;
