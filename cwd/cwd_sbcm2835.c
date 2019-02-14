@@ -25,8 +25,8 @@
 #include "cwd_sbcm2835.h"
 #include "bcm2835.h"
 
-static int futex;
-static int usage_counter;
+static volatile int futex;
+static volatile int initialized;
 
 static void acquire_futex(int* futex)
 {
@@ -43,15 +43,13 @@ static void release_futex(int* futex)
 int cwd_sbcm2835_initialize()
 {
 	acquire_futex(&futex);
-	if (usage_counter++)
+	int local_initialized = initialized;
+	if (!local_initialized && !bcm2835_init())
 	{
-		if (!bcm2835_init())
-		{
-			--usage_counter;
-			release_futex(&futex);
-			return EIO;
-		}
+		release_futex(&futex);
+		return EIO;
 	}
+	initialized = local_initialized + 1;
 	release_futex(&futex);
 	return 0;
 }
@@ -59,13 +57,14 @@ int cwd_sbcm2835_initialize()
 void cwd_sbcm2835_close()
 {
 	acquire_futex(&futex);
-	if (!--usage_counter)
+	int local_initialized = initialized;
+	if (local_initialized > 1)
+		initialized = local_initialized - 1;
+	else
 	{
-		bcm2835_close();
-	}
-	if (usage_counter < 0)
-	{
-		usage_counter = 0;
+		initialized = 0;
+		if (local_initialized == 1)
+			bcm2835_close();
 	}
 	release_futex(&futex);
 }
