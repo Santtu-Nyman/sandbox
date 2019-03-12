@@ -27,7 +27,6 @@ int create_test_process(const char* executable_name, size_t argument_count, cons
 	if (pipe(pipe_out_in) == -1)
 	{
 		error = errno;
-		free(new_processor_set);
 		return error;
 	}
 	int pipe_read_access_mode = fcntl(pipe_out_in[0], F_GETFL);
@@ -83,9 +82,14 @@ int create_test_process(const char* executable_name, size_t argument_count, cons
 
 int main(int argc, char** argv)
 {
+	if (argc < 2)
+	{
+		printf("No executable argument given\n");
+		return EXIT_FAILURE;
+	}	
 	pid_t process_id;
 	int output_pipe;
-	int error = create_test_process("/home/pi/Desktop/cwd/ui", 0, 0, &process_id, &output_pipe);
+	int error = create_test_process(argv[1], argc - 1, argv + 1, &process_id, &output_pipe);
 	if (errno)
 	{
 		printf("Failed to start test process\n");
@@ -95,7 +99,7 @@ int main(int argc, char** argv)
 	for (int read_pipe = 1; read_pipe;)
 	{
 		char tmp;
-		ssize_t read_result = read(ui_output_pipe, &tmp, 1);
+		ssize_t read_result = read(output_pipe, &tmp, 1);
 		if (read_result == -1)
 		{
 			int read_error = errno;
@@ -111,7 +115,7 @@ int main(int argc, char** argv)
 	close(output_pipe);
 	int child_status;
 	for (int wait_error = EINTR; wait_error == EINTR;)
-		if (waitpid(child_id, &child_status, 0) == -1)
+		if (waitpid(process_id, &child_status, 0) == -1)
 		{
 			wait_error = errno;
 			if (wait_error != EINTR)
