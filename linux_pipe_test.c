@@ -89,7 +89,7 @@ int main(int argc, char** argv)
 	}	
 	pid_t process_id;
 	int output_pipe;
-	int error = create_test_process(argv[1], argc - 1, argv + 1, &process_id, &output_pipe);
+	int error = create_test_process(argv[1], argc - 1, (const char**)(argv + 1), &process_id, &output_pipe);
 	if (errno)
 	{
 		printf("Failed to start test process\n");
