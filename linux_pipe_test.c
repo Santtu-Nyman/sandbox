@@ -56,7 +56,7 @@ int create_test_process(const char* executable_name, size_t argument_count, cons
 	{
 		close(pipe_out_in[0]);
 		char** execute_arguments = (char**)malloc((argument_count + 2) * sizeof(char*));
-		if (!arguments)
+		if (!execute_arguments)
 		{
 			close(pipe_out_in[1]);
 			exit(EXIT_FAILURE);
@@ -86,10 +86,10 @@ int main(int argc, char** argv)
 	{
 		printf("No executable argument given\n");
 		return EXIT_FAILURE;
-	}	
+	}
 	pid_t process_id;
 	int output_pipe;
-	int error = create_test_process(argv[1], argc - 1, (const char**)(argv + 1), &process_id, &output_pipe);
+	int error = create_test_process(argv[1], argc - 2, (const char**)(argv + 2), &process_id, &output_pipe);
 	if (errno)
 	{
 		printf("Failed to start test process\n");
