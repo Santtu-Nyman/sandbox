@@ -8,7 +8,7 @@
 		
 	Version history
 		version 0.0.1 2019-03-13
-			First incomplete version.
+			Second incomplete version.
 		version 0.0.0 2019-03-08
 			First incomplete version.
 */
@@ -38,7 +38,9 @@
 #include <stdio.h>
 #include "cwd_common.h"
 
-int cwd_create_ui_process(const char* ui_executable_name, size_t ui_process_argument_count, const char** ui_process_arguments, int ui_process_processor_index, pid_t* ui_process_id, int* ui_process_output)
+void print_scheduling_info();
+
+int cwd_old_create_ui_process(const char* ui_executable_name, size_t ui_process_argument_count, const char** ui_process_arguments, int ui_process_processor_index, pid_t* ui_process_id, int* ui_process_output)
 {
 	int error;
 	int pipe_out_in[2];
@@ -183,7 +185,7 @@ int cwd_create_ui_process(const char* ui_executable_name, size_t ui_process_argu
 	}
 }
 
-int cwd_create_ui_process_with_affinity(const char* ui_executable_name, size_t ui_process_argument_count, const char** ui_process_arguments, pid_t* ui_process_id, int* ui_process_output)
+int cwd_old_create_ui_process_with_affinity(const char* ui_executable_name, size_t ui_process_argument_count, const char** ui_process_arguments, pid_t* ui_process_id, int* ui_process_output)
 {
 	size_t processor_count;
 	int* processor_indices;
@@ -197,7 +199,121 @@ int cwd_create_ui_process_with_affinity(const char* ui_executable_name, size_t u
 	}
 	int ui_process_processor_index = processor_indices[processor_count - 1];
 	free(processor_indices);
-	return cwd_create_ui_process(ui_executable_name, ui_process_argument_count, ui_process_arguments, ui_process_processor_index, ui_process_id, ui_process_output);
+	return cwd_old_create_ui_process(ui_executable_name, ui_process_argument_count, ui_process_arguments, ui_process_processor_index, ui_process_id, ui_process_output);
+}
+
+
+int cwd_create_ui_process(const char* ui_executable_name, size_t ui_process_argument_count, const char** ui_process_arguments, int ui_process_processor_index, pid_t* ui_process_id, int* ui_process_output)
+{
+	int error;
+	int pipe_out_in[2];
+	if (pipe(pipe_out_in) == -1)
+	{
+		error = errno;
+		return error;
+	}
+	pid_t child_id = fork();
+	if (child_id == -1)
+	{
+		error = errno;
+		close(pipe_out_in[0]);
+		close(pipe_out_in[1]);
+		return error;
+	}
+	if (child_id)
+	{
+		close(pipe_out_in[1]);
+		int child_status;
+		pid_t wait_result = waitpid(child_id, &child_status, WNOHANG);
+		if (wait_result == -1)
+		{
+			error = errno;
+			if (!kill(child_id, SIGTERM) || !kill(child_id, SIGKILL))
+				cwd_wait_for_process(child_id);
+			close(pipe_out_in[0]);
+			return error;
+		}
+		else if (wait_result == child_id)
+		{
+			close(pipe_out_in[0]);
+			return ECHILD;
+		}
+		for (char child_not_ready = 1; child_not_ready;)
+		{
+			ssize_t read_result = read(pipe_out_in[0], &child_not_ready, 1);
+			if (read_result == -1)
+			{
+				error = errno;
+				if (error != EINTR)
+				{
+					if (!kill(child_id, SIGTERM) || !kill(child_id, SIGKILL))
+						cwd_wait_for_process(child_id);
+					close(pipe_out_in[0]);
+					return error;
+				}
+				child_not_ready = 1;
+			}
+			else if (read_result == 1 && !child_not_ready)
+				continue;
+			else
+			{
+				if (!kill(child_id, SIGTERM) || !kill(child_id, SIGKILL))
+					cwd_wait_for_process(child_id);
+				close(pipe_out_in[0]);
+				return error;
+			}
+		}
+		int pipe_read_access_mode = fcntl(pipe_out_in[0], F_GETFL);
+		if (pipe_read_access_mode == -1 || fcntl(pipe_out_in[0], F_SETFL, pipe_read_access_mode | O_NONBLOCK) == -1)
+		{
+			error = errno;
+			if (!kill(child_id, SIGTERM) || !kill(child_id, SIGKILL))
+				cwd_wait_for_process(child_id);
+			close(pipe_out_in[0]);
+			return error;
+		}
+		*ui_process_id = child_id;
+		*ui_process_output = pipe_out_in[0];
+		return 0;
+	}
+	else
+	{
+		close(pipe_out_in[0]);
+		error = cwd_set_affinity(1, &ui_process_processor_index);
+		if (error)
+		{
+			close(pipe_out_in[1]);
+			exit(EXIT_FAILURE);
+		}
+		if (write(pipe_out_in[1], "", 1) != 1)
+		{
+			error = errno;
+			close(pipe_out_in[1]);
+			exit(EXIT_FAILURE);
+		}
+		char** arguments = (char**)malloc((ui_process_argument_count + 2) * sizeof(char*));
+		if (!arguments)
+		{
+			close(pipe_out_in[1]);
+			exit(EXIT_FAILURE);
+		}
+		close(STDOUT_FILENO);
+		if (dup2(pipe_out_in[1], STDOUT_FILENO) == -1)
+		{
+			free(arguments);
+			close(pipe_out_in[1]);
+			exit(EXIT_FAILURE);
+		}
+		close(pipe_out_in[1]);
+		arguments[0] = (char*)ui_executable_name;
+		memcpy(arguments + 1, ui_process_arguments, ui_process_argument_count * sizeof(char*));
+		arguments[ui_process_argument_count + 1] = 0;
+		execvp(ui_executable_name, arguments);
+		close(STDOUT_FILENO);
+		free(arguments);
+		exit(EXIT_FAILURE);
+		return -1;
+	}
 }
 
 int set_fifo_scheduling(int priority)
@@ -243,7 +359,7 @@ void print_scheduling_info()
 	free(processor_indices);
 }
 
-int cwd_init()
+int cwd_init(int* ui_process_processer_index)
 {
 	int curl_installed_with_http = 0;
 	int error = cwd_is_curl_installed_with_http(&curl_installed_with_http);
@@ -251,9 +367,30 @@ int cwd_init()
 		return ENOPKG;
 	if (!curl_installed_with_http)
 		return ENOPKG;
-	error = set_fifo_scheduling(1);
+	size_t processor_count;
+	int* processor_indices;
+	error = cwd_get_affinity(&processor_count, &processor_indices);
 	if (error)
 		return error;
+	if (processor_count < 2)
+	{
+		free(processor_indices);
+		return EINVAL;
+	}
+	*ui_process_processer_index = processor_indices[processor_count - 1];
+	error = cwd_set_affinity(processor_count - 1, processor_indices);
+	if (error)
+	{
+		free(processor_indices);
+		return error;
+	}	
+	error = set_fifo_scheduling(1);
+	if (error)
+	{
+		cwd_set_affinity(processor_count, processor_indices);
+		return error;
+	}
+	free(processor_indices);
 	return 0;
 }
 
@@ -261,7 +398,7 @@ int read_byte_form_pipe(int pipe, char* byte)
 {
 	for (;;)
 	{
-		ssize_t read_result = read(pipe, &byte, 1);
+		ssize_t read_result = read(pipe, byte, 1);
 		if (read_result == -1)
 		{
 			int read_error = errno;
@@ -279,8 +416,11 @@ int read_byte_form_pipe(int pipe, char* byte)
 
 int main(int argc, char** argv)
 {
-	if (cwd_init())
+	int ui_process_processor_index = -1;
+	if (cwd_init(&ui_process_processor_index))
 		return EXIT_FAILURE;
+	printf("Initialization succesfull\n");
+
 	
 	int error = 0;
 	pid_t ui_process = -1;
@@ -296,14 +436,18 @@ int main(int argc, char** argv)
 			cwd_wait_for_process(ui_process);
 			ui_process = -1;
 		}
-		if (ui_process != -1)
+		if (ui_process == -1)
 		{
+			sleep(1);
 			const char* ui_process_executable = "cat";
-			const char* ui_process_arguments[1] = { "cwd_test.txt" };
-			if (!cwd_create_ui_process_with_affinity(ui_process_executable, 1, ui_process_arguments, &ui_process, &ui_output_pipe))
+			const char* ui_process_arguments[1] = { "cwd_ui_output_test.txt" };
+			error = cwd_create_ui_process(ui_process_executable, 1, ui_process_arguments, ui_process_processor_index, &ui_process, &ui_output_pipe);
+			if (!error)
 				memset(ui_process_output, 0, sizeof(ui_process_output));
 			else
 			{
+				printf("error %i\n", error);
+				error = 0;
 				ui_process = -1;
 				ui_output_pipe = -1;
 			}
