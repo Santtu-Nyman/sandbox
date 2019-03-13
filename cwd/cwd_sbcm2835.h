@@ -1,9 +1,13 @@
 /*
-	Cool Water Dispenser shared interface for bcm2835 library version 0.0.0 written by Santtu Nyman.
+	Cool Water Dispenser shared interface for bcm2835 library version 1.0.0 2019-03-02 written by Santtu Nyman.
 	git repository https://github.com/AP-Elektronica-ICT/ip2019-coolwater
 	
 	Description
 		Shared interface to bcm2835 library for the Cool Water Dispenser project.
+		
+	Version history
+		Version 1.0.0 2019-03-02
+			First and hopefully last version.
 */
 
 #ifndef CWD_SBCM2835_H

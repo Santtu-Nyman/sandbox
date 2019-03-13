@@ -1,5 +1,5 @@
 /*
-	Cool Water Dispenser shared interface for bcm2835 library version 0.0.0 written by Santtu Nyman.
+	Cool Water Dispenser shared interface for bcm2835 library version 1.0.0 2019-03-02 written by Santtu Nyman.
 	git repository https://github.com/AP-Elektronica-ICT/ip2019-coolwater
 */
 
@@ -28,13 +28,13 @@
 static volatile int futex;
 static volatile int initialized;
 
-static void acquire_futex(int* futex)
+static void acquire_futex(volatile int* futex)
 {
 	while (!__sync_bool_compare_and_swap(futex, 0, 1))
 		syscall(SYS_futex, futex, FUTEX_WAIT | FUTEX_PRIVATE_FLAG, 1, 0, 0);
 }
 
-static void release_futex(int* futex)
+static void release_futex(volatile int* futex)
 {
 	__sync_bool_compare_and_swap(futex, 1, 0);
 	syscall(SYS_futex, futex, FUTEX_WAKE | FUTEX_PRIVATE_FLAG, 1, 0, 0);
