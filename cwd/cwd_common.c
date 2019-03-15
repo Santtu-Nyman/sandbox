@@ -47,6 +47,14 @@ void cwd_debug_print(int hex, size_t size, const void* buffer)
 	}
 }
 
+void cwd_default_configuration(uint32_t device_id, struct cwd_device_configuration_t* configuration)
+{
+	configuration->device_id = device_id;
+	configuration->device_operation_mode = 1;
+	configuration->periodic_mesurement_delay = 120;
+	configuration->target_water_temperature = 11;
+}
+
 int cwd_load_file(const char* name, size_t* size, void** data)
 {
 	int error;

@@ -39,6 +39,8 @@ struct cwd_device_configuration_t
 
 void cwd_debug_print(int hex, size_t size, const void* buffer);
 
+void cwd_default_configuration(uint32_t device_id, struct cwd_device_configuration_t* configuration);
+
 int cwd_load_file(const char* name, size_t* size, void** data);
 
 int cwd_save_file(const char* name, size_t size, const void* data);

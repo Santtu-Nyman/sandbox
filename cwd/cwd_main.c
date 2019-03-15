@@ -1,5 +1,5 @@
 /*
-	Cool Water Dispenser test data generator version 0.0.0 2019-03-08 written by Santtu Nyman.
+	Cool Water Dispenser test data generator version 0.0.1 2019-03-16 written by Santtu Nyman.
 	git repository https://github.com/AP-Elektronica-ICT/ip2019-coolwater
 	
 	Description
@@ -7,7 +7,7 @@
 		The UI part of the software is on separate source and executable.
 		
 	Version history
-		version 0.0.1 2019-03-13
+		version 0.0.1 2019-03-16
 			Second incomplete version.
 		version 0.0.0 2019-03-08
 			First incomplete version.
@@ -36,6 +36,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 #include "cwd_common.h"
 
 void print_scheduling_info();
@@ -222,9 +223,9 @@ int cwd_create_ui_process(const char* ui_executable_name, size_t ui_process_argu
 	}
 	if (child_id)
 	{
-		close(pipe_out_in[1]);
 		int child_status;
 		pid_t wait_result = waitpid(child_id, &child_status, WNOHANG);
+		close(pipe_out_in[1]);
 		if (wait_result == -1)
 		{
 			error = errno;
@@ -278,8 +279,8 @@ int cwd_create_ui_process(const char* ui_executable_name, size_t ui_process_argu
 	}
 	else
 	{
-		close(pipe_out_in[0]);
 		error = cwd_set_affinity(1, &ui_process_processor_index);
+		close(pipe_out_in[0]);
 		if (error)
 		{
 			close(pipe_out_in[1]);
@@ -359,8 +360,24 @@ void print_scheduling_info()
 	free(processor_indices);
 }
 
-int cwd_init(int* ui_process_processer_index)
+int cwd_init(int argc, char** argv, int* ui_process_processer_index, char** server, uint32_t* device_id)
 {
+	char* server_argument = cwd_search_for_argument(argc, argv, "--server");
+	if (!server_argument)
+		return EINVAL;
+	char* device_id_argument = cwd_search_for_argument(argc, argv, "--device_id");
+	if (!device_id_argument)
+		return EINVAL;
+	uint32_t tmp_device_id = 0;
+	while (*device_id_argument)
+	{
+		if (*device_id_argument >= '0' && *device_id_argument <= '9')
+			tmp_device_id = 10 * tmp_device_id + (uint32_t)(*device_id_argument++ - '0');
+		else
+			return EINVAL;
+	}
+	*server = server_argument;
+	*device_id = tmp_device_id;
 	int curl_installed_with_http = 0;
 	int error = cwd_is_curl_installed_with_http(&curl_installed_with_http);
 	if (error)
@@ -402,7 +419,7 @@ int read_byte_form_pipe(int pipe, char* byte)
 		if (read_result == -1)
 		{
 			int read_error = errno;
-			if (read_error != EINTR)
+			if (read_error == EINTR)
 				continue;
 			else
 				return read_error;
@@ -416,21 +433,41 @@ int read_byte_form_pipe(int pipe, char* byte)
 
 int main(int argc, char** argv)
 {
+	printf("Executing Cool Water Dispenser software\n");
 	int ui_process_processor_index = -1;
-	if (cwd_init(&ui_process_processor_index))
+	char* server;
+	uint32_t device_id;
+	if (cwd_init(argc, argv, &ui_process_processor_index, &server, &device_id))
+	{
+		printf("Initialization failed\n");
 		return EXIT_FAILURE;
+	}
 	printf("Initialization succesfull\n");
 
-	
 	int error = 0;
 	pid_t ui_process = -1;
 	int ui_output_pipe = -1;
 	char ui_process_output_tmp;
 	char ui_process_output[4];
+	struct cwd_device_configuration_t configuration;
+	time_t previous_measurement_time;
+	time_t current_time;
+
+	previous_measurement_time = 0;
+	current_time = time(0);
+	cwd_send_device_startup(server, device_id, (uint64_t)current_time);
+	if (cwd_get_device_configuration(server, device_id, &configuration))
+		cwd_default_configuration(device_id, &configuration);
 	
-	// Logic for controlling ui process, reading sensors and sending data to the server goes here
 	while (!error)
 	{
+		current_time = time(0);
+		if ((uint64_t)(current_time - previous_measurement_time) >= configuration.periodic_mesurement_delay)
+		{
+			cwd_send_periodic_mesurements(server, device_id, current_time, 0, 0);
+			cwd_get_device_configuration(server, device_id, &configuration);
+			previous_measurement_time = current_time;
+		}
 		if (ui_process != -1 && ui_output_pipe == -1)
 		{
 			cwd_wait_for_process(ui_process);
@@ -438,15 +475,14 @@ int main(int argc, char** argv)
 		}
 		if (ui_process == -1)
 		{
-			sleep(1);
-			const char* ui_process_executable = "cat";
+			// TODO : Add real ui executable file name here
+			const char* ui_process_executable = "./fake_ui";
 			const char* ui_process_arguments[1] = { "cwd_ui_output_test.txt" };
 			error = cwd_create_ui_process(ui_process_executable, 1, ui_process_arguments, ui_process_processor_index, &ui_process, &ui_output_pipe);
 			if (!error)
 				memset(ui_process_output, 0, sizeof(ui_process_output));
 			else
 			{
-				printf("error %i\n", error);
 				error = 0;
 				ui_process = -1;
 				ui_output_pipe = -1;
@@ -460,16 +496,19 @@ int main(int argc, char** argv)
 				memmove(ui_process_output, ui_process_output + 1, sizeof(ui_process_output) - 1);
 				ui_process_output[sizeof(ui_process_output) - 1] = ui_process_output_tmp;
 				if (!memcmp(ui_process_output, "\n!X\n", 4))
-					printf("Bypass happened\n");
+					cwd_send_bypassing(server, device_id, current_time);
 				if (!memcmp(ui_process_output, "\n!1\n", 4))
-					printf("Order 1 happened\n");
+					cwd_send_order(server, device_id, current_time, 1);
 				if (!memcmp(ui_process_output, "\n!2\n", 4))
-					printf("Order 2 happened\n");
+					cwd_send_order(server, device_id, current_time, 2);
 				if (!memcmp(ui_process_output, "\n!3\n", 4))
-					printf("Order 3 happened\n");
+					cwd_send_order(server, device_id, current_time, 3);
 			}
 			else if (error == EAGAIN)
+			{
+				sleep(1);
 				error = 0;
+			}
 			else
 			{
 				error = 0;
