@@ -1,5 +1,5 @@
 /*
-	Cool Water Dispenser test data generator version 0.2.0 2019-03-08 written by Santtu Nyman.
+	Cool Water Dispenser test data generator version 0.2.3 2019-03-17 written by Santtu Nyman.
 	git repository https://github.com/AP-Elektronica-ICT/ip2019-coolwater
 	
 	Description
@@ -7,6 +7,10 @@
 		Read function print_instructions to see the instructions how to use the program.
 		
 	Version history
+		version 0.2.3 2019-03-17
+			Server API version argument added.
+		version 0.2.2 2019-03-17
+			Preparing for new server API.
 		version 0.2.1 2019-03-11
 			Fixed simulation operation mode bug when failed to load configuration from server.
 		version 0.2.0 2019-03-08
@@ -67,6 +71,24 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	char* server_api_version_string = cwd_search_for_argument(argc, argv, "--server_api");
+	if (!server_api_version_string)
+	{
+		printf("No server api version specified initialization failed use --server_api 1 or 2\n");
+		return EXIT_FAILURE;
+	}
+	int server_api_version = 0;
+	while (*server_api_version_string)
+	{
+		if (*server_api_version_string >= '0' && *server_api_version_string <= '9')
+			server_api_version = 10 * server_api_version + (int)(*server_api_version_string++ - '0');
+		else
+		{
+			printf("Specified server API version is not desimal number initialization failed use --server_api 1 or some other desimal number\n");
+			return EXIT_FAILURE;
+		}
+	}
+
 	char* server = cwd_search_for_argument(argc, argv, "--server");
 	if (!server)
 	{
@@ -92,12 +114,18 @@ int main(int argc, char** argv)
 		}
 	}
 
-	printf("server device configuration is at \"%s%s%s\" and data goes to \"%s%s%s\"\nSending data to server...\n", CWD_URL_PROTOCOL, server, CWD_URL_DEVICE_CONFIGURATION_PATH, CWD_URL_PROTOCOL, server, CWD_URL_DATA_INPUT_PATH);
+	printf("Server API version %i\n", server_api_version);
+	if (server_api_version != 1)
+	{
+		printf("Server API version %i is not supported\n", server_api_version);
+		return EXIT_FAILURE;
+	}
+	printf("Server device configuration is at \"%s%s%s\" and data goes to \"%s%s%s\"\nSending data to server...\n", CWD_URL_PROTOCOL, server, CWD_URL_DEVICE_CONFIGURATION_PATH, CWD_URL_PROTOCOL, server, CWD_URL_DATA_INPUT_PATH);
 	
 	srand((unsigned int)time(0));
 	struct cwd_device_configuration_t configuration;
-	cwd_send_device_startup(server, device_id, (uint64_t)time(0));
-	if (cwd_get_device_configuration(server, device_id, &configuration))
+	cwd_send_device_startup(server_api_version, server, device_id, (uint64_t)time(0));
+	if (cwd_get_device_configuration(server_api_version, server, device_id, &configuration))
 	{
 		printf("Program failed to load configuration from server this error is ignored device_operation_mode = 1 periodic_mesurement_delay = 60\n");
 		configuration.device_operation_mode = 1;
@@ -111,8 +139,8 @@ int main(int argc, char** argv)
 		uint64_t current_time = (uint64_t)raw_time;
 		if (current_time - last_measurements > configuration.periodic_mesurement_delay)
 		{
-			cwd_send_periodic_mesurements(server, device_id, current_time, (float)water_level + (float)(rand() & 1), (float)(15 + (int)(4.0f * cos((float)current_time * 0.01))) + ((float)(rand() % 31) / 10.0f));
-			if (cwd_get_device_configuration(server, device_id, &configuration))
+			cwd_send_periodic_mesurements(server_api_version, server, device_id, current_time, (float)water_level + (float)(rand() & 1), (float)(15 + (int)(4.0f * cos((float)current_time * 0.01))) + ((float)(rand() % 31) / 10.0f));
+			if (cwd_get_device_configuration(server_api_version, server, device_id, &configuration))
 			{
 				printf("Program failed to load configuration from server this error is ignored device_operation_mode = 1 periodic_mesurement_delay = 60\n");
 				configuration.device_operation_mode = 1;
@@ -125,20 +153,20 @@ int main(int argc, char** argv)
 			if ((date->tm_wday > 1 && date->tm_wday < 6) || random_chance(0.33f))
 			{
 				if ((!(date->tm_hour > 6 && date->tm_hour < 21) && random_chance(0.001f)) || ((date->tm_hour > 6 && date->tm_hour < 21) && random_chance(0.02f)))
-					cwd_send_bypassing(server, device_id, current_time);
+					cwd_send_bypassing(server_api_version, server, device_id, current_time);
 				else if ((date->tm_hour > 6 && date->tm_hour < 21) && water_level && random_chance(0.01f))
 				{
-					cwd_send_bypassing(server, device_id, current_time);
+					cwd_send_bypassing(server_api_version, server, device_id, current_time);
 					if (!(rand() % 4))
 					{
 						sleep(2 + (rand() % 9));
-						cwd_send_bypassing(server, device_id, current_time);
+						cwd_send_bypassing(server_api_version, server, device_id, current_time);
 					}
 					sleep(2 + (rand() % 9));
 					uint32_t order_type = (uint32_t)(rand() % 3);
 					if (order_type + 1 > (uint32_t)water_level)
 						order_type = (uint32_t)water_level - 1;
-					cwd_send_order(server, device_id, current_time, order_type);
+					cwd_send_order(server_api_version, server, device_id, current_time, order_type);
 					water_level -= (uint64_t)(order_type + 1);
 				}
 				else if ((date->tm_hour > 6 && date->tm_hour < 16) && !water_level && random_chance(0.009f))
@@ -161,7 +189,8 @@ static void print_instructions()
 		"Parameter List:\n"
 		"	-h or --help Displays help message.\n"
 		"	--server Specifies the name of the server where data is send.\n"
-		"	--device_id Specifies id of the simulated device.\n");
+		"	--device_id Desimal number that specifies id of the simulated device.\n"
+		"	--server_api Desimal number that specifies server's web API version.");
 }
 
 static int random_chance(float chance)

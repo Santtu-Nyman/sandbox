@@ -1,5 +1,5 @@
 /*
-	Cool Water Dispenser test data generator version 0.0.1 2019-03-16 written by Santtu Nyman.
+	Cool Water Dispenser test data generator version 0.0.3 2019-03-17 written by Santtu Nyman.
 	git repository https://github.com/AP-Elektronica-ICT/ip2019-coolwater
 	
 	Description
@@ -7,6 +7,10 @@
 		The UI part of the software is on separate source and executable.
 		
 	Version history
+		version 0.0.3 2019-03-17
+			Server API version argument added.
+		version 0.0.2 2019-03-17
+			Preparing for new server API.
 		version 0.0.1 2019-03-16
 			Second incomplete version.
 		version 0.0.0 2019-03-08
@@ -360,8 +364,19 @@ void print_scheduling_info()
 	free(processor_indices);
 }
 
-int cwd_init(int argc, char** argv, int* ui_process_processer_index, char** server, uint32_t* device_id)
+int cwd_init(int argc, char** argv, int* ui_process_processer_index, int* server_api_version,  char** server, uint32_t* device_id)
 {
+	char* server_api_version_argument = cwd_search_for_argument(argc, argv, "--server_api");
+	if (!server_api_version_argument)
+		return EINVAL;
+	int tmp_server_api_version = 0;
+	while (*server_api_version_argument)
+	{
+		if (*server_api_version_argument >= '0' && *server_api_version_argument <= '9')
+			tmp_server_api_version = 10 * tmp_server_api_version + (int)(*server_api_version_argument++ - '0');
+		else
+			return EINVAL;
+	}
 	char* server_argument = cwd_search_for_argument(argc, argv, "--server");
 	if (!server_argument)
 		return EINVAL;
@@ -376,6 +391,7 @@ int cwd_init(int argc, char** argv, int* ui_process_processer_index, char** serv
 		else
 			return EINVAL;
 	}
+	*server_api_version = tmp_server_api_version;
 	*server = server_argument;
 	*device_id = tmp_device_id;
 	int curl_installed_with_http = 0;
@@ -435,14 +451,15 @@ int main(int argc, char** argv)
 {
 	printf("Executing Cool Water Dispenser software\n");
 	int ui_process_processor_index = -1;
+	int server_api_version;
 	char* server;
 	uint32_t device_id;
-	if (cwd_init(argc, argv, &ui_process_processor_index, &server, &device_id))
+	if (cwd_init(argc, argv, &ui_process_processor_index, &server_api_version, &server, &device_id))
 	{
 		printf("Initialization failed\n");
 		return EXIT_FAILURE;
 	}
-	printf("Initialization succesfull\n");
+	printf("Initialization succesfull\nServer API version %i\nServer \"%s\"\nDevive id %lu\n", server_api_version, server, (unsigned long)device_id);
 
 	int error = 0;
 	pid_t ui_process = -1;
@@ -455,8 +472,8 @@ int main(int argc, char** argv)
 
 	previous_measurement_time = 0;
 	current_time = time(0);
-	cwd_send_device_startup(server, device_id, (uint64_t)current_time);
-	if (cwd_get_device_configuration(server, device_id, &configuration))
+	cwd_send_device_startup(server_api_version, server, device_id, (uint64_t)current_time);
+	if (cwd_get_device_configuration(server_api_version, server, device_id, &configuration))
 		cwd_default_configuration(device_id, &configuration);
 	
 	while (!error)
@@ -464,8 +481,8 @@ int main(int argc, char** argv)
 		current_time = time(0);
 		if ((uint64_t)(current_time - previous_measurement_time) >= configuration.periodic_mesurement_delay)
 		{
-			cwd_send_periodic_mesurements(server, device_id, current_time, 0, 0);
-			cwd_get_device_configuration(server, device_id, &configuration);
+			cwd_send_periodic_mesurements(server_api_version, server, device_id, current_time, 0, 0);
+			cwd_get_device_configuration(server_api_version, server, device_id, &configuration);
 			previous_measurement_time = current_time;
 		}
 		if (ui_process != -1 && ui_output_pipe == -1)
@@ -496,13 +513,13 @@ int main(int argc, char** argv)
 				memmove(ui_process_output, ui_process_output + 1, sizeof(ui_process_output) - 1);
 				ui_process_output[sizeof(ui_process_output) - 1] = ui_process_output_tmp;
 				if (!memcmp(ui_process_output, "\n!X\n", 4))
-					cwd_send_bypassing(server, device_id, current_time);
+					cwd_send_bypassing(server_api_version, server, device_id, current_time);
 				if (!memcmp(ui_process_output, "\n!1\n", 4))
-					cwd_send_order(server, device_id, current_time, 1);
+					cwd_send_order(server_api_version, server, device_id, current_time, 1);
 				if (!memcmp(ui_process_output, "\n!2\n", 4))
-					cwd_send_order(server, device_id, current_time, 2);
+					cwd_send_order(server_api_version, server, device_id, current_time, 2);
 				if (!memcmp(ui_process_output, "\n!3\n", 4))
-					cwd_send_order(server, device_id, current_time, 3);
+					cwd_send_order(server_api_version, server, device_id, current_time, 3);
 			}
 			else if (error == EAGAIN)
 			{

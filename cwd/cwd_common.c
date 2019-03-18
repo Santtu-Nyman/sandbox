@@ -1,5 +1,5 @@
 /*
-	Cool Water Dispenser common version 0.0.1 2019-03-08 written by Santtu Nyman.
+	Cool Water Dispenser common version 0.0.3 2019-03-17 written by Santtu Nyman.
 	git repository https://github.com/AP-Elektronica-ICT/ip2019-coolwater
 */
 
@@ -512,8 +512,12 @@ int cwd_http_post(const char* url, size_t key_value_pair_count, const char** key
 	}
 }
 
-int cwd_get_device_configuration(const char* server, uint32_t device_id, struct cwd_device_configuration_t* configuration)
+int cwd_get_device_configuration(int api_version, const char* server, uint32_t device_id, struct cwd_device_configuration_t* configuration)
 {
+	if (api_version < 1)
+		return EINVAL;
+	if (api_version != 1)
+		return ENOSYS;
 	const char* url_protocol = CWD_URL_PROTOCOL;
 	const char* url_server_path = CWD_URL_DEVICE_CONFIGURATION_PATH;
 	size_t url_protocol_length = strlen(url_protocol);
@@ -595,8 +599,12 @@ int cwd_get_device_configuration(const char* server, uint32_t device_id, struct 
 	return 0;
 }
 
-int cwd_send_device_startup(const char* server, uint32_t device_id, uint64_t timestamp)
+int cwd_send_device_startup(int api_version, const char* server, uint32_t device_id, uint64_t timestamp)
 {
+	if (api_version < 1)
+		return EINVAL;
+	if (api_version != 1)
+		return ENOSYS;
 	const char* url_protocol = CWD_URL_PROTOCOL;
 	const char* url_server_path = CWD_URL_DATA_INPUT_PATH;
 	size_t url_protocol_length = strlen(url_protocol);
@@ -629,8 +637,12 @@ int cwd_send_device_startup(const char* server, uint32_t device_id, uint64_t tim
 	return 0;
 };
 
-int cwd_send_periodic_mesurements(const char* server, uint32_t device_id, uint64_t timestamp, float water_level, float water_temperature)
+int cwd_send_periodic_mesurements(int api_version, const char* server, uint32_t device_id, uint64_t timestamp, float water_level, float water_temperature)
 {
+	if (api_version < 1)
+		return EINVAL;
+	if (api_version != 1)
+		return ENOSYS;
 	const char* url_protocol = CWD_URL_PROTOCOL;
 	const char* url_server_path = CWD_URL_DATA_INPUT_PATH;
 	size_t url_protocol_length = strlen(url_protocol);
@@ -667,8 +679,12 @@ int cwd_send_periodic_mesurements(const char* server, uint32_t device_id, uint64
 	return 0;
 };
 
-int cwd_send_bypassing(const char* server, uint32_t device_id, uint64_t timestamp)
+int cwd_send_bypassing(int api_version, const char* server, uint32_t device_id, uint64_t timestamp)
 {
+	if (api_version < 1)
+		return EINVAL;
+	if (api_version != 1)
+		return ENOSYS;
 	const char* url_protocol = CWD_URL_PROTOCOL;
 	const char* url_server_path = CWD_URL_DATA_INPUT_PATH;
 	size_t url_protocol_length = strlen(url_protocol);
@@ -701,8 +717,12 @@ int cwd_send_bypassing(const char* server, uint32_t device_id, uint64_t timestam
 	return 0;
 };
 
-int cwd_send_order(const char* server, uint32_t device_id, uint64_t timestamp, uint32_t order_type)
+int cwd_send_order(int api_version, const char* server, uint32_t device_id, uint64_t timestamp, uint32_t order_type)
 {
+	if (api_version < 1)
+		return EINVAL;
+	if (api_version != 1)
+		return ENOSYS;
 	const char* url_protocol = CWD_URL_PROTOCOL;
 	const char* url_server_path = CWD_URL_DATA_INPUT_PATH;
 	size_t url_protocol_length = strlen(url_protocol);

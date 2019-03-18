@@ -1,11 +1,15 @@
 /*
-	Cool Water Dispenser common version 0.0.1 2019-03-08 written by Santtu Nyman.
+	Cool Water Dispenser common version 0.0.3 2019-03-17 written by Santtu Nyman.
 	git repository https://github.com/AP-Elektronica-ICT/ip2019-coolwater
 	
 	Description
 		Cool Water Dispenser shared linux source.
 		
 	Version history
+		version 0.0.3 2019-03-17
+			Preparing for new server API.
+		version 0.0.2 2019-03-16
+			Default device configuration added.
 		version 0.0.1 2019-03-08
 			First version.
 */
@@ -75,15 +79,15 @@ int cwd_is_curl_installed_with_http(int* is_isntalled);
 
 int cwd_http_post(const char* url, size_t key_value_pair_count, const char** key_value_pairs, size_t* data_size, void** data);
 
-int cwd_get_device_configuration(const char* server, uint32_t device_id, struct cwd_device_configuration_t* configuration);
+int cwd_get_device_configuration(int api_version, const char* server, uint32_t device_id, struct cwd_device_configuration_t* configuration);
 
-int cwd_send_device_startup(const char* server, uint32_t device_id, uint64_t timestamp);
+int cwd_send_device_startup(int api_version, const char* server, uint32_t device_id, uint64_t timestamp);
 
-int cwd_send_periodic_mesurements(const char* server, uint32_t device_id, uint64_t timestamp, float water_level, float water_temperature);
+int cwd_send_periodic_mesurements(int api_version, const char* server, uint32_t device_id, uint64_t timestamp, float water_level, float water_temperature);
 
-int cwd_send_bypassing(const char* server, uint32_t device_id, uint64_t timestamp);
+int cwd_send_bypassing(int api_version, const char* server, uint32_t device_id, uint64_t timestamp);
 
-int cwd_send_order(const char* server, uint32_t device_id, uint64_t timestamp, uint32_t order_type);
+int cwd_send_order(int api_version, const char* server, uint32_t device_id, uint64_t timestamp, uint32_t order_type);
 
 float cwd_calculate_thermistor_temperature(int measurement);
 
