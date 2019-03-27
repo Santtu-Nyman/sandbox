@@ -1,0 +1,4 @@
+﻿cl : Command line warning D9025: overriding '/sdl-' with '/GS-'
+  main.cpp
+c:\users\illuminati\desktop\v0.6\brown_buffalo_controller\brown_buffalo_controller\main.cpp(437): warning C4326: return type of 'main' should be 'int' instead of 'void'
+  brown_buffalo_controller.vcxproj -> C:\Users\Illuminati\Desktop\v0.6\brown_buffalo_controller\x64\Debug\brown_buffalo_controller.exe

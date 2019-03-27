@@ -1,0 +1,8 @@
+﻿  main.cpp
+main.cpp(551): warning C4838: conversion from 'int' to 'WCHAR' requires a narrowing conversion
+  Generating code
+  3 of 7 functions (42.9%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    1 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  tuulettimen_ohjain.vcxproj -> C:\Users\Illuminati\Desktop\v0.2\tuulettimen_ohjain\x64\Release\tuulettimen_ohjain.exe

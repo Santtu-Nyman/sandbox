@@ -1,3 +1,15 @@
+/*
+	Linux pipe test version 0.0.0 2019-03-12 written by Santtu Nyman.
+	git repository https://github.com/AP-Elektronica-ICT/ip2019-coolwater
+	
+	Description
+		Simple program for reading other program's standard output to pipe and then writing to standard output.
+		
+	Version history
+		version 1.0.0 2019-03-12
+			First version.
+*/
+
 #define _GNU_SOURCE
 #include <stddef.h>
 #include <stdint.h>
