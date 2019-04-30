@@ -37,7 +37,7 @@
 
 #define CWD_VERSION_NXX 1
 #define CWD_VERSION_XNX 0
-#define CWD_VERSION_XXN 3
+#define CWD_VERSION_XXN 4
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
