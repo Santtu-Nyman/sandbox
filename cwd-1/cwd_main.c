@@ -503,6 +503,8 @@ char* append_string(char* low, const char* high)
 
 int main(int argc, char** argv)
 {
+	char version_string[16];
+	size_t version_string_length;
 	struct cwd_device_configuration_t configuration;
 	pid_t ui_process = -1;
 	int ui_output_pipe = -1;
@@ -530,7 +532,14 @@ int main(int argc, char** argv)
 		printf("Initialization failed (cwd_init_process)\n");
 		return EXIT_FAILURE;
 	}
-	printf("Executing Cool Water Dispenser software version %i.%i.%i\n", configuration.version, configuration.version_extension, configuration.version_patch);
+	version_string_length = cwd_print_u64(4, version_string, configuration.version);
+	version_string[version_string_length++] = '.';
+	version_string_length += cwd_print_u64(4, version_string + version_string_length, configuration.version_extension);
+	version_string[version_string_length++] = '.';
+	version_string_length += cwd_print_u64(4, version_string + version_string_length, configuration.version_patch);
+	version_string[version_string_length] = 0;
+	cwd_save_file("/home/pi/cwd_version.txt", version_string_length, version_string);
+	printf("Executing Cool Water Dispenser software version %s\n", version_string);
 	if (chdir(configuration.directory) == -1)
 	{
 		printf("Initialization failed (chdir \"%s\")\n", configuration.directory);
