@@ -1081,7 +1081,7 @@ int cwd_http_post(const char* url, size_t key_value_pair_count, const char** key
 	}
 	else
 	{
-		const char* curl_arguments[10] = { "curl", "--data", key_value_buffer, "-X", "PUT", url, "-o", http_data_file_name, "-s", 0 };
+		const char* curl_arguments[12] = { "curl", "--data", key_value_buffer, "-X", "PUT", url, "-o", http_data_file_name, "-m", "10", "-s", 0 };
 		execvp(curl_arguments[0], (char**)curl_arguments);
 		free(key_value_buffer);
 		exit(EXIT_FAILURE);
