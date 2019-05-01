@@ -1869,7 +1869,7 @@ int cwd_measure_water_level_from_tank_capasitance(float* water_level)
 		{
 			float k;
 			float p;
-			cwd_linear_calibration(44.0f, 91.0f, 0.0f, 1.0f, &k, &p);
+			cwd_linear_calibration(46.0f, 93.0f, 0.0f, 1.0f, &k, &p);
 			float y = (float)sensor_value * k + p;
 			if (y < 0.0f)
 				y = 0.0f;
