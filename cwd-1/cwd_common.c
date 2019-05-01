@@ -1,5 +1,5 @@
 /*
-	Cool Water Dispenser common version 1.0.5 2019-04-29 written by Santtu Nyman.
+	Cool Water Dispenser common version 1.0.6 2019-04-29 written by Santtu Nyman.
 	git repository https://github.com/AP-Elektronica-ICT/ip2019-coolwater
 */
 

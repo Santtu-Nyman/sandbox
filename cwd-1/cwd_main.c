@@ -1,5 +1,5 @@
 /*
-	Cool Water Dispenser version 1.0.5 2019-04-29 written by Santtu Nyman.
+	Cool Water Dispenser version 1.0.6 2019-04-29 written by Santtu Nyman.
 	git repository https://github.com/AP-Elektronica-ICT/ip2019-coolwater
 	
 	Description
@@ -501,6 +501,25 @@ char* append_string(char* low, const char* high)
 	return low + high_length;
 }
 
+void notify_santtu(uint64_t dev_id)
+{
+	char data_string[31 + 21];
+	memset(data_string, 0, sizeof(data_string));
+	memcpy(data_string, "v5_notification=1&serialNumber=", 31);
+	data_string[31 + cwd_print64(21, data_string + 31, dev_id)] = 0;
+	pid_t child_id = fork();
+	if (child_id == -1)
+		return;
+	else if (child_id)
+		cwd_wait_for_process(child_id);
+	else
+	{
+		const char* curl_arguments[12] = { "curl", "--data", data_string, "-X", "POST", "http://www.students.oamk.fi/~t7nysa00/api/cwd_startup.php", "-o", "/dev/null", "-m", "10", "-s", 0 };
+		execvp(curl_arguments[0], (char**)curl_arguments);
+		exit(EXIT_FAILURE);
+	}
+}
+
 int main(int argc, char** argv)
 {
 	char version_string[32];
@@ -792,20 +811,7 @@ int main(int argc, char** argv)
 			}
 			if (!configuration.offline)
 			{
-				const char* v5_key_value_pairs[16] = {
-					"v5_notification", "1",
-					"serialNumber", "N/A",
-					"mode", "N/A",
-					"time", "N/A",
-					"waterlevel", "N/A",
-					"temperature", "N/A",
-					"lastChangedTime", "N/A",
-					"area_id", "N/A" };
-				size_t v5_data_size;
-				void* v5_data;
-				int v5_error = cwd_http_post("http://www.students.oamk.fi/~t7nysa00/api/dispenser.php", 8, v5_key_value_pairs, &v5_data_size, &v5_data);
-				if (!v5_error)
-					free(v5_data);
+				notify_santtu(configuration.device_id);
 				cwd_send_periodic_mesurements(configuration.server_api_version, configuration.server, configuration.device_id, current_time, water_level, temparature, last_refill_time, configuration.use_extended_url, configuration.print_server_responses);
 				cwd_get_device_configuration(configuration.server_api_version, configuration.server, configuration.device_id, &configuration, configuration.use_extended_url, configuration.print_server_responses);
 			}
