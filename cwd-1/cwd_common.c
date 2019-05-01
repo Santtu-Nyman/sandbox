@@ -1,5 +1,5 @@
 /*
-	Cool Water Dispenser common version 1.0.7 2019-04-29 written by Santtu Nyman.
+	Cool Water Dispenser common version 1.0.8 2019-04-29 written by Santtu Nyman.
 	git repository https://github.com/AP-Elektronica-ICT/ip2019-coolwater
 */
 
@@ -1451,7 +1451,6 @@ float cwd_calculate_water_level_from_pressure_value(int value)
 
 int cwd_get_tank_water_level(float* water_level)
 {
-	// TODO: Add real weight split when pressure sensor is calibrated.
 	const float capasitance_pressure_split = 1.0f;
 	float from_capasitance;
 	int from_capasitance_error = cwd_measure_water_level_from_tank_capasitance(&from_capasitance);
@@ -1861,20 +1860,25 @@ int cwd_measure_water_level_from_tank_capasitance_raw(int* sensor_value)
 
 int cwd_measure_water_level_from_tank_capasitance(float* water_level)
 {
-	int sensor_value;
-	int error = cwd_measure_water_level_from_tank_capasitance_raw(&sensor_value);
-	if (!error)
+	int error = 0;
+	for (int c = 3; !error && c--;)
 	{
-		float k;
-		float p;
-		cwd_linear_calibration(44.0f, 91.0f, 0.0f, 1.0f, &k, &p);
-		float y = (float)sensor_value * k + p;
-		if (y < 0.0f)
-			y = 0.0f;
-		else if (y > 1.0f)
-			y = 1.0f;
-		*water_level = y;
-		return 0;
+		int sensor_value;
+		error = cwd_measure_water_level_from_tank_capasitance_raw(&sensor_value);
+		if (!error)
+		{
+			float k;
+			float p;
+			cwd_linear_calibration(44.0f, 91.0f, 0.0f, 1.0f, &k, &p);
+			float y = (float)sensor_value * k + p;
+			if (y < 0.0f)
+				y = 0.0f;
+			else if (y > 1.0f)
+				y = 1.0f;
+			*water_level = y;
+			if (y > 0.0f && y < 1.0f)
+				return 0;
+		}
 	}
 	return error;
 }
