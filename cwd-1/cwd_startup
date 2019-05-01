@@ -1,4 +1,4 @@
-curl --url http://www.students.oamk.fi/~t7nysa00/api/cwd_startup.php -o /dev/null
+curl --url http://www.students.oamk.fi/~t7nysa00/api/cwd_startup.php -o /dev/null -m 5
 mkdir /home/pi/cwd/tmp
 rm /home/pi/cwd/tmp/bcm2835.h
 rm /home/pi/cwd/tmp/bcm2835.c
@@ -11,16 +11,16 @@ rm /home/pi/cwd/tmp/cwd_common.c
 rm /home/pi/cwd/tmp/cwd_main.c
 rm /home/pi/cwd/tmp/cwd_ui.py
 rm /home/pi/cwd/tmp/cwd
-curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/bcm2835.h -o /home/pi/cwd/tmp/bcm2835.h
-curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/bcm2835.c -o /home/pi/cwd/tmp/bcm2835.c
-curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_sbcm2835.h -o /home/pi/cwd/tmp/cwd_sbcm2835.h
-curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_sbcm2835.c -o /home/pi/cwd/tmp/cwd_sbcm2835.c
-curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_mcp3201.h -o /home/pi/cwd/tmp/cwd_mcp3201.h
-curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_mcp3201.c -o /home/pi/cwd/tmp/cwd_mcp3201.c
-curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_common.h -o /home/pi/cwd/tmp/cwd_common.h
-curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_common.c -o /home/pi/cwd/tmp/cwd_common.c
-curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_main.c -o /home/pi/cwd/tmp/cwd_main.c
-curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_ui.py -o /home/pi/cwd/tmp/cwd_ui.py
+curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/bcm2835.h -o /home/pi/cwd/tmp/bcm2835.h -m 5
+curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/bcm2835.c -o /home/pi/cwd/tmp/bcm2835.c -m 5
+curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_sbcm2835.h -o /home/pi/cwd/tmp/cwd_sbcm2835.h -m 5
+curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_sbcm2835.c -o /home/pi/cwd/tmp/cwd_sbcm2835.c -m 5
+curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_mcp3201.h -o /home/pi/cwd/tmp/cwd_mcp3201.h -m 5
+curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_mcp3201.c -o /home/pi/cwd/tmp/cwd_mcp3201.c -m 5
+curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_common.h -o /home/pi/cwd/tmp/cwd_common.h -m 5
+curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_common.c -o /home/pi/cwd/tmp/cwd_common.c -m 5
+curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_main.c -o /home/pi/cwd/tmp/cwd_main.c -m 5
+curl --url https://raw.githubusercontent.com/Santtu-Nyman/sandbox/master/cwd-1/cwd_ui.py -o /home/pi/cwd/tmp/cwd_ui.py -m 5
 gcc -std=gnu99 -O2 -D CWD_BCM2835 -D NO_PRIN_TEMP /home/pi/cwd/tmp/bcm2835.c /home/pi/cwd/tmp/cwd_sbcm2835.c /home/pi/cwd/tmp/cwd_mcp3201.c /home/pi/cwd/tmp/cwd_common.c /home/pi/cwd/tmp/cwd_main.c -o /home/pi/cwd/tmp/cwd
 cwd_new_exe="/home/pi/cwd/tmp/cwd"
 if [ -f "$cwd_new_exe" ]; then
