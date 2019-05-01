@@ -86,6 +86,7 @@
 #define CWD_URL_PROTOCOL_2 "http://"
 #define CWD_URL_DATA_PATH_2 "/api/dispenser"
 #define CWD_URL_EXTENDE_DATA_PATH_2 "/api/dispenser.php"
+#define CWD_AREA_ID "14"
 
 struct cwd_device_configuration_t
 {

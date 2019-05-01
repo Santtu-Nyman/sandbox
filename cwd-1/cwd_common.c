@@ -1381,7 +1381,7 @@ int cwd_send_periodic_mesurements2(const char* server, uint64_t device_id, uint6
 		"waterlevel", water_level_string,
 		"temperature", temperature_string,
 		"lastChangedTime", refill_time_string,
-		"area_id", "N/A" };
+		"area_id", CWD_AREA_ID };
 	size_t data_size;
 	void* data;
 	cwd_save_file("cwd_last_mesuremt_url.txt", strlen(url), url);
