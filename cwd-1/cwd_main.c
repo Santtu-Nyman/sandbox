@@ -506,7 +506,7 @@ void notify_santtu(uint64_t dev_id)
 	char data_string[31 + 21];
 	memset(data_string, 0, sizeof(data_string));
 	memcpy(data_string, "v5_notification=1&serialNumber=", 31);
-	data_string[31 + cwd_print64(21, data_string + 31, dev_id)] = 0;
+	data_string[31 + cwd_print_u64(21, data_string + 31, dev_id)] = 0;
 	pid_t child_id = fork();
 	if (child_id == -1)
 		return;
