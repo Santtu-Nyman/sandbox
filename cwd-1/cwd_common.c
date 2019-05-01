@@ -1,5 +1,5 @@
 /*
-	Cool Water Dispenser common version 1.0.4 2019-04-29 written by Santtu Nyman.
+	Cool Water Dispenser common version 1.0.5 2019-04-29 written by Santtu Nyman.
 	git repository https://github.com/AP-Elektronica-ICT/ip2019-coolwater
 */
 
@@ -1354,7 +1354,8 @@ int cwd_send_periodic_mesurements2(const char* server, uint64_t device_id, uint6
 	char temperature_string[17];
 	char refill_time_string[20];
 	char water_level_string[4];
-	device_id_string[cwd_print_u64(20, device_id_string, device_id)] = 0;
+	size_t device_id_length = cwd_print_u64(20, device_id_string, device_id);
+	device_id_string[device_id_length] = 0;
 	cwd_print_time(timestamp, date_string);
 	date_string[19] = 0;
 	temperature_string[cwd_print_f32_n_dot3(16, temperature_string, water_temperature)] = 0;
@@ -1365,12 +1366,14 @@ int cwd_send_periodic_mesurements2(const char* server, uint64_t device_id, uint6
 	else if (water_level > 100.0f)
 		water_level = 100.0f;
 	water_level_string[cwd_print_u64(3, water_level_string, (uint64_t)water_level)] = 0;
-	char* url = (char*)malloc(url_protocol_length + server_length + url_path_length + 1);
+	char* url = (char*)malloc(url_protocol_length + server_length + url_path_length + 1 + device_id_length + 1);
 	if (!url)
 		return ENOMEM;
 	memcpy(url, url_protocol, url_protocol_length);
 	memcpy(url + url_protocol_length, server, server_length);
-	memcpy(url + url_protocol_length + server_length, url_path, url_path_length + 1);
+	memcpy(url + url_protocol_length + server_length, url_path, url_path_length);
+	url[url_protocol_length + server_length + url_path_length] = '/';
+	memcpy(url + url_protocol_length + server_length + url_path_length + 1, device_id_string, device_id_length + 1);
 	const char* key_value_pairs[14] = {
 		"serialNumber", device_id_string,
 		"mode", "on",
@@ -1381,6 +1384,7 @@ int cwd_send_periodic_mesurements2(const char* server, uint64_t device_id, uint6
 		"area_id", "N/A" };
 	size_t data_size;
 	void* data;
+	cwd_save_file("cwd_last_mesuremt_url.txt", strlen(url), url);
 	int error = cwd_http_post(url, 7, key_value_pairs, &data_size, &data);
 	free(url);
 	if (error == -1)
