@@ -1,5 +1,5 @@
 /*
-	Cool Water Dispenser version 1.0.6 2019-04-29 written by Santtu Nyman.
+	Cool Water Dispenser version 1.0.7 2019-04-29 written by Santtu Nyman.
 	git repository https://github.com/AP-Elektronica-ICT/ip2019-coolwater
 	
 	Description
@@ -514,7 +514,7 @@ void notify_santtu(uint64_t dev_id)
 		cwd_wait_for_process(child_id);
 	else
 	{
-		const char* curl_arguments[12] = { "curl", "--data", data_string, "-X", "POST", "http://www.students.oamk.fi/~t7nysa00/api/cwd_startup.php", "-o", "/dev/null", "-m", "10", "-s", 0 };
+		const char* curl_arguments[12] = { "curl", "--data", data_string, "-X", "POST", "http://www.students.oamk.fi/~t7nysa00/api/dispenser.php", "-o", "/dev/null", "-m", "10", "-s", 0 };
 		execvp(curl_arguments[0], (char**)curl_arguments);
 		exit(EXIT_FAILURE);
 	}

@@ -1,5 +1,5 @@
 /*
-	Cool Water Dispenser common version 1.0.6 2019-04-29 written by Santtu Nyman.
+	Cool Water Dispenser common version 1.0.7 2019-04-29 written by Santtu Nyman.
 	git repository https://github.com/AP-Elektronica-ICT/ip2019-coolwater
 */
 
@@ -491,7 +491,7 @@ int cwd_default_configuration(struct cwd_device_configuration_t* configuration)
 	int id_error = cwd_get_device_uid(&configuration->device_id);
 	if (id_error)
 		configuration->device_id = (uint64_t)~0;
-	configuration->periodic_mesurement_delay = 60;
+	configuration->periodic_mesurement_delay = 10;
 	configuration->loop_delay = 0;
 	configuration->server = CWD_DEFAULT_SERVER;
 	int dir_error = cwd_get_executable_directory_path(&configuration->directory);
@@ -1353,7 +1353,7 @@ int cwd_send_periodic_mesurements2(const char* server, uint64_t device_id, uint6
 	char date_string[20];
 	char temperature_string[17];
 	char refill_time_string[20];
-	char water_level_string[4];
+	char water_level_string[17];
 	size_t device_id_length = cwd_print_u64(20, device_id_string, device_id);
 	device_id_string[device_id_length] = 0;
 	cwd_print_time(timestamp, date_string);
@@ -1365,7 +1365,7 @@ int cwd_send_periodic_mesurements2(const char* server, uint64_t device_id, uint6
 		water_level = 0.0f;
 	else if (water_level > 100.0f)
 		water_level = 100.0f;
-	water_level_string[cwd_print_u64(3, water_level_string, (uint64_t)water_level)] = 0;
+	water_level_string[cwd_print_f32_n_dot3(16, water_level_string, water_level / 100.0f)] = 0;
 	char* url = (char*)malloc(url_protocol_length + server_length + url_path_length + 1 + device_id_length + 1);
 	if (!url)
 		return ENOMEM;
