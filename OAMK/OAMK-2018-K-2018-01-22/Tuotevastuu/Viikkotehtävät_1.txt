@@ -1,0 +1,31 @@
+T 1: Vastaa yhyesti seuraaviin kysymyksiin
+	a) Mikä on valmistusvirhe ja miten sitä voidaan korjata ja vähentää?
+		Valmistusvirhe on valmistuksen aikana
+		tapahtunut virhe, lainninlyönti tai
+		laadunvonnan väärin suorittaminen.
+		Valmistusvirheitä voi välttää paremmalla laadun valvonnalla.
+	b) Mikä on suunnittelu -ja rakennevirhe?
+		Suunnittelu -ja rakennevirhe on tuotteen tai sen valmistusmenetelmien suunnittelussa tapahtunut virhe.
+	c) Tuotevahinko.
+		turvallisuudeltaan puutteellisen tuotteen käytöstä ta hallussapidosta johtuva vahinko muulle kuin tuotteelle itselleen.
+
+T 2: Vastaa lyhyesti seuraaviin kysymyksiin:
+	a) Miksi EU:n tuotevastuudirektiivi alun perin annettiin?
+		Poistamaan jäsenvaltioden väliset tuotevastuusääntöjen erillaisuudet.
+	b) Tuotevastuudirektiivi on ns. Harmonisointi- eli maksimidirektiivi. Mitä tämä tarkoittaa?
+		Tämä tarkoittaa että EY:m jäsenvaltioden tulee omassa lainsäädännössään noudattaa direktiiviä alittamatta tai ylittämättä sen vaatimuksia.
+
+T 3: Vastaa seuraaviin väittämin O(ikein) tai V(äärin). 
+	a) Tuotteen suomalainen maahantuoja on tuotevastuulain vastuuobjekti (Tuotevastuulain tarkennuksen 1993 jälkeen). 
+		O
+	b) Suomalaisessa tuotevastuu laissa on 500 euron omavastuu. 
+		O
+	c) Euroopan tuoteturvallisuus on noussut merkittävästi 1985 jälkeen (Tuotevastuu direktiivi hyväksyttiin). 
+		O
+	d) Tuottevastuudirektiivi sisältää joukon vakuutusta koskevia määräyksiä.
+		V
+	
+T 4: Mitkäovat tuotevastuulain 3 päätavoitetta?
+		Ennaltaehkäisevä tavoite jolla pyritään vähentämään turvallisuudeltaan puutteellisten tuotteiden tuontia markkinoille.
+		Korjaava tavoite jolla pyritään antamaan vahingonkärsijälle korvauksen saanti mahdollisuus.
+		Kauppapoliittinen tavoite jolla pyritääm antamaan eri maiden yrityksille mahdollisimman tasavertaiset kilpailu-olosuhteet.

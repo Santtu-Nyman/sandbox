@@ -1,0 +1,3 @@
+﻿  main.cpp
+c:\users\illuminati\documents\visual studio 2017\projects\snm\snm\main.cpp(74): warning C4326: return type of 'main' should be 'int' instead of 'void'
+  snm.vcxproj -> C:\Users\Illuminati\Documents\Visual Studio 2017\Projects\snm\x64\Debug\snm.exe

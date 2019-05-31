@@ -1,0 +1,21 @@
+Ryhmätehtävä 1 (yksi palautusta / ryhmä riittää) (max 3 pistettä)
+
+Rakentakaa 2 hengen ryhmissä kahden Arduinon välille langaton tietoliikenneyhteys käyttäen opettajan antamia 433 MHz radiopiirejä (datalehti löytyy täältä https://www.sparkfun.com/products/10534).
+
+Arduinoon tulee asentaa radioheadin kirjasto ja sen versio 1.81 löytyy täältä (http://www.airspayce.com/mikem/arduino/RadioHead/). 
+
+Asennetaan myös gnuradio ohjelmisto. Ohjelmistolla toteutetaan yksinkertainen spektrianalysaattori (RTL-SDR Source => GUI Frequency Sink (ja GUI Waterfall Sink)
+
+Selvitetään mittaamalla seuraavat asiat:
+
+1. Millainen on 433 MHz radiosignaali aikatasossa (oskilloskoopilla) ja taajuustasossa (RTL-SDR USB-tikulla + Gnuradiolla)
+
+2. Mitataan kuinka monta metriä tarvitaan etäisyyttä lähettimen ja vastaanottimen välille, jotta signaalin voimakkuus pienenee puoleen ja 1/10 osaan. (Mitataan lähettämällä signaalia 433 MHz radiolla ja vastaanotetaan signaali RTL_SDR USB-tikulla + Gnuradiolla).
+
+Pisteytys:
+
+1 piste, kun saadaan tieto siirtymään kahden Arduinon välillä kahteen suuntaan.
+
+1 piste, kun saatu näytettyä 433 MHz signaali aika- ja taajuustasossa.
+
+1 piste, kun on saatu mitattua etäisyydet, joilla signaali vaimenee puoleen ja kymmenesosaan.

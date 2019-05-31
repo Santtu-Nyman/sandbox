@@ -1,0 +1,17 @@
+* D:\OAMK\Elektroniikan perusteet\transistorivahvistin.asc
+Q1 c b e 0 NPN
+V§Ucc N001 0 5
+V§Usig in 0 AC 0.2
+Ci b in 35.5nF
+RB2 b 0 4700
+RE e 0 29.2
+RL out 0 250
+RC N001 c 248
+RB1 N001 b 16800
+Co out c 705.5nF
+.model NPN NPN
+.model PNP PNP
+.lib C:\Users\Santtu Nyman\Documents\LTspiceXVII\lib\cmp\standard.bjt
+.ac dec 100 100 10000
+.backanno
+.end

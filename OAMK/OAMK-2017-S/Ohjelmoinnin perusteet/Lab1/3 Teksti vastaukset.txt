@@ -1,0 +1,3 @@
+3.3 ohjelman toisto lauseke tarkoittaa jotain ohjelman souritusta hallitsevaa rakennetta joka toistaa m‰‰r‰tty‰ ohjelman osaa kun ohjelma on m‰‰r‰tyss‰ tilassa.
+
+3.6 muuttuja on jokin tilaa tallentava osia jonka tallentamaa tilaa voi muuttaa.

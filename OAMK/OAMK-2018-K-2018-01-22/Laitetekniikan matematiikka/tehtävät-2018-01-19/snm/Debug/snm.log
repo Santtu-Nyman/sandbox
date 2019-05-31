@@ -1,0 +1,7 @@
+﻿  main.cpp
+c:\users\illuminati\documents\visual studio 2017\projects\snm\snm\snm.hpp(34): warning C4552: '+': operator has no effect; expected operator with side-effect
+c:\users\illuminati\documents\visual studio 2017\projects\snm\snm\snm.hpp(35): warning C4552: '+': operator has no effect; expected operator with side-effect
+c:\users\illuminati\documents\visual studio 2017\projects\snm\snm\snm.hpp(38): warning C4552: '-': operator has no effect; expected operator with side-effect
+c:\users\illuminati\documents\visual studio 2017\projects\snm\snm\snm.hpp(39): warning C4552: '-': operator has no effect; expected operator with side-effect
+c:\users\illuminati\documents\visual studio 2017\projects\snm\snm\main.cpp(5): warning C4326: return type of 'main' should be 'int' instead of 'void'
+  snm.vcxproj -> C:\Users\Illuminati\Documents\Visual Studio 2017\Projects\snm\Debug\snm.exe
