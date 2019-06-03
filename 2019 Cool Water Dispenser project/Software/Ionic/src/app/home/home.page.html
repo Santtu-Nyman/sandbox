@@ -1,0 +1,31 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>
+      Home
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-img class="page-banner" src="/assets/tank.svg"></ion-img>
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Welcome to the Cool Water Dispenser home page</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-grid>
+        <ion-row>
+          <ion-col>
+            <ion-button color="primary" expand="block" (click)="navigateToLocation()">Go to dispenser listings</ion-button>
+          </ion-col>
+          <ion-col>
+            <ion-button color="primary" expand="block" (click)="navigateToConfiguration()">Go to the configuration page</ion-button>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

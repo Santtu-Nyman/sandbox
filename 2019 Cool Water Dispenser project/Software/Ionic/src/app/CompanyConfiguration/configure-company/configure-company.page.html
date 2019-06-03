@@ -1,0 +1,448 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>
+      Configuration panel
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content padding>
+    <div>
+      <h1>Company: {{ connectedCompanyName }}</h1>
+      <ion-button type="button" size="default" (click)="navigateToDisconnectPage()">Go to disconnect page</ion-button>
+    </div>
+  
+  <div
+    class="p-grid"
+    *ngIf="
+      !isBuildingEditing &&
+      !isFloorEditing &&
+      !isAreaEditing &&
+      !isDispenserEditing &&
+      !isAddingBuilding &&
+      !isAddingFloor &&
+      !isAddingArea &&
+      !isAddingDispenser
+    "
+  >
+    <div class="p-col">
+      <h1>Buildings:</h1>
+      <ion-list>
+        <ion-item *ngFor="let building of allBuildings">
+          <ion-button
+            [color]="
+              selectedBuilding && selectedBuilding == building
+                ? 'primary'
+                : 'light'
+            "
+            (click)="selectBuilding(building)"
+            >{{ building.name }}</ion-button
+          >
+        </ion-item>
+        <ion-item>
+          <ion-button color="success" (click)="addBuilding()"
+            >Add Building</ion-button
+          >
+        </ion-item>
+        <ion-item *ngIf="selectedBuilding">
+          <ion-button color="danger" (click)="editBuilding()"
+            >Edit Building</ion-button
+          >
+        </ion-item>
+      </ion-list>
+    </div>
+
+    <div class="p-col">
+      <h1>Floors:</h1>
+      <ion-item *ngIf="!selectedBuilding; else buildingSelected">
+        <p>select a building</p>
+      </ion-item>
+      <ng-template #buildingSelected>
+        <ion-list>
+          <ion-item *ngFor="let floor of floors">
+            <ion-button
+              [color]="
+                selectedFloor && selectedFloor == floor ? 'primary' : 'light'
+              "
+              (click)="selectFloor(floor)"
+              >{{ floor.name }}</ion-button
+            >
+          </ion-item>
+          <ion-item>
+            <ion-button color="success" (click)="addFloor()"
+              >Add Floor</ion-button
+            >
+          </ion-item>
+          <ion-item *ngIf="selectedFloor">
+            <ion-button color="danger" (click)="editFloor()"
+              >Edit Floor</ion-button
+            >
+          </ion-item>
+        </ion-list>
+      </ng-template>
+    </div>
+
+    <div class="p-col">
+      <h1>Area's:</h1>
+      <ion-item *ngIf="!selectedFloor; else floorSelected">
+        <p>select a floor</p>
+      </ion-item>
+      <ng-template #floorSelected>
+        <ion-list>
+          <ion-item *ngFor="let area of areas">
+            <ion-button
+              [color]="
+                selectedArea && selectedArea == area ? 'primary' : 'light'
+              "
+              (click)="selectArea(area)"
+              >{{ area.name }}</ion-button
+            >
+          </ion-item>
+          <ion-item>
+            <ion-button color="success" (click)="addArea()"
+              >Add Area</ion-button
+            >
+          </ion-item>
+          <ion-item *ngIf="selectedArea">
+            <ion-button color="danger" (click)="editArea()"
+              >Edit Area</ion-button
+            >
+          </ion-item>
+        </ion-list>
+      </ng-template>
+    </div>
+
+    <div class="p-col">
+      <h1>Dispensers:</h1>
+      <ion-item *ngIf="!selectedArea; else areaSelected">
+        <p>select an area</p>
+      </ion-item>
+      <ng-template #areaSelected>
+        <ion-list>
+          <ion-item *ngFor="let dispenser of dispensers">
+            <ion-button
+              [color]="
+                selectedDispenser && selectedDispenser == dispenser
+                  ? 'primary'
+                  : 'light'
+              "
+              (click)="selectDispenser(dispenser)"
+              >{{ dispenser.id }}</ion-button
+            >
+          </ion-item>
+          <ion-item>
+            <ion-button color="success" (click)="addDispenser()"
+              >Add Dispenser</ion-button
+            >
+          </ion-item>
+          <ion-item *ngIf="selectedDispenser">
+            <ion-button color="danger" (click)="editDispenser()"
+              >Edit Dispenser</ion-button
+            >
+          </ion-item>
+        </ion-list>
+      </ng-template>
+    </div>
+  </div>
+
+  <form
+    (ngSubmit)="editCurrentBuilding(selectedBuilding)"
+    #buildingForm="ngForm"
+    *ngIf="isBuildingEditing"
+  >
+    <ion-item>
+      <ion-label for="buildingname">Name:</ion-label>
+      <ion-input
+        type="text"
+        [(ngModel)]="selectedBuilding.name"
+        name="buildingname"
+        id="buildingname"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label for="buildingcity">City:</ion-label>
+      <ion-input
+        type="text"
+        [(ngModel)]="selectedBuilding.city"
+        name="buildingcity"
+        id="buildingcity"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label for="buildingZIP">ZIP:</ion-label>
+      <ion-input
+        type="number"
+        [(ngModel)]="selectedBuilding.ZIPcode"
+        name="buildingZIP"
+        id="buildingZIP"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label for="buildingaddress">Adress:</ion-label>
+      <ion-input
+        type="text"
+        [(ngModel)]="selectedBuilding.address"
+        name="buildingaddress"
+        id="buildingaddress"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-button
+      [disabled]="!buildingForm.form.valid"
+      color="success"
+      block
+      type="submit"
+      >Edit Building</ion-button
+    >
+
+    <ion-button block color="danger" (click)="stopEditing()">Cancel</ion-button>
+    <ion-button block color="danger" (click)="deleteBuilding(selectedBuilding)"
+      >Delete</ion-button
+    >
+  </form>
+
+  <form
+    (ngSubmit)="addNewBuilding(newBuilding)"
+    #addBuildingForm="ngForm"
+    *ngIf="isAddingBuilding"
+  >
+    <ion-item>
+      <ion-label for="buildingname">Name:</ion-label>
+      <ion-input
+        type="text"
+        [(ngModel)]="newBuilding.name"
+        name="buildingname"
+        id="buildingname"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label for="buildingcity">City:</ion-label>
+      <ion-input
+        type="text"
+        [(ngModel)]="newBuilding.city"
+        name="buildingcity"
+        id="buildingcity"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label for="buildingZIP">ZIP:</ion-label>
+      <ion-input
+        type="number"
+        [(ngModel)]="newBuilding.ZIPcode"
+        name="buildingZIP"
+        id="buildingZIP"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label for="buildingaddress">Adress:</ion-label>
+      <ion-input
+        type="text"
+        [(ngModel)]="newBuilding.address"
+        name="buildingaddress"
+        id="buildingaddress"
+        required
+      ></ion-input>
+    </ion-item>
+    <ion-button
+      [disabled]="!addBuildingForm.form.valid"
+      color="success"
+      block
+      type="submit"
+      >Add Building</ion-button
+    >
+
+    <ion-button block color="danger" (click)="stopEditing()">Cancel</ion-button>
+  </form>
+
+  <form
+    (ngSubmit)="editCurrentFloor(selectedFloor)"
+    *ngIf="isFloorEditing"
+    #floorForm="ngForm"
+  >
+    <ion-item>
+      <ion-label for="floorname">Name:</ion-label>
+      <ion-input
+        type="text"
+        [(ngModel)]="selectedFloor.name"
+        name="floorname"
+        id="floorname"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label for="floorblueprint">Blueprint (link):</ion-label>
+      <ion-input
+        type="text"
+        [(ngModel)]="selectedFloor.blueprint"
+        name="floorblueprint"
+        id="floorblueprint"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-button
+      [disabled]="!floorForm.form.valid"
+      color="success"
+      block
+      type="submit"
+      >Edit Floor</ion-button
+    >
+    <ion-button block color="danger" (click)="stopEditing()">Cancel</ion-button>
+    <ion-button block color="danger" (click)="deleteFloor(selectedFloor)"
+      >Delete</ion-button
+    >
+  </form>
+
+  <form
+    (ngSubmit)="addNewFloor(newFloor)"
+    #addFloorForm="ngForm"
+    *ngIf="isAddingFloor"
+  >
+    <ion-item>
+      <ion-label for="floorname">Name:</ion-label>
+      <ion-input
+        type="text"
+        [(ngModel)]="newFloor.name"
+        name="floorname"
+        id="floorname"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label for="floorblueprint">Blueprint (link):</ion-label>
+      <ion-input
+        type="text"
+        [(ngModel)]="newFloor.blueprint"
+        name="floorblueprint"
+        id="floorblueprint"
+        required
+      ></ion-input>
+    </ion-item>
+    <ion-button
+      [disabled]="!addFloorForm.form.valid"
+      color="success"
+      block
+      type="submit"
+      >Add Floor</ion-button
+    >
+    <ion-button block color="danger" (click)="stopEditing()">Cancel</ion-button>
+  </form>
+
+  <form
+    (ngSubmit)="editCurrentArea(selectedArea)"
+    *ngIf="isAreaEditing"
+    #areaForm="ngForm"
+  >
+    <ion-item>
+      <ion-label for="areaname">Name:</ion-label>
+      <ion-input
+        type="text"
+        [(ngModel)]="selectedArea.name"
+        name="areaname"
+        id="areaname"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-button
+      [disabled]="!areaForm.form.valid"
+      color="success"
+      block
+      type="submit"
+      >Edit Area</ion-button
+    >
+    <ion-button block color="danger" (click)="stopEditing()">Cancel</ion-button>
+    <ion-button block color="danger" (click)="deleteArea(selectedArea)"
+      >Delete</ion-button
+    >
+  </form>
+
+  <form
+    (ngSubmit)="addNewArea(newArea)"
+    #addAreaForm="ngForm"
+    *ngIf="isAddingArea"
+  >
+    <ion-item>
+      <ion-label for="areaname">Name:</ion-label>
+      <ion-input
+        type="text"
+        [(ngModel)]="newArea.name"
+        name="areaname"
+        id="areaname"
+        required
+      ></ion-input>
+    </ion-item>
+    <ion-button
+      [disabled]="!addAreaForm.form.valid"
+      color="success"
+      block
+      type="submit"
+      >Add Area</ion-button
+    >
+    <ion-button block color="danger" (click)="stopEditing()">Cancel</ion-button>
+  </form>
+
+  <form
+    (ngSubmit)="editCurrentDispenser(selectedDispenser)"
+    *ngIf="isDispenserEditing"
+    #dispenserForm="ngForm"
+  >
+    <ion-button
+      [disabled]="!dispenserForm.form.valid"
+      color="success"
+      block
+      type="submit"
+      >Edit Dispenser</ion-button
+    >
+    <ion-button block color="danger" (click)="stopEditing()">Cancel</ion-button>
+    <ion-button
+      block
+      color="danger"
+      (click)="deleteDispenser(selectedDispenser)"
+      >Delete</ion-button
+    >
+  </form>
+
+  <form
+    (ngSubmit)="addNewDispenser(newDispenser)"
+    #addDispenserForm="ngForm"
+    *ngIf="isAddingDispenser"
+  >
+    <ion-item>
+      <ion-label for="dispenserId">Serial number:</ion-label>
+      <ion-input
+        type="text"
+        [(ngModel)]="newDispenser.id"
+        name="dispenserId"
+        id="dispenserId"
+        required
+      ></ion-input>
+    </ion-item>
+    <ion-button
+      [disabled]="!addDispenserForm.form.valid"
+      color="success"
+      block
+      type="submit"
+      >Add Dispenser</ion-button
+    >
+    <ion-button block color="danger" (click)="stopEditing()">Cancel</ion-button>
+  </form>
+</ion-content>

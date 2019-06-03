@@ -1,0 +1,24 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button></ion-back-button>
+    </ion-buttons>
+    <ion-title>
+      <!--Building: {{buildings.name}} -->Floor: {{floors.name}}
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content padding>
+  <p>Max 2 Dispenser</p>
+  <canvas class="canv1" id="Canvas" width="626" height="434"></canvas> 
+  
+  <div *ngFor="let area of areas">
+    <div *ngIf="area.id == Dispensers.id">
+        {{area.name}}: {{area.id}} <br> dispenser id => {{Dispensers.id}} <br>
+        Area ID = {{Dispensers.area_id}}
+        Waterlevel = {{Dispensers.waterlevel}} <br>
+        Temperature = {{Dispensers.temperature}}
+    </div>
+  </div>
+</ion-content>

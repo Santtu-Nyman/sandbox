@@ -1,0 +1,27 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button></ion-back-button>
+    </ion-buttons>
+    <ion-title>
+      Building: {{building.name}}; Choose a floor
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content padding>
+  <div *ngFor="let floor of floors">
+    <ion-item *ngIf="floor.building_id == building.id">
+      <ion-button size="default" (click)="navigateToChosenFloor(floor.id)">
+        floor {{floor.name}}
+      </ion-button>
+    </ion-item>
+  </div>
+
+  <div *ngFor="let company of companies">
+    <p *ngIf=" building.company_id == company.id">
+      City: {{building.city}}
+      Company: {{company.name}} <br>
+    </p>
+  </div>
+</ion-content>

@@ -1,0 +1,31 @@
+canvas{
+    border:2px solid black
+}
+
+@media only screen and (max-width: 400px){
+    canvas{
+        width: 345px;
+        height: 345px;
+    }
+}
+
+@media only screen and (min-width: 400px){
+    canvas{
+        width: 350px;
+        height: 320px;
+    }
+}
+
+@media only screen and (min-width: 500px){
+    canvas{
+        width: 400px;
+        height: 400px;
+    }
+}
+
+@media only screen and (min-width: 700px){
+    canvas{
+        width: 626px;
+        height: 434px;
+    }
+}
