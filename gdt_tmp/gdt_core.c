@@ -457,7 +457,6 @@ static void gdt_fast_multilevel_blur_bitmap(int width, int height, size_t stride
 				uint32_t* row = (uint32_t*)((uintptr_t)pixels + (size_t)y * stride);
 				for (int c = level; c--;)
 				{
-					uint32_t row_previous;
 					uint32_t row_current = row[0];
 					uint32_t row_next = row[1];
 					current[0] = (float)((row_current >> 0x18) & 0xff);
@@ -647,7 +646,6 @@ static void gdt_blur_bitmap(int width, int height, size_t stride, uint32_t* pixe
 			for (int y = 0; y != height; ++y)
 			{
 				uint32_t* row = (uint32_t*)((uintptr_t)pixels + (size_t)y * stride);
-				uint32_t row_previous;
 				uint32_t row_current = row[0];
 				uint32_t row_next = row[1];
 				current[0] = (float)((row_current >> 0x18) & 0xff);
@@ -706,7 +704,6 @@ static void gdt_blur_bitmap(int width, int height, size_t stride, uint32_t* pixe
 			for (int x = 0; x != width; ++x)
 			{
 				uintptr_t column = (uintptr_t)pixels + (x * sizeof(uint32_t));
-				uint32_t column_previous;
 				uint32_t column_current = *(uint32_t*)column;
 				uint32_t column_next = *(uint32_t*)(column + stride);
 				current[0] = (float)((column_current >> 0x18) & 0xff);

@@ -93,7 +93,7 @@ static const struct gdt_error_info_t gdt_error_table[] = {
 	{ ETXTBSY, "ETXTBSY", "Text file busy" },
 	{ EWOULDBLOCK, "EWOULDBLOCK", "Operation would block" }
 #ifdef _WIN32
-	{ STRUNCATE, "STRUNCATE", "A string copy or concatenation resulted in a truncated string" }, { EOTHER, "EOTHER", "Other" }
+	, { STRUNCATE, "STRUNCATE", "A string copy or concatenation resulted in a truncated string" }, { EOTHER, "EOTHER", "Other" }
 #endif
  };
 
