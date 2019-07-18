@@ -8,6 +8,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <limits.h>
+#include <errno.h>
 
 int gdt_load_file(const char* name, size_t* size, void** data);
 

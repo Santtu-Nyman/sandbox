@@ -12,7 +12,7 @@
 #define GDT_CORE_ASSUME(x) do { if (!(x)) __builtin_unreachable(); } while (0)
 #endif
 #if (defined(_M_X64) || defined(_M_IX86) || defined(__i386__) || defined(__x86_64__))
-#define GDT_SSEE3
+//#define GDT_SSEE3
 #include <emmintrin.h>
 #include <xmmintrin.h>
 #include <immintrin.h>
@@ -1920,8 +1920,8 @@ int gdt_draw_graph_with_titles_to_bitmap(int flags, uint32_t background_color, u
 		y_axis_color, grid_delta_x, grid_delta_y, width, height, stride,
 		pixels, line_thickness, line_count, point_x_element, line_colors,
 		point_count, points, truetype_file_name, gird_number_font_height,
-		graph_title_font_height, graph_title_color, tmp_graph_title, axis_title_font_height,
-		axis_title_colors, tmp_axis_titles);
+		graph_title_font_height, graph_title_color, (const char*)tmp_graph_title, axis_title_font_height,
+		axis_title_colors, (const char**)tmp_axis_titles);
 	if (tmp_axis_titles)
 	{
 		for (size_t i = 0; i != line_count; ++i)

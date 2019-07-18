@@ -8,6 +8,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <limits.h>
+#include <errno.h>
 
 int gdt_get_process_arguments(size_t* argument_count, char*** arguments);
 

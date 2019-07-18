@@ -593,6 +593,7 @@ int gdt_move_file_win32(const WCHAR* current_name, const WCHAR* new_name)
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 static uint64_t gdt_get_unix_time_stamp()
 {
@@ -606,8 +607,8 @@ static uint64_t gdt_get_unix_time_stamp()
 int gdt_load_file(const char* name, size_t* size, void** data)
 {
 	struct stat stats;
-	int file_descriptor = -1;
 	int error;
+	int file_descriptor = -1;
 	while (file_descriptor == -1)
 	{
 		file_descriptor = open(name, O_RDONLY);
@@ -618,7 +619,7 @@ int gdt_load_file(const char* name, size_t* size, void** data)
 				return error;
 		}
 	}
-	if (fstat(file, &stats) == -1)
+	if (fstat(file_descriptor, &stats) == -1)
 	{
 		error = errno;
 		close(file_descriptor);
@@ -645,7 +646,7 @@ int gdt_load_file(const char* name, size_t* size, void** data)
 	}
 	for (size_t loaded = 0; loaded != file_size;)
 	{
-		ssize_t read_result = read(file, (void*)(buffer + loaded), ((file_size - loaded) < (size_t)0x40000000) ? (file_size - loaded) : (size_t)0x40000000);
+		ssize_t read_result = read(file_descriptor, (void*)(buffer + loaded), ((file_size - loaded) < (size_t)0x40000000) ? (file_size - loaded) : (size_t)0x40000000);
 		if (read_result == -1)
 		{
 			error = errno;
@@ -769,7 +770,6 @@ int gdt_store_file(const char* name, size_t size, const void* data)
 		else
 			error = 0;
 	close(file_descriptor);
-	rename(temporal_file_name, name);
 	if (rename(temporal_file_name, name) == -1)
 	{
 		error = errno;
@@ -784,8 +784,8 @@ int gdt_store_file(const char* name, size_t size, const void* data)
 int gdt_read_map_file(const char* name, size_t* size, void** mapping)
 {
 	struct stat file_info;
-	int file_descriptor;
 	int error;
+	int file_descriptor = -1;
 	while (file_descriptor == -1)
 	{
 		file_descriptor = open(name, O_RDONLY);

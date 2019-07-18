@@ -19,6 +19,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <limits.h>
+#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -212,7 +214,7 @@ int main(int argc, char** argv)
 		if (error)
 			gdt_exit_process("Unable to find a truetype font file", error);
 		error = gdt_simplified_draw_graph_with_titles_to_bitmap(grid_x, grid_y, image_width, image_height, image_width * sizeof(uint32_t),
-			bitmap, (size_t)vector_length, graph_point_count, graph_point_table, font_file_name, graph_title, axis_title_table, 0);
+			bitmap, (size_t)vector_length, graph_point_count, graph_point_table, font_file_name, (const char*)graph_title, (const char**)axis_title_table, 0);
 		free(font_file_name);
 	}
 	else
@@ -596,7 +598,7 @@ int gdt_find_font_file(char** font_file_name)
 		"/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf" };
 	struct stat file_info;
 	for (size_t i = 0; i != (sizeof(file_name_table) / sizeof(char*)); ++i)
-		if (lstat(file_name_table[i], &file_info) != -1 && (file_info.st_mode == S_ISREG || file_info.st_mode == S_ISLNK()))
+		if (!stat(file_name_table[i], &file_info) && (S_ISREG(file_info.st_mode) || S_ISLNK(file_info.st_mode)))
 		{
 			size_t file_name_size = (strlen(file_name_table[i]) + 1) * sizeof(char);
 			char* file_name = (char*)malloc(file_name_size);
@@ -604,6 +606,7 @@ int gdt_find_font_file(char** font_file_name)
 				return ENOMEM;
 			memcpy(file_name, file_name_table[i], file_name_size);
 			*font_file_name = file_name;
+			return 0;
 		}
 	return ENOENT;
 }

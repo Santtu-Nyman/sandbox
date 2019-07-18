@@ -6,6 +6,9 @@
 #ifndef GDT_ERROR_H
 #define GDT_ERROR_H
 
+#include <stddef.h>
+#include <stdint.h>
+#include <limits.h>
 #include <errno.h>
 
 int gdt_get_error_info(int error, const char** name, const char** description);

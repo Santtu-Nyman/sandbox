@@ -489,7 +489,7 @@ int gdt_get_enumeration_argument(size_t argument_count, char** arguments, const 
 	if (error)
 		return error;
 	for (int i = 0; i != enumeration_value_count; ++i)
-		if (!lstrcmpA(string, enumeration_values[i]))
+		if (!strcmp(string, enumeration_values[i]))
 		{
 			*value = i;
 			return 0;

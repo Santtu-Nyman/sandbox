@@ -8,6 +8,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <limits.h>
+#include <errno.h>
 
 #define GDT_DRAW_GRAPH_FLAG_LINE_SOA_REPRESENTATION 0x1
 #define GDT_DRAW_GRAPH_FLAG_DRAW_BACKGROUND 0x2

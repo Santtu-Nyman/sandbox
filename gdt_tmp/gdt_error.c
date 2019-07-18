@@ -53,7 +53,6 @@ static const struct gdt_error_info_t gdt_error_table[] = {
 	{ ENOTEMPTY, "ENOTEMPTY", "Directory not empty" },
 	{ EILSEQ, "EILSEQ", "Illegal byte sequence" },
 	{ EADDRINUSE, "EADDRINUSE", "Address already in use" },
-	{ STRUNCATE, "STRUNCATE", "A string copy or concatenation resulted in a truncated string" },
 	{ EADDRNOTAVAIL, "EADDRNOTAVAIL", "Cannot assign requested address" },
 	{ EAFNOSUPPORT, "EAFNOSUPPORT", "Address family not supported by protocol" },
 	{ EALREADY, "EALREADY", "Operation already in progress" },
@@ -84,7 +83,6 @@ static const struct gdt_error_info_t gdt_error_table[] = {
 	{ ENOTSOCK, "ENOTSOCK", "Socket operation on non-socket" },
 	{ ENOTSUP, "ENOTSUP", "Not supported" },
 	{ EOPNOTSUPP, "EOPNOTSUPP", "Operation not supported on transport endpoint" },
-	{ EOTHER, "EOTHER", "Other" },
 	{ EOVERFLOW, "EOVERFLOW", "Value too large for defined data type" },
 	{ EOWNERDEAD, "EOWNERDEAD", "Owner dead" },
 	{ EPROTO, "EPROTO", "Protocol error" },
@@ -93,7 +91,11 @@ static const struct gdt_error_info_t gdt_error_table[] = {
 	{ ETIME, "ETIME", "Timer expired" },
 	{ ETIMEDOUT, "ETIMEDOUT", "Connection timed out" },
 	{ ETXTBSY, "ETXTBSY", "Text file busy" },
-	{ EWOULDBLOCK, "EWOULDBLOCK", "Operation would block" } };
+	{ EWOULDBLOCK, "EWOULDBLOCK", "Operation would block" }
+#ifdef _WIN32
+	{ STRUNCATE, "STRUNCATE", "A string copy or concatenation resulted in a truncated string" }, { EOTHER, "EOTHER", "Other" }
+#endif
+ };
 
 int gdt_get_error_info(int error, const char** name, const char** description)
 {
