@@ -1,5 +1,5 @@
 /*
-	Graph Drawing Tool 0.1.0 2019-07-18 by Santtu Nyman.
+	Graph Drawing Tool 1.0.0 2019-07-18 by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/gdt
 */
 
@@ -11,12 +11,14 @@
 #ifdef __GNUC__
 #define GDT_CORE_ASSUME(x) do { if (!(x)) __builtin_unreachable(); } while (0)
 #endif
+#ifndef GDT_NO_SSSE3
 #if (defined(_M_X64) || defined(_M_IX86) || defined(__i386__) || defined(__x86_64__))
-//#define GDT_SSEE3
+#define GDT_SSSE3
 #include <emmintrin.h>
 #include <xmmintrin.h>
 #include <immintrin.h>
 #include <tmmintrin.h>
+#endif
 #endif
 #include <errno.h>
 #include <math.h>
@@ -35,7 +37,7 @@ struct gdt_iv2_t
 static void gdt_fill_bitmap(int width, int height, size_t stride, uint32_t* pixels, uint32_t color)
 {
 	GDT_CORE_ASSUME((uintptr_t)pixels % sizeof(uint32_t) == 0 && stride % sizeof(uint32_t) == 0);
-#ifdef GDT_SSEE3
+#ifdef GDT_SSSE3
 	__m128i color_block = _mm_cvtsi32_si128(color);
 	color_block = _mm_shuffle_epi32(color_block, 0);
 	size_t block_fill = (((size_t)width << 2) & (size_t)~15);
@@ -79,7 +81,7 @@ static void gdt_draw_dot_to_bitmap(int width, int height, size_t stride, uint32_
 	int offset_y = (dot_y - dot_radius > 0) ? -dot_radius : -dot_y;
 	int end_x = (dot_x + dot_radius < width) ? dot_radius : (dot_radius - ((dot_x + dot_radius) - width));
 	int end_y = (dot_y + dot_radius < height) ? dot_radius : (dot_radius - ((dot_y + dot_radius) - height));
-#ifdef GDT_SSEE3
+#ifdef GDT_SSSE3
 	width = end_x - offset_x;
 	height = end_y - offset_y;
 	uint32_t* square = (uint32_t*)((uintptr_t)pixels + (size_t)(dot_y + offset_y) * stride + (size_t)(dot_x + offset_x) * sizeof(uint32_t));
@@ -237,7 +239,7 @@ static void gdt_draw_line_to_bitmap(int width, int height, size_t stride, uint32
 	float line_length = sqrtf((float)((end_point.x - begin_point.x) * (end_point.x - begin_point.x) + (end_point.y - begin_point.y) * (end_point.y - begin_point.y)));
 	float line_angle = asinf((float)(end_point.y - begin_point.y) / line_length);
 	float rotate_multipliers[2] = { cosf(line_angle), -sinf(line_angle) };
-#ifdef GDT_SSEE3
+#ifdef GDT_SSSE3
 	width = rigth_top.x - left_bottom.x;
 	height = rigth_top.y - left_bottom.y;
 	size_t block_fill = (((size_t)width << 2) & (size_t)~15);
@@ -386,7 +388,7 @@ static void gdt_fast_multilevel_blur_bitmap(int width, int height, size_t stride
 {
 	GDT_CORE_ASSUME((uintptr_t)pixels % sizeof(uint32_t) == 0 && (uintptr_t)temporal_buffer % sizeof(uint32_t) == 0 && stride % sizeof(uint32_t) == 0 && width > -1 && height > -1 && level > -1);
 	size_t temporal_buffer_stride = (size_t)height * sizeof(uint32_t);
-#ifdef GDT_SSEE3
+#ifdef GDT_SSSE3
 	__m128i decode_shuffle = _mm_cvtsi32_si128(0x80808003);
 	decode_shuffle = _mm_insert_epi16(decode_shuffle, 0x8002, 2);
 	decode_shuffle = _mm_insert_epi16(decode_shuffle, 0x8080, 3);
@@ -411,7 +413,7 @@ static void gdt_fast_multilevel_blur_bitmap(int width, int height, size_t stride
 #endif
 	for (int repeat_two_times = 2; repeat_two_times--;)
 	{
-#ifdef GDT_SSEE3
+#ifdef GDT_SSSE3
 		if (width > 1)
 			for (int y = 0; y != height; ++y)
 			{
@@ -547,7 +549,7 @@ static void gdt_blur_bitmap(int width, int height, size_t stride, uint32_t* pixe
 			return;
 		}
 	}
-#ifdef GDT_SSEE3
+#ifdef GDT_SSSE3
 	__m128i decode_shuffle = _mm_cvtsi32_si128(0x80808003);
 	decode_shuffle = _mm_insert_epi16(decode_shuffle, 0x8002, 2);
 	decode_shuffle = _mm_insert_epi16(decode_shuffle, 0x8080, 3);

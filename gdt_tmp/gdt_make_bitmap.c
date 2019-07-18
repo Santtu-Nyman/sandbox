@@ -1,5 +1,5 @@
 /*
-	Graph Drawing Tool 0.1.0 2019-07-18 by Santtu Nyman.
+	Graph Drawing Tool 1.0.0 2019-07-18 by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/gdt
 */
 

@@ -1,5 +1,5 @@
 /*
-	Graph Drawing Tool 0.1.0 2019-07-18 by Santtu Nyman.
+	Graph Drawing Tool 1.0.0 2019-07-18 by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/gdt
 */
 
@@ -392,7 +392,7 @@ int gdt_get_process_arguments(size_t* argument_count, char*** arguments)
 	}
 	char** argument_table = (char**)buffer;
 	char* argument_read = (char*)((uintptr_t)buffer + (count * sizeof(char*)));
-	memmove(argument_read, buffer, count * sizeof(char*));
+	memmove(argument_read, buffer, file_size);
 	for (size_t i = 0; i != count; ++i)
 	{
 		argument_table[i] = argument_read;
