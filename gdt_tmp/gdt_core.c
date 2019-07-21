@@ -1,5 +1,5 @@
 /*
-	Graph Drawing Tool 1.0.0 2019-07-18 by Santtu Nyman.
+	Graph Drawing Tool 1.1.0 2019-07-22 by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/gdt
 */
 
@@ -1091,7 +1091,15 @@ static int gdt_load_truetype_font(const char* truetype_file_name, void** font_bu
 	return error;
 }
 
-static int gdt_calculate_string_rectangle(void* font, float font_height, const char* string, int* rectangle_left, int* rectangle_right, int* rectangle_bottom, int* rectangle_top)
+static size_t gdt_unicode_string_length(const uint32_t* string)
+{
+	const uint32_t* string_read = string;
+	while (*string_read)
+		++string_read;
+	return (size_t)((uintptr_t)string_read - (uintptr_t)string) / sizeof(uint32_t);
+}
+
+static int gdt_calculate_string_rectangle(void* font, float font_height, const uint32_t* string, int* rectangle_left, int* rectangle_right, int* rectangle_bottom, int* rectangle_top)
 {
 	if (font_height < 0.0f)
 		return EINVAL;
@@ -1107,8 +1115,8 @@ static int gdt_calculate_string_rectangle(void* font, float font_height, const c
 	stbtt_GetFontVMetrics(font_info, &ascent, 0, 0);
 	float scale = stbtt_ScaleForPixelHeight(font_info, font_height);
 	int baseline = (int)(scale * (float)ascent);
-	for (size_t i = 0, l = strlen(string); i != l; ++i)
-		if (string[i] != '\n')
+	for (size_t i = 0, l = gdt_unicode_string_length(string); i != l; ++i)
+		if (string[i] != (uint32_t)'\n')
 		{
 			float x_shift = x - floorf(x);
 			int advance;
@@ -1117,8 +1125,8 @@ static int gdt_calculate_string_rectangle(void* font, float font_height, const c
 			int right;
 			int bottom;
 			int top;
-			stbtt_GetCodepointHMetrics(font_info, (int)((const uint8_t*)string)[i], &advance, &lsb);
-			stbtt_GetCodepointBitmapBoxSubpixel(font_info, (int)((const uint8_t*)string)[i], scale, scale, x_shift, 0, &left, &bottom, &right, &top);
+			stbtt_GetCodepointHMetrics(font_info, (int)string[i], &advance, &lsb);
+			stbtt_GetCodepointBitmapBoxSubpixel(font_info, (int)string[i], scale, scale, x_shift, 0, &left, &bottom, &right, &top);
 			int w = right - left;
 			int h = top - bottom;
 			if (rectangle_set)
@@ -1141,8 +1149,8 @@ static int gdt_calculate_string_rectangle(void* font, float font_height, const c
 				rectangle_set = 1;
 			}
 			x += (scale * (float)advance);
-			if ((int)((const uint8_t*)string)[i + 1])
-				x += scale * (float)stbtt_GetCodepointKernAdvance(font_info, (int)((const uint8_t*)string)[i], (int)((const uint8_t*)string)[i + 1]);
+			if (i + 1 != l)
+				x += scale * (float)stbtt_GetCodepointKernAdvance(font_info, (int)string[i], (int)string[i + 1]);
 		}
 		else
 		{
@@ -1166,7 +1174,7 @@ static int gdt_calculate_string_rectangle(void* font, float font_height, const c
 	return 0;
 }
 
-static int gdt_draw_string(int width, int height, size_t stride, uint32_t* pixels, float x, float y, void* font, float font_height, const char* string, uint32_t color)
+static int gdt_draw_string(int width, int height, size_t stride, uint32_t* pixels, float x, float y, void* font, float font_height, const uint32_t* string, uint32_t color)
 {
 	GDT_CORE_ASSUME((uintptr_t)pixels % sizeof(uint32_t) == 0 && stride % sizeof(uint32_t) == 0 && width > -1 && height > -1);
 	if (width < 1 || height < 1 || font_height < 0.0f)
@@ -1187,9 +1195,9 @@ static int gdt_draw_string(int width, int height, size_t stride, uint32_t* pixel
 	stbtt_GetFontVMetrics(font_info, &ascent, 0, 0);
 	float scale = stbtt_ScaleForPixelHeight(font_info, font_height);
 	int baseline = (int)(scale * (float)ascent);
-	for (size_t i = 0, l = strlen(string); i != l; ++i)
+	for (size_t i = 0, l = gdt_unicode_string_length(string); i != l; ++i)
 	{
-		if (string[i] != '\n')
+		if (string[i] != (uint32_t)'\n')
 		{
 			float x_shift = x - floorf(x);
 			int advance;
@@ -1200,8 +1208,8 @@ static int gdt_draw_string(int width, int height, size_t stride, uint32_t* pixel
 			int top;
 			int w;
 			int h;
-			stbtt_GetCodepointHMetrics(font_info, (int)((const uint8_t*)string)[i], &advance, &lsb);
-			stbtt_GetCodepointBitmapBoxSubpixel(font_info, (int)((const uint8_t*)string)[i], scale, scale, x_shift, 0, &left, &bottom, &right, &top);
+			stbtt_GetCodepointHMetrics(font_info, (int)string[i], &advance, &lsb);
+			stbtt_GetCodepointBitmapBoxSubpixel(font_info, (int)string[i], scale, scale, x_shift, 0, &left, &bottom, &right, &top);
 			w = right - left;
 			h = top - bottom;
 			if (w > glyph_bitmap_width && h > glyph_bitmap_height)
@@ -1218,7 +1226,7 @@ static int gdt_draw_string(int width, int height, size_t stride, uint32_t* pixel
 				}
 				glyph_bitmap = new_glyph_bitmap;
 			}
-			stbtt_MakeCodepointBitmapSubpixel(font_info, glyph_bitmap, w, h, w, scale, scale, x_shift, 0, (int)((const uint8_t*)string)[i]);
+			stbtt_MakeCodepointBitmapSubpixel(font_info, glyph_bitmap, w, h, w, scale, scale, x_shift, 0, (int)string[i]);
 			int blit_y = (int)y - (baseline + bottom);
 			int blit_y_end = blit_y - h;
 			int blit_x = (int)x + left;
@@ -1269,8 +1277,8 @@ static int gdt_draw_string(int width, int height, size_t stride, uint32_t* pixel
 				}
 			}
 			x += (scale * (float)advance);
-			if ((int)((const uint8_t*)string)[i + 1])
-				x += scale * (float)stbtt_GetCodepointKernAdvance(font_info, (int)((const uint8_t*)string)[i], (int)((const uint8_t*)string)[i + 1]);
+			if (i + 1 != l)
+				x += scale * (float)stbtt_GetCodepointKernAdvance(font_info, (int)string[i], (int)string[i + 1]);
 		}
 		else
 		{
@@ -1283,7 +1291,7 @@ static int gdt_draw_string(int width, int height, size_t stride, uint32_t* pixel
 }
 
 #define GDT_FLOAT_STIRNG_BUFFER_LENGTH 13
-static size_t gdt_print_grid_number(char* buffer, float value, int fraction_limit)
+static size_t gdt_print_grid_number(uint32_t* buffer, float value, int fraction_limit)
 {
 	GDT_CORE_ASSUME(value != NAN && value != INFINITY && fraction_limit > -1);
 	int sign_bit = value < 0.0f;
@@ -1338,10 +1346,10 @@ static size_t gdt_print_grid_number(char* buffer, float value, int fraction_limi
 					{
 						if (sign_bit)
 							for (int copy_index = 0; copy_index != 13; ++copy_index)
-								buffer[copy_index] = "-1000000000.0"[copy_index];
+								buffer[copy_index] = (uint32_t)"-1000000000.0"[copy_index];
 						else
 							for (int copy_index = 0; copy_index != 12; ++copy_index)
-								buffer[copy_index] = "1000000000.0"[copy_index];
+								buffer[copy_index] = (uint32_t)"1000000000.0"[copy_index];
 						return 0;
 					}
 					digits = 100000000;
@@ -1371,10 +1379,6 @@ static size_t gdt_print_grid_number(char* buffer, float value, int fraction_limi
 		if (digits / 100000000)
 		{
 			output_low_digit_count = low_digit_count - low_zero_count;
-
-
-
-
 			if (output_low_digit_count < 1)
 				output_low_digit_count = 1;
 			else if (output_low_digit_count > fraction_limit)
@@ -1394,13 +1398,13 @@ static size_t gdt_print_grid_number(char* buffer, float value, int fraction_limi
 	else
 		output_low_digit_count = (low_digit_count - low_zero_count) ? (low_digit_count - low_zero_count) : 1;
 	if (sign_bit)
-		buffer[0] = '-';
+		buffer[0] = (uint32_t)'-';
 	int digit_select = 100000000;
 	for (int i = 0; i != high_digit_count; ++i, digit_select /= 10)
-		buffer[sign_bit + i] = '0' + ((digits / digit_select) % 10);
+		buffer[sign_bit + i] = (uint32_t)('0' + ((digits / digit_select) % 10));
 	buffer[sign_bit + high_digit_count] = '.';
 	for (int i = 0; i != output_low_digit_count; ++i, digit_select /= 10)
-		buffer[sign_bit + high_digit_count + 1 + i] = '0' + (char)((digits / digit_select) % 10);
+		buffer[sign_bit + high_digit_count + 1 + i] = (uint32_t)('0' + (char)((digits / digit_select) % 10));
 	return (size_t)(sign_bit + high_digit_count + 1 + output_low_digit_count);
 }
 
@@ -1467,8 +1471,8 @@ static int gdt_internal_draw_graph_with_titles_to_bitmap(int flags, uint32_t bac
 	uint32_t y_axis_color, float grid_delta_x, float grid_delta_y, int width, int height, size_t stride,
 	uint32_t* pixels, int line_thickness, size_t line_count, size_t point_x_element, uint32_t* line_colors,
 	size_t point_count, const float* points, const char* truetype_file_name, float gird_number_font_height,
-	float graph_title_font_height, uint32_t graph_title_color, const char* graph_title, float axis_title_font_height,
-	const uint32_t* axis_title_colors, const char** axis_titles)
+	float graph_title_font_height, uint32_t graph_title_color, const uint32_t* graph_title, float axis_title_font_height,
+	const uint32_t* axis_title_colors, const uint32_t** axis_titles)
 {
 	GDT_CORE_ASSUME((uintptr_t)pixels % sizeof(uint32_t) == 0 && stride % sizeof(uint32_t) == 0 && width > -1 && height > -1 && point_x_element < line_count);
 	if (line_count < 2 || line_count > INT_MAX || width < 1 || height < 1 ||
@@ -1497,7 +1501,7 @@ static int gdt_internal_draw_graph_with_titles_to_bitmap(int flags, uint32_t bac
 	int error = gdt_load_truetype_font(truetype_file_name, &font);
 	if (error)
 		return error;
-	char gird_number_string[GDT_FLOAT_STIRNG_BUFFER_LENGTH + 1];
+	uint32_t gird_number_string[GDT_FLOAT_STIRNG_BUFFER_LENGTH + 1];
 	int horizontal_space;
 	int grid_y_numbers_yl;
 	int grid_y_numbers_yh;
@@ -1832,46 +1836,156 @@ static int gdt_internal_draw_graph_with_titles_to_bitmap(int flags, uint32_t bac
 	return 0;
 }
 
-char* gdt_swap_critical_utf8_codes_to_unicode_codes(const char* string)
+static int gdt_utf8_to_unicode(size_t utf8_string_size, const char* utf8_string, size_t unicode_buffer_length, size_t* unicode_character_count, uint32_t* unicode_buffer)
 {
-	static const uint8_t swap_table[] = {
-		0x84, 0xC4,
-		0x85, 0xC5,
-		0x96, 0xD6,
-		0xA4, 0xE4,
-		0xA5, 0xE5,
-		0xB6, 0xF6 };
-	size_t original_length = strlen(string);
-	size_t skipped_length = 0;
-	for (size_t i = 0; i != original_length; ++i)
-		if (original_length - i > 1 && ((const uint8_t*)string)[i] == 0xC3)
-			for (size_t j = 0; j != sizeof(swap_table) / (2 * sizeof(*swap_table)); ++j)
-				if (((const uint8_t*)string)[i + 1] == swap_table[2 * j])
-				{
-					++skipped_length;
-					++i;
-					j = (sizeof(swap_table) / (2 * sizeof(*swap_table))) - 1;
-				}
-	char* swap_string = (char*)malloc(((original_length - skipped_length) + 1) * sizeof(char));
-	if (!swap_string)
-		return 0;
-	skipped_length = 0;
-	for (size_t i = 0; i != original_length; ++i)
+	size_t character_count = 0;
+	for (size_t character_offset = 0; character_offset != utf8_string_size;)
 	{
-		int not_skiped = 1;
-		if (original_length - i > 1 && ((const uint8_t*)string)[i] == 0xC3)
-			for (size_t j = 0; j != sizeof(swap_table) / (2 * sizeof(*swap_table)); ++j)
-				if (((const uint8_t*)string)[i + 1] == swap_table[2 * j])
+		int invalid_data = 0;
+		size_t character_size;
+		uint32_t character_code;
+		uint32_t utf8_data;
+		int high_set_bit_count;
+		size_t character_size_limit = utf8_string_size - character_offset;
+		if (character_size_limit > 3)
+			utf8_data =
+			(uint32_t)*(((const uint8_t*)utf8_string) + character_offset) |
+			((uint32_t)*(((const uint8_t*)utf8_string) + character_offset + 1) << 8) |
+			((uint32_t)*(((const uint8_t*)utf8_string) + character_offset + 2) << 16) |
+			((uint32_t)*(((const uint8_t*)utf8_string) + character_offset + 3) << 24);
+		else
+		{
+			utf8_data = 0;
+			for (size_t byte_index = 0; byte_index != character_size_limit; ++byte_index)
+				utf8_data |= ((uint32_t)*(((const uint8_t*)utf8_string) + character_offset + byte_index) << (byte_index << 3));
+		}
+		high_set_bit_count = 0;
+		while (high_set_bit_count != 5 && (utf8_data & (uint32_t)(0x80 >> high_set_bit_count)))
+			++high_set_bit_count;
+		switch (high_set_bit_count)
+		{
+			case 0:
+			{
+				character_size = 1;
+				character_code = utf8_data & 0x7F;
+				break;
+			}
+			case 2:
+			{
+				if (((utf8_data >> 14) & 0x03) == 0x02)
 				{
-					swap_string[i++ - skipped_length++] = swap_table[2 * j + 1];
-					not_skiped = 0;
-					j = (sizeof(swap_table) / (2 * sizeof(*swap_table))) - 1;
+					character_size = 2;
+					character_code = ((utf8_data & 0x1F) << 6) | ((utf8_data >> 8) & 0x3F);
 				}
-		if (not_skiped)
-			swap_string[i - skipped_length] = string[i];
+				else
+					invalid_data = 1;
+				break;
+			}
+			case 3:
+			{
+				if (((utf8_data >> 14) & 0x03) == 0x02 && ((utf8_data >> 22) & 0x03) == 0x02)
+				{
+					character_size = 3;
+					character_code = ((utf8_data & 0x0F) << 12) | (((utf8_data >> 8) & 0x3F) << 6) | ((utf8_data >> 16) & 0x3F);
+				}
+				else
+					invalid_data = 1;
+				break;
+			}
+			case 4:
+			{
+				if (((utf8_data >> 14) & 0x03) == 0x02 && ((utf8_data >> 22) & 0x03) == 0x02 && ((utf8_data >> 30) & 0x03) == 0x02)
+				{
+					character_size = 4;
+					character_code = ((utf8_data & 0x0F) << 18) | (((utf8_data >> 8) & 0x3F) << 12) | (((utf8_data >> 16) & 0x3F) << 6) | ((utf8_data >> 24) & 0x3F);
+				}
+				else
+					invalid_data = 1;
+				break;
+			}
+			default:
+			{
+				invalid_data = 1;
+				break;
+			}
+		}
+		if (invalid_data)
+		{
+			character_size = 1;
+			while (character_size != character_size_limit && invalid_data)
+			{
+				utf8_data = (uint32_t)*(((const uint8_t*)utf8_string) + character_offset + character_size);
+				high_set_bit_count = 0;
+				while (high_set_bit_count != 5 && (utf8_data & (uint32_t)(0x80 >> high_set_bit_count)))
+					++high_set_bit_count;
+				switch (high_set_bit_count)
+				{
+					case 0:
+					{
+						invalid_data = 0;
+						break;
+					}
+					case 2:
+					{
+						if (character_size_limit > (character_size + 1) &&
+							(*(((const uint8_t*)utf8_string) + character_offset + character_size + 1) >> 6) == 0x02)
+							invalid_data = 0;
+						break;
+					}
+					case 3:
+					{
+						if (character_size_limit > (character_size + 2) &&
+							(*(((const uint8_t*)utf8_string) + character_offset + character_size + 1) >> 6) == 0x02 &&
+							(*(((const uint8_t*)utf8_string) + character_offset + character_size + 2) >> 6) == 0x02)
+							invalid_data = 0;
+						break;
+					}
+					case 5:
+					{
+						if (character_size_limit > (character_size + 2) &&
+							(*(((const uint8_t*)utf8_string) + character_offset + character_size + 1) >> 6) == 0x02 &&
+							(*(((const uint8_t*)utf8_string) + character_offset + character_size + 2) >> 6) == 0x02 &&
+							(*(((const uint8_t*)utf8_string) + character_offset + character_size + 3) >> 6) == 0x02)
+							invalid_data = 0;
+						break;
+					}
+					default:
+						break;
+				}
+				if (invalid_data)
+					++character_size;
+			}
+			character_code = 0xFFFD;
+		}
+		if (character_count < unicode_buffer_length)
+			unicode_buffer[character_count] = character_code;
+		++character_count;
+		character_offset += character_size;
 	}
-	swap_string[original_length - skipped_length] = 0;
-	return swap_string;
+	*unicode_character_count = character_count;
+	if (character_count > unicode_buffer_length)
+		return ENOBUFS;
+	else
+		return 0;
+}
+
+static int gdt_utf8_to_new_unicode_buffer(const char* utf8_string, uint32_t** unicode_buffer)
+{
+	size_t length = strlen(utf8_string);
+	if (!(length + 1) || (((length + 1) * sizeof(uint32_t)) / sizeof(uint32_t)) != (length + 1))
+		return ENOMEM;
+	uint32_t* new_buffer = (uint32_t*)malloc((length + 1) * sizeof(uint32_t));
+	if (!new_buffer)
+		return ENOMEM;
+	int error = gdt_utf8_to_unicode(length, utf8_string, length, &length, new_buffer);
+	if (error)
+	{
+		free(new_buffer);
+		return error;
+	}
+	new_buffer[length] = 0;
+	*unicode_buffer = new_buffer;
+	return 0;
 }
 
 int gdt_draw_graph_with_titles_to_bitmap(int flags, uint32_t background_color, uint32_t grid_color, uint32_t x_axis_color,
@@ -1881,54 +1995,55 @@ int gdt_draw_graph_with_titles_to_bitmap(int flags, uint32_t background_color, u
 	float graph_title_font_height, uint32_t graph_title_color, const char* graph_title, float axis_title_font_height,
 	const uint32_t* axis_title_colors, const char** axis_titles)
 {
-	char* tmp_graph_title = 0;
-	char** tmp_axis_titles = 0;
+	int error;
+	uint32_t* unicode_graph_title = 0;
+	uint32_t** unicode_axis_titles = 0;
 	if (graph_title)
 	{
-		tmp_graph_title = gdt_swap_critical_utf8_codes_to_unicode_codes(graph_title);
-		if (!tmp_graph_title)
-			return ENOMEM;
+		error = gdt_utf8_to_new_unicode_buffer(graph_title, &unicode_graph_title);
+		if (error)
+			return error;
 	}
 	if (axis_titles)
 	{
-		tmp_axis_titles = (char**)malloc(line_count * sizeof(char*));
-		if (!tmp_axis_titles)
+		unicode_axis_titles = (uint32_t**)malloc(line_count * sizeof(uint32_t*));
+		if (!unicode_axis_titles)
 		{
-			if (tmp_graph_title)
-				free(tmp_graph_title);
+			if (unicode_graph_title)
+				free(unicode_graph_title);
 			return ENOMEM;
 		}
 		for (size_t i = 0; i != line_count; ++i)
 			if (axis_titles[i])
 			{
-				tmp_axis_titles[i] = gdt_swap_critical_utf8_codes_to_unicode_codes(axis_titles[i]);
-				if (!tmp_axis_titles[i])
+				error = gdt_utf8_to_new_unicode_buffer(axis_titles[i], &unicode_axis_titles[i]);
+				if (error)
 				{
 					for (size_t j = 0; j != i; ++j)
-						free(tmp_axis_titles[j]);
-					free(tmp_axis_titles);
-					if (tmp_graph_title)
-						free(tmp_graph_title);
-					return ENOMEM;
+						free(unicode_axis_titles[j]);
+					free(unicode_axis_titles);
+					if (unicode_graph_title)
+						free(unicode_graph_title);
+					return error;
 				}
 			}
 			else
-				tmp_axis_titles[i] = 0;
+				unicode_axis_titles[i] = 0;
 	}
-	int error = gdt_internal_draw_graph_with_titles_to_bitmap(flags, background_color, grid_color, x_axis_color,
+	error = gdt_internal_draw_graph_with_titles_to_bitmap(flags, background_color, grid_color, x_axis_color,
 		y_axis_color, grid_delta_x, grid_delta_y, width, height, stride,
 		pixels, line_thickness, line_count, point_x_element, line_colors,
 		point_count, points, truetype_file_name, gird_number_font_height,
-		graph_title_font_height, graph_title_color, (const char*)tmp_graph_title, axis_title_font_height,
-		axis_title_colors, (const char**)tmp_axis_titles);
-	if (tmp_axis_titles)
+		graph_title_font_height, graph_title_color, (const uint32_t*)unicode_graph_title, axis_title_font_height,
+		axis_title_colors, (const uint32_t**)unicode_axis_titles);
+	if (unicode_axis_titles)
 	{
 		for (size_t i = 0; i != line_count; ++i)
-			free(tmp_axis_titles[i]);
-		free(tmp_axis_titles);
+			free(unicode_axis_titles[i]);
+		free(unicode_axis_titles);
 	}
-	if (tmp_graph_title)
-		free(tmp_graph_title);
+	if (unicode_graph_title)
+		free(unicode_graph_title);
 	return error;
 }
 

@@ -1,5 +1,5 @@
 /*
-	Graph Drawing Tool 1.0.0 2019-07-18 by Santtu Nyman.
+	Graph Drawing Tool 1.1.0 2019-07-22 by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/gdt
 
 	Description
@@ -7,9 +7,12 @@
 		The main purpose of the program is drawing graph from very large sample sizes
 		that other programs (such as Excel) strugle to deal with.
 		This program works on both Windows and Linux.
-		Instructions how to use the program are contained in the program and printed out with -h or --help parameter.
+		Instructions how to use the program are contained in the program and can be
+		printed out with -h or --help parameter when running it.
 
 	Version history
+		version 1.1.0 2019-07-22
+			Unicode support added.
 		version 1.0.0 2019-07-18
 			First release.
 		version 0.0.0 2019-07-15
