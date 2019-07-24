@@ -1,5 +1,5 @@
 /*
-	Graph Drawing Tool 1.1.0 2019-07-22 by Santtu Nyman.
+	Graph Drawing Tool version 1.2.0 2019-07-24 by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/gdt
 */
 
@@ -226,6 +226,7 @@ int gdt_load_file_win32(const WCHAR* name, size_t* size, void** data)
 #endif
 	if (!file_size)
 	{
+		CloseHandle(file_handle);
 		*size = 0;
 		*data = (void*)~0;
 		return 0;
@@ -493,6 +494,7 @@ int gdt_read_map_file_win32(const WCHAR* name, size_t* size, void** mapping)
 #endif
 	if (!file_size)
 	{
+		CloseHandle(file_handle);
 		*size = 0;
 		*mapping = (void*)~0;
 		return 0;

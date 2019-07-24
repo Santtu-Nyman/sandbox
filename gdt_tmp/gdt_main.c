@@ -1,5 +1,5 @@
 /*
-	Graph Drawing Tool 1.1.0 2019-07-22 by Santtu Nyman.
+	Graph Drawing Tool version 1.2.0 2019-07-24 by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/gdt
 
 	Description
@@ -11,6 +11,11 @@
 		printed out with -h or --help parameter when running it.
 
 	Version history
+		version 1.2.0 2019-07-24
+			Swiched bmp pixel format from 32 bit BGRA to 24 bit BGR.
+			Improved accuracy of text rendering.
+		version 1.1.1 2019-07-24
+			Fixed bug that occurs when reading empty file on Windows.
 		version 1.1.0 2019-07-22
 			Unicode support added.
 		version 1.0.0 2019-07-18
@@ -201,6 +206,7 @@ int main(int argc, char** argv)
 	}
 	else
 		gdt_exit_process("Input file format not supported", error);
+	printf("Creating graph from \"%s\" to \"%s\".\n", input_file_name, output_file_name);
 	if (grid_x == 0.0f && grid_y == 0.0f)
 	{
 		error = gdt_find_reasonable_graph_grid_deltas(0, (size_t)vector_length, 0, graph_point_count, graph_point_table, &grid_x, &grid_y);
@@ -660,9 +666,13 @@ void gdt_exit_process(const char* error_string, int error_code)
 void gdt_print_program_info()
 {
 	printf(
+		"Graph Drawing Tool version 1.2.0 2019-07-24 by Santtu Nyman.\n"
+		"git repository https://github.com/Santtu-Nyman/gdt\"\n"
+		"\n"
 		"Program description:\n"
 		"	Command line tool for drawing graphs from data points to bmp files.\n"
 		"	The main purpose of the program is drawing graph from very large sample sizes that other programs(such as Excel) strugle to deal with.\n"
+		"\n"
 		"Parameter List:\n"
 		"	-h or --help displays help message.\n"
 		"	-f Specifies input data format. This parameter can be \"text_lines\" for text data where single lines of text contains single data point or \"float\" for raw 32 bit float data where consecutive elements make single data point. If this argument is not given, input data format is set to \"text_lines\".\n"

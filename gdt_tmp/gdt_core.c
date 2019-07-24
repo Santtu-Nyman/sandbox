@@ -1,5 +1,5 @@
 /*
-	Graph Drawing Tool 1.1.0 2019-07-22 by Santtu Nyman.
+	Graph Drawing Tool version 1.2.0 2019-07-24 by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/gdt
 */
 
@@ -985,7 +985,7 @@ static uint32_t gdt_make_line_color(int count, int index)
 		g = 0.0f;
 		b = (1.0f - s) * full_brightness;
 	}
-	return ((uint32_t)0xff << 24) | ((uint32_t)r << 16) | ((uint32_t)g << 8) | (uint32_t)b;
+	return 0xFF000000 | ((uint32_t)r << 16) | ((uint32_t)g << 8) | (uint32_t)b;
 }
 
 int gdt_simplified_draw_graph_to_bitmap(float grid_delta_x, float grid_delta_y, int width, int height, size_t stride,
@@ -1179,12 +1179,13 @@ static int gdt_draw_string(int width, int height, size_t stride, uint32_t* pixel
 	GDT_CORE_ASSUME((uintptr_t)pixels % sizeof(uint32_t) == 0 && stride % sizeof(uint32_t) == 0 && width > -1 && height > -1);
 	if (width < 1 || height < 1 || font_height < 0.0f)
 		return EINVAL;
+	const float reciprocal_of_255 = 0.003921568859f;
 	stbtt_fontinfo* font_info = (stbtt_fontinfo*)font;
 	float font_color[4] = {
-		(float)((color >> 24) & 0xff) * 0.00392156862f,
-		(float)((color >> 16) & 0xff) * 0.00392156862f,
-		(float)((color >> 8) & 0xff) * 0.00392156862f,
-		(float)((color >> 0) & 0xff) * 0.00392156862f };
+		(float)((color >> 24) & 0xFF) * reciprocal_of_255,
+		(float)((color >> 16) & 0xFF) * reciprocal_of_255,
+		(float)((color >> 8) & 0xFF) * reciprocal_of_255,
+		(float)((color >> 0) & 0xFF) * reciprocal_of_255 };
 	float string_x_offset = x;
 	int glyph_bitmap_width = (int)font_height * 2 + 1;
 	int glyph_bitmap_height = glyph_bitmap_width;
@@ -1244,7 +1245,7 @@ static int gdt_draw_string(int width, int height, size_t stride, uint32_t* pixel
 					for (int blend_x = bounding_x; blend_x != bounding_x_end; ++blend_x)
 					{
 						int glyph_x = blend_x - blit_x;
-						float glyph_intensity_scaler = (float)glyph_bitmap[glyph_y * w + glyph_x] * 0.00392156862f;
+						float glyph_intensity_scaler = (float)glyph_bitmap[glyph_y * w + glyph_x] * reciprocal_of_255;
 						float glyph_intensity[4] = {
 							glyph_intensity_scaler,
 							glyph_intensity_scaler,
@@ -1257,10 +1258,10 @@ static int gdt_draw_string(int width, int height, size_t stride, uint32_t* pixel
 							1.0f - glyph_intensity[3] };
 						uint32_t bitmap_pixel_ARGB32 = row[blend_x];
 						float bitmap_pixel[4] = {
-							(float)((bitmap_pixel_ARGB32 >> 24) & 0xff) * 0.00392156862f,
-							(float)((bitmap_pixel_ARGB32 >> 16) & 0xff) * 0.00392156862f,
-							(float)((bitmap_pixel_ARGB32 >> 8) & 0xff) * 0.00392156862f,
-							(float)((bitmap_pixel_ARGB32 >> 0) & 0xff) * 0.00392156862f };
+							(float)((bitmap_pixel_ARGB32 >> 24) & 0xFF) * reciprocal_of_255,
+							(float)((bitmap_pixel_ARGB32 >> 16) & 0xFF) * reciprocal_of_255,
+							(float)((bitmap_pixel_ARGB32 >> 8) & 0xFF) * reciprocal_of_255,
+							(float)((bitmap_pixel_ARGB32 >> 0) & 0xFF) * reciprocal_of_255 };
 						float final_pixel[4] = {
 							(glyph_intensity[0] * font_color[0] + bitmap_intensity[0] * bitmap_pixel[0]) * 255.0f,
 							(glyph_intensity[1] * font_color[1] + bitmap_intensity[1] * bitmap_pixel[1]) * 255.0f,
