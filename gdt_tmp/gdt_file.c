@@ -1,5 +1,5 @@
 /*
-	Graph Drawing Tool version 1.2.0 2019-07-24 by Santtu Nyman.
+	Graph Drawing Tool version 1.3.0 2019-08-13 by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/gdt
 */
 
@@ -307,6 +307,8 @@ int gdt_store_file_win32(const WCHAR* name, size_t size, const void* data)
 		{
 			native_error = GetLastError();
 			if (native_error != ERROR_FILE_EXISTS)
+			{
+				HeapFree(heap, 0, temporal_new_file_name);
 				switch (native_error)
 				{
 					case ERROR_ACCESS_DENIED:
@@ -318,6 +320,7 @@ int gdt_store_file_win32(const WCHAR* name, size_t size, const void* data)
 					default:
 						return EIO;
 				}
+			}
 			if (temporal_file_index != 1295)
 				++temporal_file_index;
 			else
@@ -387,6 +390,9 @@ int gdt_store_file_win32(const WCHAR* name, size_t size, const void* data)
 			{
 				native_error = GetLastError();
 				if (native_error != ERROR_ALREADY_EXISTS)
+				{
+					DeleteFileW(temporal_new_file_name);
+					HeapFree(heap, 0, temporal_new_file_name);
 					switch (native_error)
 					{
 						case ERROR_ACCESS_DENIED:
@@ -398,6 +404,7 @@ int gdt_store_file_win32(const WCHAR* name, size_t size, const void* data)
 						default:
 							return EIO;
 					}
+				}
 				if (temporal_file_index != 1295)
 					++temporal_file_index;
 				else
@@ -576,6 +583,7 @@ int gdt_move_file_win32(const WCHAR* current_name, const WCHAR* new_name)
 
 #else
 
+#define _GNU_SOURCE
 #include <stddef.h>
 #include <stdint.h>
 #include <limits.h>

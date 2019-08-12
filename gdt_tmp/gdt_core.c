@@ -1,5 +1,5 @@
 /*
-	Graph Drawing Tool version 1.2.0 2019-07-24 by Santtu Nyman.
+	Graph Drawing Tool version 1.3.0 2019-08-13 by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/gdt
 */
 
@@ -11,9 +11,15 @@
 #ifdef __GNUC__
 #define GDT_CORE_ASSUME(x) do { if (!(x)) __builtin_unreachable(); } while (0)
 #endif
-#ifndef GDT_NO_SSSE3
+#ifndef GDT_NO_ARM_NEON
+#if (defined(_M_ARMT) || defined(__arm__))
+#define GDT_ARM_NEON
+#include <arm_neon.h>
+#endif
+#endif
+#ifndef GDT_NO_X86_SSSE3
 #if (defined(_M_X64) || defined(_M_IX86) || defined(__i386__) || defined(__x86_64__))
-#define GDT_SSSE3
+#define GDT_X86_SSSE3
 #include <emmintrin.h>
 #include <xmmintrin.h>
 #include <immintrin.h>
@@ -37,7 +43,41 @@ struct gdt_iv2_t
 static void gdt_fill_bitmap(int width, int height, size_t stride, uint32_t* pixels, uint32_t color)
 {
 	GDT_CORE_ASSUME((uintptr_t)pixels % sizeof(uint32_t) == 0 && stride % sizeof(uint32_t) == 0);
-#ifdef GDT_SSSE3
+#if defined(GDT_ARM_NEON)
+	uint32x4_t color_block = vdupq_n_u32((uint32_t)color);
+	size_t block_fill = (((size_t)width << 2) & (size_t)~15);
+	int end_fill = (int)(((size_t)width << 2) - block_fill);
+	GDT_CORE_ASSUME(end_fill < 16);
+	size_t skip = stride - (block_fill + (size_t)end_fill);
+	uintptr_t write = (uintptr_t)pixels;
+	uintptr_t write_end = write + ((size_t)height * stride);
+	if (block_fill)
+	{
+		if (end_fill)
+			while (write != write_end)
+			{
+				for (uintptr_t loop_end = write + block_fill; write != loop_end; write += 16)
+					vst1q_u32((uint32_t*)write, color_block);
+				write += skip;
+			}
+		else
+			while (write != write_end)
+			{
+				for (uintptr_t loop_end = write + block_fill; write != loop_end; write += 16)
+					vst1q_u32((uint32_t*)write, color_block);
+				write += (size_t)end_fill;
+				vst1q_u32((uint32_t*)(write - 16), color_block);
+				write += skip;
+			}
+	}
+	else
+		while (write != write_end)
+		{
+			for (uintptr_t loop_end = write + (size_t)end_fill; write != loop_end; write += 4)
+				*(uint32_t*)write = color;
+			write += skip;
+		}
+#elif defined(GDT_X86_SSSE3)
 	__m128i color_block = _mm_cvtsi32_si128(color);
 	color_block = _mm_shuffle_epi32(color_block, 0);
 	size_t block_fill = (((size_t)width << 2) & (size_t)~15);
@@ -81,16 +121,102 @@ static void gdt_draw_dot_to_bitmap(int width, int height, size_t stride, uint32_
 	int offset_y = (dot_y - dot_radius > 0) ? -dot_radius : -dot_y;
 	int end_x = (dot_x + dot_radius < width) ? dot_radius : (dot_radius - ((dot_x + dot_radius) - width));
 	int end_y = (dot_y + dot_radius < height) ? dot_radius : (dot_radius - ((dot_y + dot_radius) - height));
-#ifdef GDT_SSSE3
+#if defined(GDT_ARM_NEON)
+	static const float block_offset_constants[4] = { 0.0f, 1.0f, 2.0f, 3.0f };
 	width = end_x - offset_x;
 	height = end_y - offset_y;
-	uint32_t* square = (uint32_t*)((uintptr_t)pixels + (size_t)(dot_y + offset_y) * stride + (size_t)(dot_x + offset_x) * sizeof(uint32_t));
+	if (width > 3)
+	{
+		uintptr_t iterator = ((uintptr_t)pixels + (size_t)(dot_y + offset_y) * stride + ((size_t)(dot_x + offset_x) << 2));
+		uintptr_t end = iterator + ((size_t)height * stride);
+		size_t block_fill = (((size_t)width << 2) & (size_t)~15);
+		int end_fill = (int)(((size_t)width << 2) - block_fill);
+		GDT_CORE_ASSUME(block_fill && ((block_fill & 15) == 0) && end_fill < 16);
+		size_t skip = stride - (block_fill + (size_t)end_fill);
+		uint32x4_t color_block = vdupq_n_u32((uint32_t)dot_color);
+		float32x4_t block_increment = vreinterpretq_f32_u32(vdupq_n_u32(0x80000000));
+		float32x4_t minus_r_squared = vreinterpretq_f32_s32(vdupq_n_s32(dot_radius));
+		minus_r_squared = vcvtq_f32_s32(vreinterpretq_s32_f32(minus_r_squared));
+		minus_r_squared = vmulq_f32(minus_r_squared, minus_r_squared);
+		minus_r_squared = vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(minus_r_squared), vreinterpretq_u32_f32(block_increment)));
+		float32x4_t end_increment = vreinterpretq_f32_s32(vdupq_n_s32(end_fill));
+		end_increment = vreinterpretq_f32_u32(vshrq_n_u32(vreinterpretq_u32_f32(end_increment), 2));
+		end_increment = vcvtq_f32_s32(vreinterpretq_s32_f32(end_increment));
+		end_increment = vsubq_f32(block_increment, end_increment);
+		end_increment = vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(end_increment), vreinterpretq_u32_f32(block_increment)));
+		block_increment = vld1q_f32(block_offset_constants);
+		float32x4_t row_offset_x = vreinterpretq_f32_s32(vdupq_n_s32(offset_x));
+		row_offset_x = vcvtq_f32_s32(vreinterpretq_s32_f32(row_offset_x));
+		row_offset_x = vaddq_f32(row_offset_x, block_increment);
+		block_increment = vreinterpretq_f32_u32(vdupq_n_u32(0x40800000));
+		float32x4_t single_increment = vreinterpretq_f32_u32(vdupq_n_u32(0x3F800000));
+		float32x4_t column_y = vreinterpretq_f32_s32(vdupq_n_s32(offset_y));
+		column_y = vcvtq_f32_s32(vreinterpretq_s32_f32(column_y));
+		float32x4_t row_x;
+		float32x4_t y_squared_minus_r_squared;
+		uint32x4_t blend;
+		uint32x4_t tmp;
+		while (iterator != end)
+		{
+			row_x = row_offset_x;
+			y_squared_minus_r_squared = vmulq_f32(column_y, column_y);
+			y_squared_minus_r_squared = vaddq_f32(y_squared_minus_r_squared, minus_r_squared);
+			for (uintptr_t loop_end = iterator + block_fill; iterator != loop_end; iterator += 16)
+			{
+				blend = vld1q_u32((uint32_t*)iterator);
+				//tmp = vreinterpretq_u32_f32(vfmaq_f32(row_x, row_x, y_squared_minus_r_squared));
+				tmp = vreinterpretq_u32_f32(vmulq_f32(row_x, row_x));
+				tmp = vreinterpretq_u32_f32(vaddq_f32(vreinterpretq_f32_u32(tmp), y_squared_minus_r_squared));
+				tmp = vreinterpretq_u32_s32(vshrq_n_s32(vreinterpretq_s32_u32(tmp), 31));
+				blend = vbicq_u32(blend, tmp);
+				tmp = vandq_u32(color_block, tmp);
+				blend = vorrq_u32(blend, tmp);
+				row_x = vaddq_f32(row_x, block_increment);
+				vst1q_u32((uint32_t*)iterator, blend);
+			}
+			if (end_fill)
+			{
+				iterator += (size_t)end_fill;
+				blend = vld1q_u32((uint32_t*)(iterator - 16));
+				row_x = vaddq_f32(row_x, end_increment);
+				//tmp = vreinterpretq_u32_f32(vfmaq_f32(row_x, row_x, y_squared_minus_r_squared));
+				tmp = vreinterpretq_u32_f32(vmulq_f32(row_x, row_x));
+				tmp = vreinterpretq_u32_f32(vaddq_f32(vreinterpretq_f32_u32(tmp), y_squared_minus_r_squared));
+				tmp = vreinterpretq_u32_s32(vshrq_n_s32(vreinterpretq_s32_u32(tmp), 31));
+				blend = vbicq_u32(blend, tmp);
+				tmp = vandq_u32(color_block, tmp);
+				blend = vorrq_u32(blend, tmp);
+				vst1q_u32((uint32_t*)(iterator - 16), blend);
+			}
+			iterator += skip;
+			column_y = vaddq_f32(column_y, single_increment);
+		}
+	}
+	else
+	{
+		int minus_r_squared = -(dot_radius * dot_radius);
+		uint32_t* dot_center = (uint32_t*)((uintptr_t)pixels + (size_t)dot_y * stride + (size_t)dot_x * sizeof(uint32_t));
+		for (int y = offset_y; y != end_y; ++y)
+		{
+			uint32_t* row = (uint32_t*)((uintptr_t)dot_center + (size_t)y * stride);
+			for (int y_squared_minus_r_squared = y * y + minus_r_squared, x = offset_x; x != end_x; ++x)
+			{
+				uint32_t blend = row[x];
+				uint32_t mask = 0 - ((uint32_t)(x * x + y_squared_minus_r_squared) >> 31);
+				GDT_CORE_ASSUME(mask == 0 || mask == 0xFFFFFFFF);
+				row[x] = (mask & dot_color) | (blend & (mask ^ 0xFFFFFFFF));
+			}
+		}
+	}
+#elif defined(GDT_X86_SSSE3)
+	width = end_x - offset_x;
+	height = end_y - offset_y;
+	uintptr_t iterator = ((uintptr_t)pixels + (size_t)(dot_y + offset_y) * stride + ((size_t)(dot_x + offset_x) << 2));
+	uintptr_t end = iterator + ((size_t)height * stride);
 	size_t block_fill = (((size_t)width << 2) & (size_t)~15);
 	int end_fill = (int)(((size_t)width << 2) - block_fill);
 	GDT_CORE_ASSUME(end_fill < 16);
 	size_t skip = stride - (block_fill + (size_t)end_fill);
-	uintptr_t iterator = (uintptr_t)square;
-	uintptr_t end = iterator + ((size_t)height * stride);
 	__m128 row_x = _mm_castsi128_ps(_mm_cvtsi32_si128(0x80000000));
 	__m128 tmp = _mm_castsi128_ps(_mm_cvtsi32_si128(dot_radius));
 	tmp = _mm_cvtepi32_ps(_mm_castps_si128(tmp));
@@ -239,14 +365,124 @@ static void gdt_draw_line_to_bitmap(int width, int height, size_t stride, uint32
 	float line_length = sqrtf((float)((end_point.x - begin_point.x) * (end_point.x - begin_point.x) + (end_point.y - begin_point.y) * (end_point.y - begin_point.y)));
 	float line_angle = asinf((float)(end_point.y - begin_point.y) / line_length);
 	float rotate_multipliers[2] = { cosf(line_angle), -sinf(line_angle) };
-#ifdef GDT_SSSE3
+#if defined(GDT_ARM_NEON)
+	width = rigth_top.x - left_bottom.x;
+	height = rigth_top.y - left_bottom.y;
+	if (width > 3)
+	{
+		static const float block_offset_constants[4] = { 0.0f, 1.0f, 2.0f, 3.0f };
+		size_t block_fill = (((size_t)width << 2) & (size_t)~15);
+		int end_fill = (int)(((size_t)width << 2) - block_fill);
+		GDT_CORE_ASSUME(end_fill < 16);
+		size_t skip = stride - (block_fill + (size_t)end_fill);
+		uintptr_t iterator = (uintptr_t)pixels + ((size_t)left_bottom.y * stride) + ((size_t)left_bottom.x << 2);
+		uintptr_t end = iterator + ((size_t)height * stride);
+		uint32x4_t blend;
+		uint32x4_t color_block = vdupq_n_u32(color);
+		uint32x4_t sign_mask = vdupq_n_u32(0x80000000);
+		float32x4_t block_increment = vreinterpretq_f32_u32(vdupq_n_u32(0x40800000));
+		float32x4_t single_increment = vreinterpretq_f32_u32(vdupq_n_u32(0x3F800000));
+		float32x4_t end_increment = vreinterpretq_f32_s32(vdupq_n_s32(end_fill));
+		end_increment = vreinterpretq_f32_u32(vshrq_n_u32(vreinterpretq_u32_f32(end_increment), 2));
+		end_increment = vcvtq_f32_s32(vreinterpretq_s32_f32(end_increment));
+		end_increment = vsubq_f32(block_increment, end_increment);
+		end_increment = vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(end_increment), sign_mask));
+		float32x4_t radius = vreinterpretq_f32_s32(vdupq_n_s32(line_thickness));
+		radius = vcvtq_f32_s32(vreinterpretq_s32_f32(radius));
+		float32x4_t length = vreinterpretq_f32_s32(vdupq_n_s32(line_length));
+		length = vcvtq_f32_s32(vreinterpretq_s32_f32(length));
+		float32x4_t rotate_cos = vld1q_dup_f32(rotate_multipliers);
+		float32x4_t rotate_sin = vld1q_dup_f32(rotate_multipliers + 1);
+		float32x4_t relative_x_offsets = vreinterpretq_f32_s32(vdupq_n_s32(left_bottom.x - begin_point.x));
+		relative_x_offsets = vcvtq_f32_s32(vreinterpretq_s32_f32(relative_x_offsets));
+		float32x4_t relative_x = vld1q_f32(block_offset_constants);
+		relative_x_offsets = vaddq_f32(relative_x_offsets, relative_x);
+		float32x4_t relative_y = vreinterpretq_f32_s32(vdupq_n_s32(left_bottom.y - begin_point.y));
+		relative_y = vcvtq_f32_s32(vreinterpretq_s32_f32(relative_y));
+		float32x4_t rotated_y;
+		float32x4_t rotated_x;
+		float32x4_t tmp;
+		sign_mask = vmvnq_u32(sign_mask);
+		while (iterator != end)
+		{
+			relative_x = relative_x_offsets;
+			for (uintptr_t loop_end = iterator + block_fill; iterator != loop_end; iterator += 16)
+			{
+				tmp = vmulq_f32(rotate_sin, relative_x);
+				rotated_y = vmulq_f32(rotate_cos, relative_y);
+				rotated_y = vaddq_f32(rotated_y, tmp);
+				rotated_y = vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(rotated_y), sign_mask));
+				tmp = vmulq_f32(rotate_sin, relative_y);
+				rotated_x = vmulq_f32(rotate_cos, relative_x);
+				rotated_x = vsubq_f32(rotated_x, tmp);
+				blend = vcltq_f32(rotated_y, radius);
+				rotated_y = vreinterpretq_f32_u32(vld1q_u32((uint32_t*)iterator));
+				tmp = vreinterpretq_f32_u32(vmvnq_u32(vreinterpretq_u32_f32(rotated_x)));
+				tmp = vreinterpretq_f32_s32(vshrq_n_s32(vreinterpretq_s32_f32(tmp), 31));
+				blend = vandq_u32(blend, vreinterpretq_u32_f32(tmp));
+				tmp = vreinterpretq_f32_u32(vcleq_f32(rotated_x, length));
+				blend = vandq_u32(blend, vreinterpretq_u32_f32(tmp));
+				rotated_x = vreinterpretq_f32_u32(vandq_u32(color_block, blend));
+				rotated_y = vreinterpretq_f32_u32(vbicq_u32(vreinterpretq_u32_f32(rotated_y), blend));
+				blend = vorrq_u32(vreinterpretq_u32_f32(rotated_x), vreinterpretq_u32_f32(rotated_y));
+				relative_x = vaddq_f32(relative_x, block_increment);
+				vst1q_u32((uint32_t*)iterator, blend);
+			}
+			if (end_fill)
+			{
+				iterator += (size_t)end_fill;
+				relative_x = vaddq_f32(relative_x, end_increment);
+				tmp = vmulq_f32(rotate_sin, relative_x);
+				rotated_y = vmulq_f32(rotate_cos, relative_y);
+				rotated_y = vaddq_f32(rotated_y, tmp);
+				rotated_y = vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(rotated_y), sign_mask));
+				tmp = vmulq_f32(rotate_sin, relative_y);
+				rotated_x = vmulq_f32(rotate_cos, relative_x);
+				rotated_x = vsubq_f32(rotated_x, tmp);
+				blend = vcltq_f32(rotated_y, radius);
+				rotated_y = vreinterpretq_f32_u32(vld1q_u32((uint32_t*)(iterator - 16)));
+				tmp = vreinterpretq_f32_u32(vmvnq_u32(vreinterpretq_u32_f32(rotated_x)));
+				tmp = vreinterpretq_f32_s32(vshrq_n_s32(vreinterpretq_s32_f32(tmp), 31));
+				blend = vandq_u32(blend, vreinterpretq_u32_f32(tmp));
+				tmp = vreinterpretq_f32_u32(vcleq_f32(rotated_x, length));
+				blend = vandq_u32(blend, vreinterpretq_u32_f32(tmp));
+				rotated_x = vreinterpretq_f32_u32(vandq_u32(color_block, blend));
+				rotated_y = vreinterpretq_f32_u32(vbicq_u32(vreinterpretq_u32_f32(rotated_y), blend));
+				blend = vorrq_u32(vreinterpretq_u32_f32(rotated_x), vreinterpretq_u32_f32(rotated_y));
+				vst1q_u32((uint32_t*)(iterator - 16), blend);
+			}
+			iterator += skip;
+			relative_y = vaddq_f32(relative_y, single_increment);
+		}
+	}
+	else
+		for (int y = left_bottom.y; y != rigth_top.y; ++y)
+		{
+			uint32_t* row = (uint32_t*)((uintptr_t)pixels + (size_t)y * stride);
+			for (int x = left_bottom.x; x != rigth_top.x; ++x)
+			{
+				float r_x = (float)(x - begin_point.x);
+				float r_y = (float)(y - begin_point.y);
+				float rr_x = rotate_multipliers[0] * r_x - rotate_multipliers[1] * r_y;
+				float rr_y = rotate_multipliers[0] * r_y + rotate_multipliers[1] * r_x;
+#if (defined(_MSC_VER) && defined(_MT) && !defined(_DLL)) || defined(__GNUC__)
+				rr_y = fabsf(rr_y);
+#else
+				if (rr_y < 0.0f)
+					rr_y = -rr_y;
+#endif
+				if (rr_x >= 0.0f && rr_x <= line_length && rr_y < r)
+					row[x] = color;
+			}
+}
+#elif defined(GDT_X86_SSSE3)
 	width = rigth_top.x - left_bottom.x;
 	height = rigth_top.y - left_bottom.y;
 	size_t block_fill = (((size_t)width << 2) & (size_t)~15);
 	int end_fill = (int)(((size_t)width << 2) - block_fill);
 	GDT_CORE_ASSUME(end_fill < 16);
 	size_t skip = stride - (block_fill + (size_t)end_fill);
-	uintptr_t iterator = (uintptr_t)pixels + ((size_t)left_bottom.y * stride) + ((size_t)left_bottom.x * sizeof(uint32_t));
+	uintptr_t iterator = (uintptr_t)pixels + ((size_t)left_bottom.y * stride) + ((size_t)left_bottom.x << 2);
 	uintptr_t end = iterator + ((size_t)height * stride);
 	int radius = *(const int*)&r;
 	int length = *(const int*)&line_length;
@@ -388,7 +624,14 @@ static void gdt_fast_multilevel_blur_bitmap(int width, int height, size_t stride
 {
 	GDT_CORE_ASSUME((uintptr_t)pixels % sizeof(uint32_t) == 0 && (uintptr_t)temporal_buffer % sizeof(uint32_t) == 0 && stride % sizeof(uint32_t) == 0 && width > -1 && height > -1 && level > -1);
 	size_t temporal_buffer_stride = (size_t)height * sizeof(uint32_t);
-#ifdef GDT_SSSE3
+#if defined(GDT_ARM_NEON)
+	uint32x4_t blend_multiplier = vdupq_n_u32(5600000);// (3 * 255) * 5600000 / 16777216 = 255
+	uint32x4_t previous;
+	uint32x4_t current;
+	uint32x4_t next;
+	uint32x4_t tmp;
+	uint8x8_t buffer;
+#elif defined(GDT_X86_SSSE3)
 	__m128i decode_shuffle = _mm_cvtsi32_si128(0x80808003);
 	decode_shuffle = _mm_insert_epi16(decode_shuffle, 0x8002, 2);
 	decode_shuffle = _mm_insert_epi16(decode_shuffle, 0x8080, 3);
@@ -413,7 +656,58 @@ static void gdt_fast_multilevel_blur_bitmap(int width, int height, size_t stride
 #endif
 	for (int repeat_two_times = 2; repeat_two_times--;)
 	{
-#ifdef GDT_SSSE3
+#if defined(GDT_ARM_NEON)
+		if (width > 1)
+			for (int y = 0; y != height; ++y)
+			{
+				uint32_t* row = (uint32_t*)((uintptr_t)pixels + (size_t)y * stride);
+				for (int c = level; c--;)
+				{
+					buffer = vld1_u8((uint8_t*)row);
+					current = vreinterpretq_u32_u16(vmovl_u8(buffer));
+					buffer = vreinterpret_u8_u16(vget_low_u16(vreinterpretq_u16_u32(current)));
+					current = vmovl_u16(vreinterpret_u16_u8(buffer));
+					buffer = vld1_u8((uint8_t*)(row + 1));
+					next = vreinterpretq_u32_u16(vmovl_u8(buffer));
+					buffer = vreinterpret_u8_u16(vget_low_u16(vreinterpretq_u16_u32(next)));
+					next = vmovl_u16(vreinterpret_u16_u8(buffer));
+					tmp = vaddq_u32(current, current);
+					tmp = vaddq_u32(current, next);
+					tmp = vmulq_u32(tmp, blend_multiplier);
+					tmp = vshrq_n_u32(tmp, 24);
+					buffer = vreinterpret_u8_u16(vmovn_u32(tmp));
+					tmp = vreinterpretq_u32_u16(vcombine_u16(vreinterpret_u16_u8(buffer), vreinterpret_u16_u8(buffer)));
+					buffer = vmovn_u16(vreinterpretq_u16_u32(tmp));
+					vst1_lane_u32((uint32_t*)row, vreinterpret_u32_u8(buffer), 0);
+
+					for (int x = 1; x != width - 1; ++x)
+					{
+						previous = current;
+						current = next;
+						buffer = vld1_u8((uint8_t*)(row + x + 1));
+						next = vreinterpretq_u32_u16(vmovl_u8(buffer));
+						buffer = vreinterpret_u8_u16(vget_low_u16(vreinterpretq_u16_u32(next)));
+						next = vmovl_u16(vreinterpret_u16_u8(buffer));
+						tmp = vaddq_u32(previous, current);
+						tmp = vaddq_u32(tmp, next);
+						tmp = vmulq_u32(tmp, blend_multiplier);
+						tmp = vshrq_n_u32(tmp, 24);
+						buffer = vreinterpret_u8_u16(vmovn_u32(tmp));
+						tmp = vreinterpretq_u32_u16(vcombine_u16(vreinterpret_u16_u8(buffer), vreinterpret_u16_u8(buffer)));
+						buffer = vmovn_u16(vreinterpretq_u16_u32(tmp));
+						vst1_lane_u32((uint32_t*)(row + x), vreinterpret_u32_u8(buffer), 0);
+					}
+					tmp = vaddq_u32(next, next);
+					tmp = vaddq_u32(tmp, current);
+					tmp = vmulq_u32(tmp, blend_multiplier);
+					tmp = vshrq_n_u32(tmp, 24);
+					buffer = vreinterpret_u8_u16(vmovn_u32(tmp));
+					tmp = vreinterpretq_u32_u16(vcombine_u16(vreinterpret_u16_u8(buffer), vreinterpret_u16_u8(buffer)));
+					buffer = vmovn_u16(vreinterpretq_u16_u32(tmp));
+					vst1_lane_u32((uint32_t*)(row + width - 1), vreinterpret_u32_u8(buffer), 0);
+				}
+			}
+#elif defined(GDT_X86_SSSE3)
 		if (width > 1)
 			for (int y = 0; y != height; ++y)
 			{
@@ -549,7 +843,110 @@ static void gdt_blur_bitmap(int width, int height, size_t stride, uint32_t* pixe
 			return;
 		}
 	}
-#ifdef GDT_SSSE3
+#if defined(GDT_ARM_NEON)
+	uint32x4_t blend_multiplier = vdupq_n_u32(5600000);// (3 * 255) * 5600000 / 16777216 = 255
+	uint32x4_t previous;
+	uint32x4_t current;
+	uint32x4_t next;
+	uint32x4_t tmp;
+	uint8x8_t buffer;
+	while (level)
+	{
+		if (width > 1)
+			for (int y = 0; y != height; ++y)
+			{
+				uint32_t* row = (uint32_t*)((uintptr_t)pixels + (y * stride));
+				buffer = vld1_u8((uint8_t*)row);
+				current = vreinterpretq_u32_u16(vmovl_u8(buffer));
+				buffer = vreinterpret_u8_u16(vget_low_u16(vreinterpretq_u16_u32(current)));
+				current = vmovl_u16(vreinterpret_u16_u8(buffer));
+				buffer = vld1_u8((uint8_t*)(row + 1));
+				next = vreinterpretq_u32_u16(vmovl_u8(buffer));
+				buffer = vreinterpret_u8_u16(vget_low_u16(vreinterpretq_u16_u32(next)));
+				next = vmovl_u16(vreinterpret_u16_u8(buffer));
+				tmp = vaddq_u32(current, current);
+				tmp = vaddq_u32(current, next);
+				tmp = vmulq_u32(tmp, blend_multiplier);
+				tmp = vshrq_n_u32(tmp, 24);
+				buffer = vreinterpret_u8_u16(vmovn_u32(tmp));
+				tmp = vreinterpretq_u32_u16(vcombine_u16(vreinterpret_u16_u8(buffer), vreinterpret_u16_u8(buffer)));
+				buffer = vmovn_u16(vreinterpretq_u16_u32(tmp));
+				vst1_lane_u32((uint32_t*)row, vreinterpret_u32_u8(buffer), 0);
+				for (int x = 1; x != width - 1; ++x)
+				{
+					previous = current;
+					current = next;
+					buffer = vld1_u8((uint8_t*)(row + x + 1));
+					next = vreinterpretq_u32_u16(vmovl_u8(buffer));
+					buffer = vreinterpret_u8_u16(vget_low_u16(vreinterpretq_u16_u32(next)));
+					next = vmovl_u16(vreinterpret_u16_u8(buffer));
+					tmp = vaddq_u32(previous, current);
+					tmp = vaddq_u32(tmp, next);
+					tmp = vmulq_u32(tmp, blend_multiplier);
+					tmp = vshrq_n_u32(tmp, 24);
+					buffer = vreinterpret_u8_u16(vmovn_u32(tmp));
+					tmp = vreinterpretq_u32_u16(vcombine_u16(vreinterpret_u16_u8(buffer), vreinterpret_u16_u8(buffer)));
+					buffer = vmovn_u16(vreinterpretq_u16_u32(tmp));
+					vst1_lane_u32((uint32_t*)(row + x), vreinterpret_u32_u8(buffer), 0);
+				}
+				tmp = vaddq_u32(next, next);
+				tmp = vaddq_u32(tmp, current);
+				tmp = vmulq_u32(tmp, blend_multiplier);
+				tmp = vshrq_n_u32(tmp, 24);
+				buffer = vreinterpret_u8_u16(vmovn_u32(tmp));
+				tmp = vreinterpretq_u32_u16(vcombine_u16(vreinterpret_u16_u8(buffer), vreinterpret_u16_u8(buffer)));
+				buffer = vmovn_u16(vreinterpretq_u16_u32(tmp));
+				vst1_lane_u32((uint32_t*)(row + width - 1), vreinterpret_u32_u8(buffer), 0);
+			}
+		if (height > 1)
+			for (int x = 0; x != width; ++x)
+			{
+				uintptr_t column = (uintptr_t)pixels + (x * sizeof(uint32_t));
+				buffer = vld1_u8((uint8_t*)column);
+				current = vreinterpretq_u32_u16(vmovl_u8(buffer));
+				buffer = vreinterpret_u8_u16(vget_low_u16(vreinterpretq_u16_u32(current)));
+				current = vmovl_u16(vreinterpret_u16_u8(buffer));
+				buffer = vld1_u8((uint8_t*)(column + stride));
+				next = vreinterpretq_u32_u16(vmovl_u8(buffer));
+				buffer = vreinterpret_u8_u16(vget_low_u16(vreinterpretq_u16_u32(next)));
+				next = vmovl_u16(vreinterpret_u16_u8(buffer));
+				tmp = vaddq_u32(current, current);
+				tmp = vaddq_u32(current, next);
+				tmp = vmulq_u32(tmp, blend_multiplier);
+				tmp = vshrq_n_u32(tmp, 24);
+				buffer = vreinterpret_u8_u16(vmovn_u32(tmp));
+				tmp = vreinterpretq_u32_u16(vcombine_u16(vreinterpret_u16_u8(buffer), vreinterpret_u16_u8(buffer)));
+				buffer = vmovn_u16(vreinterpretq_u16_u32(tmp));
+				vst1_lane_u32((uint32_t*)column, vreinterpret_u32_u8(buffer), 0);
+				for (int y = 1; y != height - 1; ++y)
+				{
+					previous = current;
+					current = next;
+					buffer = vld1_u8((uint8_t*)(column + ((y + 1) * stride)));
+					next = vreinterpretq_u32_u16(vmovl_u8(buffer));
+					buffer = vreinterpret_u8_u16(vget_low_u16(vreinterpretq_u16_u32(next)));
+					next = vmovl_u16(vreinterpret_u16_u8(buffer));
+					tmp = vaddq_u32(previous, current);
+					tmp = vaddq_u32(tmp, next);
+					tmp = vmulq_u32(tmp, blend_multiplier);
+					tmp = vshrq_n_u32(tmp, 24);
+					buffer = vreinterpret_u8_u16(vmovn_u32(tmp));
+					tmp = vreinterpretq_u32_u16(vcombine_u16(vreinterpret_u16_u8(buffer), vreinterpret_u16_u8(buffer)));
+					buffer = vmovn_u16(vreinterpretq_u16_u32(tmp));
+					vst1_lane_u32((uint32_t*)(column + (y * stride)), vreinterpret_u32_u8(buffer), 0);
+				}
+				tmp = vaddq_u32(next, next);
+				tmp = vaddq_u32(tmp, current);
+				tmp = vmulq_u32(tmp, blend_multiplier);
+				tmp = vshrq_n_u32(tmp, 24);
+				buffer = vreinterpret_u8_u16(vmovn_u32(tmp));
+				tmp = vreinterpretq_u32_u16(vcombine_u16(vreinterpret_u16_u8(buffer), vreinterpret_u16_u8(buffer)));
+				buffer = vmovn_u16(vreinterpretq_u16_u32(tmp));
+				vst1_lane_u32((uint32_t*)(column + ((height - 1) * stride)), vreinterpret_u32_u8(buffer), 0);
+			}
+		--level;
+	}
+#elif defined(GDT_X86_SSSE3)
 	__m128i decode_shuffle = _mm_cvtsi32_si128(0x80808003);
 	decode_shuffle = _mm_insert_epi16(decode_shuffle, 0x8002, 2);
 	decode_shuffle = _mm_insert_epi16(decode_shuffle, 0x8080, 3);

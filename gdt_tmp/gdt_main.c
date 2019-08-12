@@ -1,5 +1,5 @@
 /*
-	Graph Drawing Tool version 1.2.0 2019-07-24 by Santtu Nyman.
+	Graph Drawing Tool version 1.3.0 2019-08-13 by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/gdt
 
 	Description
@@ -11,6 +11,8 @@
 		printed out with -h or --help parameter when running it.
 
 	Version history
+		version 1.3.0 2019-08-13
+			Added support for 32 bit ARM Linux and fixed error handling bugs on Windows.
 		version 1.2.0 2019-07-24
 			Swiched bmp pixel format from 32 bit BGRA to 24 bit BGR.
 			Improved accuracy of text rendering.
@@ -666,8 +668,8 @@ void gdt_exit_process(const char* error_string, int error_code)
 void gdt_print_program_info()
 {
 	printf(
-		"Graph Drawing Tool version 1.2.0 2019-07-24 by Santtu Nyman.\n"
-		"git repository https://github.com/Santtu-Nyman/gdt\"\n"
+		"Graph Drawing Tool version 1.3.0 2019-08-13 by Santtu Nyman.\n"
+		"git repository \"https://github.com/Santtu-Nyman/gdt\"\n"
 		"\n"
 		"Program description:\n"
 		"	Command line tool for drawing graphs from data points to bmp files.\n"

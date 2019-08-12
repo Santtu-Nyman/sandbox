@@ -1,5 +1,5 @@
 /*
-	Graph Drawing Tool version 1.2.0 2019-07-24 by Santtu Nyman.
+	Graph Drawing Tool version 1.3.0 2019-08-13 by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/gdt
 */
 
@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-static void gdt_unaligned_store_le32(void* memory_address, uint32_t value)
+static void gdt_store_ule32(void* memory_address, uint32_t value)
 {
 	*(uint8_t*)((uintptr_t)memory_address + 0) = (uint8_t)(value >> 0);
 	*(uint8_t*)((uintptr_t)memory_address + 1) = (uint8_t)(value >> 8);
@@ -50,10 +50,10 @@ int gdt_make_bitmap_rgb(int width, int height, size_t stride, const uint32_t* pi
 	if (!file_data)
 		return ENOMEM;
 	memcpy((void*)file_data, bmp_header_template, sizeof(bmp_header_template));
-	gdt_unaligned_store_le32((void*)(file_data + 2), (uint32_t)file_size);
-	gdt_unaligned_store_le32((void*)(file_data + 18), (uint32_t)width);
-	gdt_unaligned_store_le32((void*)(file_data + 22), (uint32_t)height);
-	gdt_unaligned_store_le32((void*)(file_data + 34), (uint32_t)height * (uint32_t)file_stride);
+	gdt_store_ule32((void*)(file_data + 2), (uint32_t)file_size);
+	gdt_store_ule32((void*)(file_data + 18), (uint32_t)width);
+	gdt_store_ule32((void*)(file_data + 22), (uint32_t)height);
+	gdt_store_ule32((void*)(file_data + 34), (uint32_t)height * (uint32_t)file_stride);
 	size_t source_row_skip = stride - ((size_t)width * sizeof(uint32_t));
 	size_t destination_row_skip = file_stride - ((size_t)width * (sizeof(uint8_t) * 3));
 	uint8_t* destination = (uint8_t*)(file_data + sizeof(bmp_header_template));
@@ -133,10 +133,10 @@ int gdt_make_bitmap(int width, int height, size_t stride, const uint32_t* pixels
 	if (!file_data)
 		return ENOMEM;
 	memcpy((void*)file_data, bmp_header_template, sizeof(bmp_header_template));
-	gdt_unaligned_store_le32((void*)(file_data + 2), (uint32_t)file_size);
-	gdt_unaligned_store_le32((void*)(file_data + 18), (uint32_t)width);
-	gdt_unaligned_store_le32((void*)(file_data + 22), (uint32_t)height);
-	gdt_unaligned_store_le32((void*)(file_data + 34), (uint32_t)height * (uint32_t)file_stride);
+	gdt_store_ule32((void*)(file_data + 2), (uint32_t)file_size);
+	gdt_store_ule32((void*)(file_data + 18), (uint32_t)width);
+	gdt_store_ule32((void*)(file_data + 22), (uint32_t)height);
+	gdt_store_ule32((void*)(file_data + 34), (uint32_t)height * (uint32_t)file_stride);
 	size_t source_row_skip = stride - ((size_t)width * sizeof(uint32_t));
 	for (uint32_t* source = (uint32_t*)pixels, * source_end = (uint32_t*)((uintptr_t)pixels + ((size_t)height * stride)),
 		* destination = (uint32_t*)(file_data + sizeof(bmp_header_template)); source != source_end; source = (uint32_t*)((uintptr_t)source + source_row_skip))
