@@ -1,5 +1,5 @@
 /*
-	Graph Drawing Tool version 1.3.0 2019-08-13 by Santtu Nyman.
+	Graph Drawing Tool version 1.4.0 2019-09-16 by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/gdt
 
 	Description
@@ -11,6 +11,9 @@
 		printed out with -h or --help parameter when running it.
 
 	Version history
+		version 1.4.0 2019-09-16
+			Added new program parameter for adjusting image brightness.
+			Changed default image brightness.
 		version 1.3.0 2019-08-13
 			Added support for 32 bit ARM Linux and fixed error handling bugs on Windows.
 		version 1.2.0 2019-07-24
@@ -39,6 +42,8 @@
 #include "gdt_error.h"
 #include "gdt_core.h"
 
+int gdt_decode_brightness_parameter(const char* argument, float* brightness);
+
 size_t gdt_maximun_relevant_line_count(size_t file_size, const void* file_data);
 
 float gdt_round_grid_number(float delta);
@@ -61,6 +66,7 @@ int main(int argc, char** argv)
 	const int default_image_height = 1080;
 	const int default_file_format = 0;
 	const char* input_file_format_table[2] = { "text_lines", "float" };
+	const float default_brightness = 0.8f;
 
 	int error;
 	size_t argument_count;
@@ -84,6 +90,8 @@ int main(int argc, char** argv)
 	float* graph_point_table;
 	size_t image_file_size;
 	void* image_file_data;
+	char* brightness_argument;
+	float brightness;
 
 	error = gdt_get_process_arguments(&argument_count, &arguments);
 	if (error)
@@ -115,6 +123,19 @@ int main(int argc, char** argv)
 	{
 		gdt_print_program_info();
 		exit(EXIT_SUCCESS);
+	}
+	error = gdt_get_string_argument(argument_count, arguments, "--image_brightness", &brightness_argument);
+	if (error)
+	{
+		if (error != ENOENT)
+			gdt_exit_process("Unable to read image brightness argument", error);
+		brightness = default_brightness;
+	}
+	else
+	{
+		error = gdt_decode_brightness_parameter(brightness_argument, &brightness);
+		if (error)
+			gdt_exit_process("Invalid image brightness specified", error);
 	}
 	error = gdt_get_string_argument(argument_count, arguments, "-g", &graph_title);
 	if (error)
@@ -224,12 +245,12 @@ int main(int argc, char** argv)
 		if (error)
 			gdt_exit_process("Unable to find a truetype font file", error);
 		error = gdt_simplified_draw_graph_with_titles_to_bitmap(grid_x, grid_y, image_width, image_height, image_width * sizeof(uint32_t),
-			bitmap, (size_t)vector_length, graph_point_count, graph_point_table, font_file_name, (const char*)graph_title, (const char**)axis_title_table, 0);
+			bitmap, (size_t)vector_length, graph_point_count, graph_point_table, font_file_name, (const char*)graph_title, (const char**)axis_title_table, 0, brightness);
 		free(font_file_name);
 	}
 	else
  		error = gdt_simplified_draw_graph_to_bitmap(grid_x, grid_y, image_width, image_height, image_width * sizeof(uint32_t),
-			bitmap, (size_t)vector_length, graph_point_count, graph_point_table, 0);
+			bitmap, (size_t)vector_length, graph_point_count, graph_point_table, 0, brightness);
 	error = gdt_make_bitmap(image_width, image_height, image_width * sizeof(uint32_t), bitmap, &image_file_size, &image_file_data);
 	if (error)
 		gdt_exit_process("Unable to create output image file data", error);
@@ -237,6 +258,31 @@ int main(int argc, char** argv)
 	if (error)
 		gdt_exit_process("Unable to write output file", error);
 	gdt_exit_process(0, 0);
+	return 0;
+}
+
+int gdt_decode_brightness_parameter(const char* argument, float* brightness)
+{
+	size_t argument_length = strlen(argument);
+	if (!argument_length)
+		return EBADMSG;
+	if (argument[argument_length - 1] == '%')
+	{
+		--argument_length;
+		if (!argument_length)
+			return EBADMSG;
+	}
+	for (int i = 0; i != argument_length; ++i)
+		if (argument[i] < '0' && argument[i] > '9')
+			return EBADMSG;
+	int value = 0;
+	for (int i = 0; i != argument_length; ++i)
+	{
+		value = (value * 10) + (int)(argument[i] - '0');
+		if (value > 100)
+			return EINVAL;
+	}
+	*brightness = (float)value / 100.0f;
 	return 0;
 }
 
@@ -668,7 +714,7 @@ void gdt_exit_process(const char* error_string, int error_code)
 void gdt_print_program_info()
 {
 	printf(
-		"Graph Drawing Tool version 1.3.0 2019-08-13 by Santtu Nyman.\n"
+		"Graph Drawing Tool version 1.4.0 2019-09-16 by Santtu Nyman.\n"
 		"git repository \"https://github.com/Santtu-Nyman/gdt\"\n"
 		"\n"
 		"Program description:\n"
@@ -686,5 +732,6 @@ void gdt_print_program_info()
 		"	-x Specifies approximate horizontal distance between graph grid lines. This parameter is optional.\n"
 		"	-y Specifies approximate vertical distance between graph grid lines. This parameter is optional.\n"
 		"	--image_width Specifies width of the graph image. This parameter is optional.\n"
-		"	--image_height Specifies height of the graph image. This parameter is optional.\n");
+		"	--image_height Specifies height of the graph image. This parameter is optional.\n"
+		"	--image_brightness Specifies brightness for the graph image. Valid values are from 0%% to 100%%. Default brightness value is 80%%. This parameter is optional.\n");
 };

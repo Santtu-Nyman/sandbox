@@ -1,5 +1,5 @@
 /*
-	Graph Drawing Tool version 1.3.0 2019-08-13 by Santtu Nyman.
+	Graph Drawing Tool version 1.4.0 2019-09-16 by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/gdt
 */
 
@@ -1353,10 +1353,10 @@ void gdt_draw_graph_to_bitmap(int flags, uint32_t background_color, uint32_t gri
 		gdt_blur_bitmap(width, height, stride, pixels, line_thickness / 2);
 }
 
-static uint32_t gdt_make_line_color(int count, int index)
+static uint32_t gdt_make_line_color(float brightness, int count, int index)
 {
 	GDT_CORE_ASSUME(count > -1 && index > -1);
-	const float full_brightness = 246;
+	float full_brightness = brightness * 255.0f;
 	float s = (float)index / (float)count;
 	float r;
 	float g;
@@ -1386,15 +1386,16 @@ static uint32_t gdt_make_line_color(int count, int index)
 }
 
 int gdt_simplified_draw_graph_to_bitmap(float grid_delta_x, float grid_delta_y, int width, int height, size_t stride,
-	uint32_t* pixels, size_t line_count, size_t point_count, const float* points, int soa_representation)
+	uint32_t* pixels, size_t line_count, size_t point_count, const float* points, int soa_representation, float brightness)
 {
 	GDT_CORE_ASSUME((uintptr_t)pixels % sizeof(uint32_t) == 0 && stride % sizeof(uint32_t) == 0 && width > -1 && height > -1);
 	if (line_count < 2 || line_count > INT_MAX || width < 1 || height < 1 ||
-		grid_delta_x < 0.0f || grid_delta_y < 0.0f || !point_count)
+		grid_delta_x < 0.0f || grid_delta_y < 0.0f || !point_count ||
+		brightness < 0.0f || brightness > 1.0f)
 		return EINVAL;
-	const uint32_t background_color = 0xFF222222;
-	const uint32_t grid_color = 0xFF444444;
-	const uint32_t xy_line_colors[2] = { 0xFF000000, 0xFF0055EE };
+	const uint32_t background_color = 0xFF202020;
+	uint32_t grid_color = ((uint32_t)(brightness * 95.0f) << 0) | ((uint32_t)(brightness * 95.0f) << 8) | ((uint32_t)(brightness * 95.0f) << 16) | 0xFF000000;
+	uint32_t xy_line_colors[2] = { 0xFF000000, ((uint32_t)(brightness * 255.0f) << 0) | ((uint32_t)(brightness * 95.0f) << 8) | ((uint32_t)(brightness * 0.0f) << 16) | 0xFF000000 };
 	uint32_t* line_colors;
 	if (line_count == 2)
 		line_colors = (uint32_t*)xy_line_colors;
@@ -1404,7 +1405,7 @@ int gdt_simplified_draw_graph_to_bitmap(float grid_delta_x, float grid_delta_y, 
 		if (!line_colors)
 			return ENOMEM;;
 		for (int i = 0; i != (int)line_count; ++i)
-			line_colors[i] = gdt_make_line_color((int)line_count, i);
+			line_colors[i] = gdt_make_line_color(brightness, (int)line_count, i);
 	}
 	gdt_draw_graph_to_bitmap(
 		(soa_representation ? GDT_DRAW_GRAPH_FLAG_LINE_SOA_REPRESENTATION : 0) |
@@ -2447,17 +2448,18 @@ int gdt_draw_graph_with_titles_to_bitmap(int flags, uint32_t background_color, u
 
 int gdt_simplified_draw_graph_with_titles_to_bitmap(float grid_delta_x, float grid_delta_y, int width, int height, size_t stride,
 	uint32_t* pixels, size_t line_count, size_t point_count, const float* points, const char* truetype_file_name, const char* graph_title,
-	const char** axis_titles, int soa_representation)
+	const char** axis_titles, int soa_representation, float brightness)
 {
 	GDT_CORE_ASSUME((uintptr_t)pixels % sizeof(uint32_t) == 0 && stride % sizeof(uint32_t) == 0 && width > -1 && height > -1);
 	if (line_count < 2 || line_count > INT_MAX || width < 1 || height < 1 ||
-		grid_delta_x < 0.0f || grid_delta_y < 0.0f || !point_count)
+		grid_delta_x < 0.0f || grid_delta_y < 0.0f || !point_count ||
+		brightness < 0.0f || brightness > 1.0f)
 		return EINVAL;
-	const uint32_t background_color = 0xFF222222;
-	const uint32_t grid_color = 0xFF444444;
-	const uint32_t font_color = 0xFFEEEEEE;
-	const uint32_t xy_line_colors[2] = { 0xFF000000, 0xFF0055EE };
-	const uint32_t xy_axis_title_colors[2] = { font_color, font_color };
+	const uint32_t background_color = 0xFF202020;
+	uint32_t grid_color = ((uint32_t)(brightness * 95.0f) << 0) | ((uint32_t)(brightness * 95.0f) << 8) | ((uint32_t)(brightness * 95.0f) << 16) | 0xFF000000;
+	uint32_t font_color = ((uint32_t)(brightness * 255.0f) << 0) | ((uint32_t)(brightness * 255.0f) << 8) | ((uint32_t)(brightness * 255.0f) << 16) | 0xFF000000;
+	uint32_t xy_line_colors[2] = { 0xFF000000, ((uint32_t)(brightness * 255.0f) << 0) | ((uint32_t)(brightness * 0.0f) << 8) | ((uint32_t)(brightness * 0.0f) << 16) | 0xFF000000 };
+	uint32_t xy_axis_title_colors[2] = { font_color, font_color };
 	uint32_t* line_colors;
 	uint32_t* axis_title_colors;
 	if (line_count == 2)
@@ -2471,7 +2473,7 @@ int gdt_simplified_draw_graph_with_titles_to_bitmap(float grid_delta_x, float gr
 		if (!line_colors)
 			return ENOMEM;
 		for (int i = 0; i != (int)line_count; ++i)
-			line_colors[i] = gdt_make_line_color((int)line_count, i);
+			line_colors[i] = gdt_make_line_color(brightness, (int)line_count, i);
 		axis_title_colors = line_colors + line_count;
 		for (int i = 0; i != (int)line_count; ++i)
 			axis_title_colors[i] = font_color;

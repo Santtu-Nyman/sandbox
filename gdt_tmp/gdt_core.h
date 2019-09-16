@@ -1,5 +1,5 @@
 /*
-	Graph Drawing Tool version 1.3.0 2019-08-13 by Santtu Nyman.
+	Graph Drawing Tool version 1.4.0 2019-09-16 by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/gdt
 */
 
@@ -26,7 +26,7 @@ void gdt_draw_graph_to_bitmap(int flags, uint32_t background_color, uint32_t gri
 	size_t point_count, const float* points);
 
 int gdt_simplified_draw_graph_to_bitmap(float grid_delta_x, float grid_delta_y, int width, int height, size_t stride,
-	uint32_t* pixels, size_t line_count, size_t point_count, const float* points, int soa_representation);
+	uint32_t* pixels, size_t line_count, size_t point_count, const float* points, int soa_representation, float brightness);
 
 int gdt_draw_graph_with_titles_to_bitmap(int flags, uint32_t background_color, uint32_t grid_color, uint32_t x_axis_color,
 	uint32_t y_axis_color, float grid_delta_x, float grid_delta_y, int width, int height, size_t stride,
@@ -37,6 +37,6 @@ int gdt_draw_graph_with_titles_to_bitmap(int flags, uint32_t background_color, u
 
 int gdt_simplified_draw_graph_with_titles_to_bitmap(float grid_delta_x, float grid_delta_y, int width, int height, size_t stride,
 	uint32_t* pixels, size_t line_count, size_t point_count, const float* points, const char* truetype_file_name, const char* graph_title,
-	const char** axis_titles, int soa_representation);
+	const char** axis_titles, int soa_representation, float brightness);
 
 #endif
