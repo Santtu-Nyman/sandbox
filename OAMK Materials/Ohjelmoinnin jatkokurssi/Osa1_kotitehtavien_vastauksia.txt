@@ -1,0 +1,63 @@
+
+// Osa 1: kotitehtävien vastauksia
+// Tehtävä 1: Osoitinmuuttuja
+
+#include <iostream>
+using namespace std;
+
+void vaihda (short *pLukuYksi, short *pLukuKaksi)
+{
+    short apu;
+
+    apu=*pLukuYksi;
+    *pLukuYksi = *pLukuKaksi;
+    *pLukuKaksi = apu;
+}
+
+int main()
+{
+    short lukuYksi, lukuKaksi;
+
+    lukuYksi = 10;
+    lukuKaksi = 20;
+
+    cout << "Ennen vaihtoa:" << endl;
+    cout << "lukuYksi: " << lukuYksi << endl <<"lukuKaksi: " << lukuKaksi << endl;
+
+    vaihda(&lukuYksi, &lukuKaksi);
+    cout << "Vaihdon jalkeen:" << endl;
+    cout << "lukuYksi: " << lukuYksi << endl <<"lukuKaksi: " << lukuKaksi << endl;
+}
+
+
+
+// Osa 1: kotitehtävien vastauksia
+// Tehtävä 2: Viittausmuuttuja
+
+#include <iostream>
+using namespace std;
+
+void vaihda (short &pLukuYksi, short &pLukuKaksi)
+{
+    short apu;
+
+    apu=pLukuYksi;
+    pLukuYksi = pLukuKaksi;
+    pLukuKaksi = apu;
+}
+
+int main()
+{
+    short lukuYksi, lukuKaksi;
+
+    lukuYksi = 10;
+    lukuKaksi = 20;
+
+    cout << "Ennen vaihtoa:" << endl;
+    cout << "lukuYksi: " << lukuYksi << endl <<"lukuKaksi: " << lukuKaksi << endl;
+
+    vaihda(lukuYksi, lukuKaksi);
+    cout << "Vaihdon jalkeen:" << endl;
+    cout << "lukuYksi: " << lukuYksi << endl <<"lukuKaksi:" << lukuKaksi << endl;
+}
+

@@ -1,0 +1,125 @@
+// LISÄTEHTÄVÄ OSA 4
+// VASTAUS TEHTÄVÄ 1, olioiden yhteistyö (vahva kooste)
+
+// controller.h
+
+#include <conio.h>
+
+#include "view.h"
+#include "button.h"
+
+class Controller
+{
+public:
+    Controller();
+    ~Controller();
+    void listenMessages();
+
+private:
+    View *objectView;
+    Button *objectButton;
+};
+
+
+/*********************************/
+
+// view.h
+
+#include <stdio.h>
+
+class View
+{
+public:
+    void printCharacter(char pCharacter);
+};
+
+
+
+/*********************************/
+
+// button.h
+
+#include <conio.h>
+
+class Button
+{
+public:
+    char readKeyboard();
+private:
+    char character;
+};
+
+
+/*********************************/
+// controller.cpp
+
+#include "controller.h"
+
+Controller::Controller()
+{
+    objectView = new View;
+    objectButton = new Button;
+    this->listenMessages();
+}
+
+Controller::~Controller()
+{
+    delete objectView;
+    delete objectButton; 
+    objectView= nullptr;
+    objectButton= nullptr;
+}
+
+void Controller::listenMessages()
+{
+    char keyPressed='0';
+
+    while (keyPressed!='q')
+    {
+        // if (kbhit()) ehtolause toteutuu, jos nappainta painetaan
+        if (kbhit())
+        {
+            //tanne koodi, jossa oliot hoitavat merkin lukemisen ja tulostamisen
+            keyPressed=objectButton->readKeyboard();
+            objectView->printCharacter(keyPressed);
+
+        }
+    }
+}
+
+/*********************************/
+// view.cpp
+
+#include "view.h"
+
+void View::printCharacter(char pCharacter)
+{
+    printf("%c",pCharacter);
+}
+
+/*********************************/
+// button.cpp
+
+#include "button.h"
+
+char Button::readKeyboard()
+{
+    character = getch();
+    return character;
+}
+
+
+/*********************************/
+// main.cpp
+
+#include "controller.h"
+
+int main()
+{
+    Controller *objectController = new Controller;
+
+    delete objectController;
+    objectController= nullptr;
+
+    return 0;
+}

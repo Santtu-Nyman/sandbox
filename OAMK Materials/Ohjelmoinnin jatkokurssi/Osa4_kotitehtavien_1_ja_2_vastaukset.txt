@@ -1,0 +1,208 @@
+/************************************/
+// mycalculationclass.h
+/************************************/
+
+#ifndef MYCALCULATIONCLASS_H
+#define MYCALCULATIONCLASS_H
+
+#include <iostream>
+using namespace std;
+
+class MyCalculationClass
+{
+public:
+    MyCalculationClass();
+    ~MyCalculationClass();
+
+    double sum(double parameterOne, double parameterTwo);
+    double subtraction(double parameterOne, double parameterTwo);
+    double multiplication(double parameterOne, double parameterTwo);
+    double division(double parameterOne, double parameterTwo);
+};
+
+#endif // MYCALCULATIONCLASS_H
+
+/************************************/
+// myuiclass.h
+/************************************/
+
+#ifndef MYUICLASS_H
+#define MYUICLASS_H
+
+#include <iostream>
+using namespace std;
+
+#include "mycalculationclass.h"
+
+class MyUiClass
+{
+public:
+    MyUiClass();
+    ~MyUiClass();
+
+    void showMenu();
+    void showResult(short parameter);
+    void inputNumbers();
+private:
+    MyCalculationClass objectMyCalculationClass;
+    // Alla oleva koodirivi tarvitaan kun k‰ytet‰‰n dynaamisia oliota teht‰v‰ss‰ 2
+    //MyCalculationClass *objectMyCalculationClass;  
+
+    double numberOne, numberTwo, result;
+};
+#endif // MYUICLASS_H
+
+/************************************/
+// mycalculationclass.cpp
+/************************************/
+
+#include "mycalculationclass.h"
+
+MyCalculationClass::MyCalculationClass()
+{
+
+}
+
+MyCalculationClass::~MyCalculationClass()
+{
+
+}
+
+double MyCalculationClass::sum(double parameterOne, double parameterTwo)
+{
+    return parameterOne+parameterTwo;
+}
+
+double MyCalculationClass::subtraction(double parameterOne, double parameterTwo)
+{
+    return parameterOne-parameterTwo;
+}
+
+double MyCalculationClass::multiplication(double parameterOne, double parameterTwo)
+{
+    return parameterOne*parameterTwo;
+}
+
+double MyCalculationClass::division(double parameterOne, double parameterTwo)
+{
+    return parameterOne/parameterTwo;
+}
+
+/************************************/
+// myuiclass.cpp
+/************************************/
+#include "myuiclass.h"
+
+MyUiClass::MyUiClass()
+{
+    //Alla oleva tarvitaan kun k‰ytet‰‰n dynaamisia oliota teht‰v‰ss‰ 2
+    //objectMyCalculationClass = new MyCalculationClass;
+
+    showMenu();
+}
+
+MyUiClass::~MyUiClass()
+{
+    //Alla olevat koodirivit tarvitaan kun k‰ytet‰‰n dynaamisia oliota teht‰v‰ss‰ 2
+    //delete objectMyCalculationClass;
+    //objectMyCalculationClass = nullptr;
+}
+
+void MyUiClass::showMenu()
+{
+    short menuVariable;
+    menuVariable=0;
+    while (menuVariable!=5)
+    {
+        cout << "NELILASKIN" << endl;
+        cout << "==========" << endl;
+        cout << "1 = Summa" << endl;
+        cout << "2 = Erotus" << endl;
+        cout << "3 = Tulo" << endl;
+        cout << "4 = Osamaara" << endl;
+        cout << "5 = Lopeta" << endl;
+        cout << "Valitse: ";
+        cin >> menuVariable;
+        if (menuVariable>=1 && menuVariable<=4)
+        {
+            inputNumbers();
+            switch (menuVariable)
+            {
+                case 1:
+                   result = objectMyCalculationClass.sum(numberOne,numberTwo);
+                   //result = objectMyCalculationClass->sum(numberOne,numberTwo);
+                break;                
+                case 2:
+                    result = objectMyCalculationClass.subtraction(numberOne,numberTwo);
+                    //result = objectMyCalculationClass->subtraction(numberOne,numberTwo);
+                break;
+                case 3:
+                    result = objectMyCalculationClass.multiplication(numberOne,numberTwo);
+                    //result = objectMyCalculationClass->multiplication(numberOne,numberTwo);
+                break;
+                case 4:
+                    result = objectMyCalculationClass.division(numberOne,numberTwo);
+                    //result = objectMyCalculationClass->division(numberOne,numberTwo);
+                break;
+            }
+            showResult(menuVariable);
+        }
+    }
+}
+
+void MyUiClass::inputNumbers()
+{
+    cout << endl;
+    cout << "Anna luku yksi:";
+    cin >> numberOne;
+    cout << "Anna luku kaksi:";
+    cin >> numberTwo;
+}
+
+void MyUiClass::showResult(short parameter)
+{
+    cout << endl;
+    cout << "Laskutoimitus ja tulos:" << endl;
+    cout << numberOne;
+    switch (parameter)
+    {
+        case 1: cout << "+";
+        break;
+        case 2: cout << "-";
+        break;
+        case 3: cout << "*";
+        break;
+        case 4: cout << "/";
+        break;
+    }
+    cout << numberTwo << "=" << result << endl << endl;
+}
+
+/************************************/
+/* Tehtavan 1 main.cpp       */
+/************************************/
+#include "myuiclass.h"
+
+int main()
+{
+    MyUiClass objectMyUiClass;
+
+    return 0;
+}
+
+
+/* Tehtavan 2 main.cpp        */
+/* Tehtavassa 2 ainostaan main() -funktio on eri kuin tehtavassa 1 */
+/************************************/
+#include "myuiclass.h"
+
+int main()
+{
+    MyUiClass *objectMyUiClass = new MyUiClass;
+    delete objectMyUiClass;
+    objectMyUiClass = nullptrf;
+
+    return 0;
+}
+
+/************************************/

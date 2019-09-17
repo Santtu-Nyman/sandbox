@@ -1,0 +1,76 @@
+/*****************************************/
+// standardcalculator.h
+/*****************************************/
+
+#ifndef STANDARDCALCULATOR_H
+#define STANDARDCALCULATOR_H
+
+#include <iostream>	// tarvitaan, koska tulostusolio cout on m‰‰ritelty t‰ss‰ kirjastossa
+using namespace std;
+
+class StandardCalculator
+{
+public:
+    void sum(double parameterNumberOne, double parameterNumberTwo)
+    {
+        numberOne = parameterNumberOne;
+        numberTwo = parameterNumberTwo;
+        calculationResult = numberOne+numberTwo;
+        showCalculationAndResult('+');
+    }
+    void subtraction(double parameterNumberOne, double parameterNumberTwo)
+    {
+        numberOne = parameterNumberOne;
+        numberTwo = parameterNumberTwo;
+        calculationResult = numberOne-numberTwo;
+        showCalculationAndResult('-');
+    }
+    void multiplication(double parameterNumberOne, double parameterNumberTwo)
+    {
+        numberOne = parameterNumberOne;
+        numberTwo = parameterNumberTwo;
+        calculationResult = numberOne*numberTwo;
+        showCalculationAndResult('*');
+    }
+    void division(double parameterNumberOne, double parameterNumberTwo)
+    {
+        numberOne = parameterNumberOne;
+        numberTwo = parameterNumberTwo;
+        calculationResult = numberOne/numberTwo;
+        showCalculationAndResult('/');
+    }
+
+    void showCalculationAndResult(char parameterCalculation) const
+    {
+        cout << numberOne << parameterCalculation << numberTwo << "=" << calculationResult << endl;
+    }
+
+private:
+    double numberOne, numberTwo, calculationResult;
+};
+
+#endif // STANDARDCALCULATOR_H
+
+/***************************************/
+//  standardcalculator.cpp          
+//
+/* Periaatteessa t‰t‰ tiedostoa ei tarvita */
+/*******************************************/
+
+#include "standardcalculator.h"
+
+
+/*****************************************/
+// main.cpp
+/*****************************************/
+int main()
+{
+    StandardCalculator objectStandardCalculator;
+
+    objectStandardCalculator.sum(10,5);
+    objectStandardCalculator.subtraction(10,5);
+    objectStandardCalculator.multiplication(10,5);
+    objectStandardCalculator.division(10,5);
+
+    return 0;
+}
