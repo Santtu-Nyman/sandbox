@@ -58,21 +58,21 @@ static const char hex_table[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8',
 
 static const assembly_instruction_t instruction_table[16] = {
 	{ "MOVE", 0, "source", "destination", 0 },
-	{ "CJMP", "distance", 0, 0, 1 },
-	{ "LDIL", "low nibble constant", 0, 0, 2 },
-	{ "LDIH", "high nibble constant", 0, 0, 3 },
-	{ "LD", 0, "source address", "load value destination", 4 },
-	{ "ST", 0, "destination address", "store value source", 5 },
-	{ "CMP", 0, "left operand", "right operand", 6 },
-	{ "XOR", 0, "left operand", "right operand", 7 },
-	{ "OR", 0, "left operand", "right operand", 8 },
-	{ "AND", 0, "left operand", "right operand", 9 },
-	{ "ADD", 0, "left operand", "right operand", 10 },
-	{ "SUB", 0, "left operand", "right operand", 11 },
+	{ "CMP", 0, "left operand", "right operand", 1 },
+	{ "OR", 0, "left operand", "right operand", 2 },
+	{ "CJMP", "distance", 0, 0, 3 },
+	{ "AND", 0, "left operand", "right operand", 4 },
+	{ "LD", 0, "source address", "load value destination", 5 },
+	{ "XOR", 0, "left operand", "right operand", 6 },
+	{ "ST", 0, "destination address", "store value source", 7 },
+	{ "LDIL", "low nibble constant", 0, 0, 8 },
+	{ "LDIH", "high nibble constant", 0, 0, 9 },
+	{ "SL", 0, "source", "destination", 10 },
+	{ "SR", 0, "source", "destination", 11 },
 	{ "INC", 0, "source", "destination", 12 },
 	{ "DEC", 0, "source", "destination", 13 },
-	{ "SL", 0, "source", "destination", 14 },
-	{ "SR", 0, "source", "destination", 15 } };
+	{ "ADD", 0, "left operand", "right operand", 14 },
+	{ "SUB", 0, "left operand", "right operand", 15 } };
 
 size_t get_white_space_length(int this_line, const char* text, size_t length);
 
