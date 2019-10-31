@@ -156,6 +156,7 @@ size_t jsonpl_parse_text(size_t json_text_size, const char* json_text, size_t va
 			All strings in the value tree are null terminated, aligned to size of pointer and
 			if next address after the null character is not aligned to size of pointer,
 			zero bytes are appended after the null terminating character until next address is aligned to size of pointer.
+			This allows strings to be read in pointer sized blocks.
 
 			If the buffer is not large enough to hold the tree data, the contents of the tree value buffer are undefined.
 
