@@ -6,9 +6,9 @@
 		A library without dependencies for parsing JSON text.
 
 		The library provides only one function for parsing the JSON text and
-		defines data structure to represent value tree of JSON text contents.
+		defines a data structure to represent value tree of JSON text contents.
 
-		Documentation of the function and the data structure is provided in the file "json.h".
+		Documentation of the function and the data structure is provided in the file "jsonpl.h".
 		
 	Version history
 		version 0.0.0 2019-xx-xx
@@ -70,7 +70,7 @@ typedef struct jsonpl_value_t
 	Members
 		size
 			The size of this structure, in bytes.
-			The size includes contents pointed by member variables and all of this values child values.
+			The size includes contents pointed by member variables and sizes of child values.
 
 		type
 			The type of this value.
@@ -91,7 +91,7 @@ typedef struct jsonpl_value_t
 				JSON_TYPE_BOOLEAN
 					The specified value is a boolean.
 
-			The constant JSON_TYPE_ERROR is for internal uses of this library only.
+			The constant JSON_TYPE_ERROR is not used. It is for internal uses of this library only.
 
 		array.value_count
 			Value of this member is only valid if type of this value is an array.
@@ -99,16 +99,16 @@ typedef struct jsonpl_value_t
 
 		array.table
 			Value of this member is only valid if type of this value is an array.
-			A pointer to beginning of an array of containing child values.
+			A pointer to beginning of an array of pointers to child values.
 
 		object.value_count
 			Value of this member is only valid if type of this value is an object.
 			The number of values in this object.
 
-		object.table struct
+		object.table
 			Value of this member is only valid if type of this value is an object.
-			A pointer to beginning of an array of containing child values.
-			Elements of this array are structures of tree members that represents name value pairs.
+			A pointer to beginning of an array of pointers to child values.
+			Objects pointed in this array are structures of tree members that represents name value pairs.
 			The member name_length specifies size of this string in bytes not including null terminating character or padding bytes.
 			The member name specifies beginning address of null terminated UTF-8 string that specifies name in a name value pair.
 			The member value specifies address of a child value.
@@ -134,7 +134,7 @@ typedef struct jsonpl_value_t
 size_t jsonpl_parse_text(size_t json_text_size, const char* json_text, size_t value_buffer_size, jsonpl_value_t* value_buffer);
 /*
 	Description
-		The json_parse_text function converts a JSON text to simple tree structure that represents the contents of the JSON text.
+		The json_parse_text function converts a JSON text to tree structure that represents the contents of the JSON text.
 		The parser function unescapes strings and decodes numbers.
 
 	Parameters
@@ -155,7 +155,7 @@ size_t jsonpl_parse_text(size_t json_text_size, const char* json_text, size_t va
 
 			All strings in the value tree are null terminated, aligned to size of pointer and
 			if next address after the null character is not aligned to size of pointer,
-			zero bytes are appended after the null terminating character until next address aligned to size of pointer.
+			zero bytes are appended after the null terminating character until next address is aligned to size of pointer.
 
 			If the buffer is not large enough to hold the tree data, the contents of the tree value buffer are undefined.
 
