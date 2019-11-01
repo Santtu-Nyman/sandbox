@@ -9,12 +9,13 @@
 #include <unistd.h>
 #include <string.h>
 
+#define MASTER_BROADCAST_PORT 1732
+
 int main()
 {
-
     struct sockaddr_in any_address = { 0 };  
     any_address.sin_family = AF_INET;        
-    any_address.sin_port = htons(1234);   
+    any_address.sin_port = htons(MASTER_BROADCAST_PORT);   
     any_address.sin_addr.s_addr = INADDR_ANY;
 
     int error = 0;
@@ -45,7 +46,7 @@ int main()
 
     struct sockaddr_in source_address; 
     int source_address_size = sizeof(struct sockaddr_in);
-    char buffer[16];
+    uint8_t buffer[512];
     
     printf("Waiting broadcast from master\n");
     size_t message_size = (size_t)recvfrom(sock, buffer, sizeof(buffer), 0, (struct sockaddr*)&source_address, &source_address_size);
@@ -57,17 +58,28 @@ int main()
         return error;
     }
     
-    if (message_size != 16 || memcmp(buffer, "TVT17SPL_MASTER", 16))
+    close(sock);
+    
+    if (message_size < 16 || memcmp(buffer, "TVT17SPL_MASTER", 15))
     {
 	error = EBADMSG;
         perror("Error incorrect message received");
-	close(sock);
         return error;
     }
  
-    unsigned long source_ip = ntohl(source_address.sin_addr.s_addr);
-    printf("Master device found at address %u.%u.%u.%u\n", (source_ip >> 24) & 0xFF, (source_ip >> 16) & 0xFF, (source_ip >> 8) & 0xFF, source_ip & 0xFF);
+    unsigned long master_ip = ntohl(source_address.sin_addr.s_addr);
+    uint8_t master_id = buffer[15];
+    printf("Master device %lu found at address %lu.%lu.%lu.%lu\n", (unsigned long)master_id, (master_ip >> 24) & 0xFF, (master_ip >> 16) & 0xFF, (master_ip >> 8) & 0xFF, master_ip & 0xFF);
+    size_t other_device_count = (message_size - 16) / 5;
+    if (other_device_count)
+	for (size_t device_index = 0; device_index != other_device_count; ++device_index)
+	{
+	    unsigned long device_ip = (unsigned long)buffer[16 + (device_index * 5)] | ((unsigned long)buffer[16 + (device_index * 5) + 1] << 8) | ((unsigned long)buffer[16 + (device_index * 5) + 2] << 16) | ((unsigned long)buffer[16 + (device_index * 5) + 3] << 24);
+	    uint8_t device_id = buffer[16 + (device_index * 5) + 4];
+	    printf("Device %lu found at address %lu.%lu.%lu.%lu\n", (unsigned long)device_id, (device_ip >> 24) & 0xFF, (device_ip >> 16) & 0xFF, (device_ip >> 8) & 0xFF, device_ip & 0xFF);
+	}
+    else
+	printf("No other devices\n");
  
-    close(sock);
     return error;
 }
