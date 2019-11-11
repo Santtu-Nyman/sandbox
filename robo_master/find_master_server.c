@@ -104,45 +104,64 @@ int main(int argc, char** argv)
 	struct sockaddr_in source_address;
 	int source_address_size = sizeof(struct sockaddr_in);
 	uint8_t buffer[512];
+	size_t message_size;
 
-	printf("Waiting for system broadcast message...\n");
-	int message_size = recvfrom(sock, (char*)buffer, sizeof(buffer), 0, (struct sockaddr*)&source_address, &source_address_size);
-	if (message_size == -1)
+	uint32_t master_ip_address;
+	uint16_t message_canstant;
+	uint8_t system_status;
+	uint8_t master_id;
+	uint8_t map_height;
+	uint8_t map_width;
+	uint8_t block_count;
+	uint8_t device_count;
+
+	size_t map_size;
+	size_t block_size;
+	size_t device_size;
+
+	for (int wait_for_message = 1; wait_for_message;)
 	{
-		printf("Error receiving from socket\n");
-		closesocket(sock);
-		WSACleanup();
-		return -1;
+		printf("Waiting for system broadcast message...\n");
+		message_size = (size_t)recvfrom(sock, (char*)buffer, sizeof(buffer), 0, (struct sockaddr*) & source_address, &source_address_size);
+		if (message_size == (size_t)-1)
+		{
+			printf("Error receiving from socket\n");
+			closesocket(sock);
+			WSACleanup();
+			return -1;
+		}
+
+		if (message_size < 8)
+			printf("Error received invalid data\n");
+		else
+		{
+			master_ip_address = ntohl(source_address.sin_addr.s_addr);
+			message_canstant = (uint16_t)buffer[0] | (uint16_t)(buffer[1] << 8);
+			system_status = buffer[2];
+			master_id = buffer[3];
+			map_height = buffer[4];
+			map_width = buffer[5];
+			block_count = buffer[6];
+			device_count = buffer[7];
+
+			map_size = (((size_t)map_height * (size_t)map_width) + 7) / 8;
+			block_size = (size_t)block_count * 2;
+			device_size = (size_t)device_count * 8;
+
+			if (message_canstant != 0x0701 || (8 + map_size + block_size + device_size) != message_size)
+				printf("Error received invalid data\n");
+			else if (system_status != 1 && !master_id)
+				printf("Received emergency stop message from QT-Client\n");
+			else
+			{
+				printf("Received system broadcast message\n");
+				wait_for_message = 0;
+			}
+		}
 	}
-	printf("Received system broadcast message\n");
 
 	closesocket(sock);
 	WSACleanup();
-
-	if (message_size < 8)
-	{
-		printf("Error received invalid data\n");
-		return -1;
-	}
-
-	uint32_t master_ip_address = ntohl(source_address.sin_addr.s_addr);
-	uint16_t message_canstant = (uint16_t)buffer[0] | (uint16_t)(buffer[1] << 8);
-	uint8_t system_status = buffer[2];
-	uint8_t master_id = buffer[3];
-	uint8_t map_height = buffer[4];
-	uint8_t map_width = buffer[5];
-	uint8_t block_count = buffer[6];
-	uint8_t device_count = buffer[7];
-
-	size_t map_size = (((size_t)map_height * (size_t)map_width) + 7) / 8;
-	size_t block_size = (size_t)block_count * 2;
-	size_t device_size = (size_t)device_count * 8;
-
-	if (message_canstant != 0x0701 || (8 + map_size + block_size + device_size) != (size_t)message_size)
-	{
-		printf("Error received invalid data\n");
-		return -1;
-	}
 
 	printf("Master %lu device in state %lu at address %lu.%lu.%lu.%lu\n", master_id, system_status, (master_ip_address >> 24), (master_ip_address >> 16) & 0xFF, (master_ip_address >> 8) & 0xFF, master_ip_address & 0xFF);
 
