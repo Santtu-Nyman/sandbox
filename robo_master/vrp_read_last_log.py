@@ -1,4 +1,4 @@
-#example python script for receiving VarastoRobotti system broadcast message (SMB) by Santtu Nyman.
+#example python script for reading five last log entries from VarastoRobotti master server by Santtu Nyman.
 
 import socket
 
@@ -75,40 +75,20 @@ def is_gopigo_at_location(configuration, x, y):
 configuration = find_master_server()
 print("Master device " + str(configuration["master_device_id"]) + " found at address " + configuration["master_device_address"])
 
-print("map")
-line = "     +"
-for x in range(configuration["map_width"]) :
-    line += "-"
-line += "+"
-print(line)
-for y in range(configuration["map_height"]) :
-    line = "    " + str(((configuration["map_height"] - 1) - y) % 10) + "|"
-    for x in range(configuration["map_width"]) :
-        if is_gopigo_at_location(configuration, x, ((configuration["map_height"] - 1) - y)):
-            line += "G"
-        elif is_block_at_location(configuration, x, ((configuration["map_height"] - 1) - y)):
-            line += "B"
-        elif configuration["map"][((configuration["map_height"] - 1) - y) * configuration["map_width"] + x] :
-            line += "#"
-        else:
-            line += " "
-    line += "|"
-    print(line)
-line = "     +"
-for x in range(configuration["map_width"]) :
-    line += "-"
-line += "+"
-print(line)
-line = "      "
-for x in range(configuration["map_width"]) :
-    line += str((x % 10))
-print(line)
-  
-print("blocks(B)")
-for i in range(len(configuration["block_list"])) :
-	print("    Block found at coordinates x=" + str(configuration["block_list"][i]["x"]) + ",y=" + str(configuration["block_list"][i]["y"]) + "")
-    
-print("devices(GoPiGo=G)")
-for i in range(len(configuration["device_list"])) :
-	print("    Device id=" + str(configuration["device_list"][i]["id"]) + " type=" + str(configuration["device_list"][i]["type"]) + " found at coordinates x=" + str(configuration["device_list"][i]["x"]) + ",y=" + str(configuration["device_list"][i]["y"]) + " and address " + str(configuration["device_list"][i]["ip"]) + "")
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.connect((configuration["master_device_address"], 1739))
+#assume connection created
+ncm_data = bytearray(b'\x02\x06\x00\x00\x00\x01\xFF\xFF\xFF\xFF\x01')
+sock.send(ncm_data)
+scm_data = sock.recv(4096)
+#assume valid scm
+rlm_data = bytearray(b'\x0A\x06\x00\x00\x00\x01\x05\x00\x00\x00\x00')
+sock.send(rlm_data)
+rlm_wfm_data = sock.recv(4096)
+#assume valid wfm
+ccm_data = bytearray(b'\x05\x00\x00\x00\x00')
+sock.send(ccm_data)
+ccm_wfm_data = sock.recv(4096)
+last_log_line = str(rlm_wfm_data[12:])
+print(last_log_line)
 exit()
