@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:id="@+id/main_title_rl"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:keepScreenOn="true"
+        android:background="@android:color/black">
+
+        <ImageButton
+            android:id="@+id/ReturnBtnMain"
+            android:layout_width="wrap_content"
+            android:layout_height="35dp"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="15dp"
+            android:adjustViewBounds="true"
+            android:background="@android:color/transparent"
+            android:onClick="onReturn"
+            android:scaleType="centerInside"
+            android:src="@drawable/selector_back_button" />
+
+        <ImageButton
+            android:id="@+id/tracking_drawer_control_ib"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="15dp"
+            android:background="#ff000000"
+            android:src="@drawable/mission_other_icon" />
+    </RelativeLayout>
+
+    <TextureView
+        android:id="@+id/video_previewer_surface"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/main_title_rl"
+        android:layout_centerInParent="true"
+        android:layout_gravity="center" />
+
+    <ImageView
+        android:id="@+id/tracking_rst_rect_iv"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:scaleType="fitXY"
+        android:src="@drawable/visual_track_lowconfidence"
+        android:visibility="invisible" />
+
+    <RelativeLayout
+        android:id="@+id/tracking_bg_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/main_title_rl">
+
+        <EditText
+            android:id="@+id/stopMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="8dp"
+            android:background="#FF0000"
+            android:ems="10"
+            android:gravity="center"
+            android:text="SYSTEM STOP"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:visibility="invisible" />
+
+        <LinearLayout
+            android:id="@+id/ModeLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginLeft="4dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="start|center_vertical"
+                android:text="Modes"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
+
+            <Switch
+                android:id="@+id/switchAutoLand"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:text="AutoLand"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/CaptureLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginRight="4dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="end|center_vertical"
+                android:text="Photo capture"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Spinner
+                    android:id="@+id/spinner"
+                    android:popupBackground="#C0C0C0"
+                    android:layout_width="70dp"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="end|center_vertical"
+                    android:text="Interval"
+                    android:textColor="#FFFFFF" />
+
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/switchAutocapture"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="AutoCapture"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/buttonDL"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:layout_gravity="right"
+                android:onClick="downloadLast"
+                android:text="Download last" />
+
+        </LinearLayout>
+
+
+        <Button
+            android:id="@+id/confirm_btn"
+            android:layout_width="45dp"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/tracking_stop_btn"
+            android:text="A"
+            android:visibility="invisible" />
+
+        <ImageButton
+            android:id="@+id/tracking_stop_btn"
+            android:layout_width="45dp"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/reject_btn"
+            android:background="#00000000"
+            android:scaleType="fitXY"
+            android:src="@drawable/mission_stop"
+            android:text="Stop"
+            android:visibility="invisible" />
+
+        <Button
+            android:id="@+id/reject_btn"
+            android:layout_width="45dp"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/ModeLayout"
+            android:layout_marginBottom="40dp"
+            android:text="R"
+            android:visibility="invisible" />
+
+        <Button
+            android:id="@+id/buttonClientStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="20dp"
+            android:layout_above="@id/textIP"
+            android:layout_centerHorizontal="true"
+            android:background="#00000000"
+            android:onClick="SetForceDisconnect"
+            android:text="NO CLIENT"
+            android:textColor="#FFFF0000"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/textIP"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:paddingBottom="8dp"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold" />
+
+    </RelativeLayout>
+
+
+    <SlidingDrawer
+        android:id="@+id/tracking_drawer_sd"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/main_title_rl"
+        android:layout_alignParentRight="true"
+        android:content="@+id/tracking_drawer_content_rl"
+        android:handle="@+id/tracking_handle"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@id/tracking_handle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <RelativeLayout
+            android:id="@id/tracking_drawer_content_rl"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@id/main_title_rl"
+            android:layout_centerInParent="true">
+
+            <ScrollView
+                android:id="@+id/test_scrollview"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:clickable="false"
+                android:fillViewport="true"
+                android:scrollbars="vertical">
+
+                <TextView
+                    android:id="@+id/tracking_push_tv"
+                    style="@style/test_text"
+                    android:layout_width="210dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/push_info" />
+            </ScrollView>
+
+        </RelativeLayout>
+
+    </SlidingDrawer>
+
+</RelativeLayout>

@@ -1,0 +1,1448 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>QtClient</class>
+ <widget class="QMainWindow" name="QtClient">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1280</width>
+    <height>720</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1280</width>
+    <height>720</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1280</width>
+    <height>750</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>QtClient</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QWidget {
+	background-color: black;
+	color: white;
+	font-size: 16px;
+	border: 1px solid white;
+}
+
+QMenu, QAction {
+	background-color: Orange;
+	color: black;
+}
+
+QCheckBox {
+	padding-left: 6px;
+}</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="minimumSize">
+    <size>
+     <width>1280</width>
+     <height>720</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>1280</width>
+     <height>720</height>
+    </size>
+   </property>
+   <widget class="QTextEdit" name="terminal">
+    <property name="geometry">
+     <rect>
+      <x>970</x>
+      <y>0</y>
+      <width>310</width>
+      <height>490</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>200</width>
+      <height>490</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>310</width>
+      <height>490</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: black;
+font-size: 14px;</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pbRLM">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>640</y>
+      <width>200</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>200</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton::hover {
+	background-color: white;
+	color: brown;
+}
+QPushButton {
+	background-color: brown;
+}
+</string>
+    </property>
+    <property name="text">
+     <string>Send (RLM)
+Read Log Message</string>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinBox_mode">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>490</y>
+      <width>80</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>80</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QSpinBox::hover {
+	background-color: white;
+	color: brown;
+}
+
+QSpinBox {
+	background-color: brown;
+}</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinBox_row_count">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>540</y>
+      <width>80</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>80</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QSpinBox::hover {
+	background-color: white;
+	color: brown;
+}
+
+QSpinBox {
+	background-color: brown;
+}</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinBox_beginning_row">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>590</y>
+      <width>80</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>80</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QSpinBox::hover {
+	background-color: white;
+	color: brown;
+}
+
+QSpinBox {
+	background-color: brown;
+}</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_mode">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>490</y>
+      <width>120</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>120</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>120</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color:  brown;</string>
+    </property>
+    <property name="text">
+     <string>mode</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_row_count">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>540</y>
+      <width>120</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>120</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>120</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color:  brown;</string>
+    </property>
+    <property name="text">
+     <string>row count</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_beginning_row">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>590</y>
+      <width>120</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>120</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>120</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color:  brown;</string>
+    </property>
+    <property name="text">
+     <string>beginning row</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pbSBMfreeze">
+    <property name="geometry">
+     <rect>
+      <x>970</x>
+      <y>640</y>
+      <width>310</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>200</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>310</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">::hover {
+	background-color: white;
+	color: darkred;
+}
+QPushButton {
+	background-color: darkred;
+}</string>
+    </property>
+    <property name="text">
+     <string>EMERGENCY
+STOP</string>
+    </property>
+   </widget>
+   <widget class="QTextEdit" name="server_logs">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>490</y>
+      <width>770</width>
+      <height>200</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>770</width>
+      <height>200</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>770</width>
+      <height>200</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: black;
+font-size: 14px;</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pbSSM">
+    <property name="geometry">
+     <rect>
+      <x>970</x>
+      <y>540</y>
+      <width>310</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>200</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>310</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">::hover {
+	background-color: white;
+	color: darkgreen;
+}
+QPushButton {
+	background-color: darkgreen;
+}
+
+</string>
+    </property>
+    <property name="text">
+     <string>Send (SSM)
+System Startup Message</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pbSHM">
+    <property name="geometry">
+     <rect>
+      <x>970</x>
+      <y>590</y>
+      <width>310</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>200</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>310</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">::hover {
+	background-color: white;
+	color: darkblue;
+}
+QPushButton {
+	background-color: darkblue;
+}</string>
+    </property>
+    <property name="text">
+     <string>Send (SHM)
+System Shutdown Message</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pbUFM">
+    <property name="geometry">
+     <rect>
+      <x>970</x>
+      <y>490</y>
+      <width>310</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>200</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>310</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton::hover {
+	background-color: white;
+	color: darkorange;
+}
+QPushButton {
+	background-color: darkorange;
+}
+
+</string>
+    </property>
+    <property name="text">
+     <string>Send (UFM)
+UnFreeze Message</string>
+    </property>
+   </widget>
+   <widget class="QGraphicsView" name="graphicsView">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>0</y>
+      <width>770</width>
+      <height>490</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>770</width>
+      <height>490</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>770</width>
+      <height>490</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QGraphicsView {
+	background-color: darkgrey;
+border-width:0;
+}</string>
+    </property>
+    <property name="verticalScrollBarPolicy">
+     <enum>Qt::ScrollBarAlwaysOff</enum>
+    </property>
+    <property name="horizontalScrollBarPolicy">
+     <enum>Qt::ScrollBarAlwaysOff</enum>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_product_id">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>194</y>
+      <width>120</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: teal;</string>
+    </property>
+    <property name="text">
+     <string>product id</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pbMCM">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>144</y>
+      <width>200</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>200</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>50</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton:hover {
+	background-color: white;
+	color: purple;
+}
+
+QPushButton {
+	background-color: purple;
+}</string>
+    </property>
+    <property name="text">
+     <string>Send (MCM)
+Move Cell Message</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_send_order_to_2">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>338</y>
+      <width>120</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: teal;</string>
+    </property>
+    <property name="text">
+     <string>send to</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_send_order_to_3">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>386</y>
+      <width>120</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: teal;</string>
+    </property>
+    <property name="text">
+     <string>send to</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_order_destination_9_1">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>338</y>
+      <width>80</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QCheckBox::hover {
+	background-color: white;
+	color: teal;
+}
+
+QCheckBox {
+	background-color: teal;
+}
+</string>
+    </property>
+    <property name="text">
+     <string>(9, 1)</string>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinBox_direction">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>96</y>
+      <width>80</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QSpinBox:hover {
+	background-color: white;
+	color:  purple;
+}
+
+QSpinBox {
+	background-color:  purple;
+}
+
+</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pbPOM">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>434</y>
+      <width>200</width>
+      <height>56</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>200</width>
+      <height>56</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>56</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton::hover {
+	background-color: white;
+	color: teal;
+}
+QPushButton {
+	background-color: teal;
+}
+</string>
+    </property>
+    <property name="text">
+     <string>Send (POM)
+Product Order Message</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_order_destination_9_0">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>386</y>
+      <width>80</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QCheckBox::hover {
+	background-color: white;
+	color: teal;
+}
+
+QCheckBox {
+	background-color: teal;
+}
+</string>
+    </property>
+    <property name="text">
+     <string>(9, 0)</string>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>20</width>
+      <height>20</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_direction">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>96</y>
+      <width>120</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color:  purple;</string>
+    </property>
+    <property name="text">
+     <string>direction</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_control_flag">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>48</y>
+      <width>120</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color:  purple;</string>
+    </property>
+    <property name="text">
+     <string>control flag</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_send_order_to_1">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>290</y>
+      <width>120</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: teal;</string>
+    </property>
+    <property name="text">
+     <string>send to</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_send_order_to_0">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>242</y>
+      <width>120</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: teal;</string>
+    </property>
+    <property name="text">
+     <string>send to</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_order_destination_9_2">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>290</y>
+      <width>80</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QCheckBox::hover {
+	background-color: white;
+	color: teal;
+}
+
+QCheckBox {
+	background-color: teal;
+}
+</string>
+    </property>
+    <property name="text">
+     <string>(9, 2)</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_control_device_id">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>120</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>120</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color:  purple;</string>
+    </property>
+    <property name="text">
+     <string>device id</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinBox_control_device_id">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>0</y>
+      <width>80</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QSpinBox:hover {
+	background-color: white;
+	color:  purple;
+}
+
+QSpinBox {
+	background-color:  purple;
+}
+
+
+</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinBox_product_id">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>194</y>
+      <width>80</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QSpinBox::hover {
+	background-color: white;
+	color: teal;
+}
+QSpinBox {
+	background-color: teal;
+}
+</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinBox_control_flag">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>48</y>
+      <width>80</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QSpinBox:hover {
+	background-color: white;
+	color:  purple;
+}
+
+QSpinBox {
+	background-color:  purple;
+}
+
+</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_order_destination_9_3">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>242</y>
+      <width>80</width>
+      <height>48</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>48</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QCheckBox::hover {
+	background-color: white;
+	color: teal;
+}
+
+QCheckBox {
+	background-color: teal;
+}
+</string>
+    </property>
+    <property name="text">
+     <string>(9, 3)</string>
+    </property>
+   </widget>
+   <zorder>graphicsView</zorder>
+   <zorder>terminal</zorder>
+   <zorder>pbRLM</zorder>
+   <zorder>spinBox_mode</zorder>
+   <zorder>spinBox_row_count</zorder>
+   <zorder>spinBox_beginning_row</zorder>
+   <zorder>label_mode</zorder>
+   <zorder>label_row_count</zorder>
+   <zorder>label_beginning_row</zorder>
+   <zorder>pbSBMfreeze</zorder>
+   <zorder>pbSSM</zorder>
+   <zorder>pbSHM</zorder>
+   <zorder>label_product_id</zorder>
+   <zorder>label_send_order_to_2</zorder>
+   <zorder>label_send_order_to_3</zorder>
+   <zorder>checkBox_order_destination_9_1</zorder>
+   <zorder>spinBox_direction</zorder>
+   <zorder>checkBox_order_destination_9_0</zorder>
+   <zorder>label_direction</zorder>
+   <zorder>label_send_order_to_1</zorder>
+   <zorder>label_send_order_to_0</zorder>
+   <zorder>checkBox_order_destination_9_2</zorder>
+   <zorder>spinBox_product_id</zorder>
+   <zorder>spinBox_control_flag</zorder>
+   <zorder>pbPOM</zorder>
+   <zorder>label_control_flag</zorder>
+   <zorder>label_control_device_id</zorder>
+   <zorder>pbMCM</zorder>
+   <zorder>spinBox_control_device_id</zorder>
+   <zorder>server_logs</zorder>
+   <zorder>pbUFM</zorder>
+   <zorder>checkBox_order_destination_9_3</zorder>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1280</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>1280</width>
+     <height>30</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>1280</width>
+     <height>30</height>
+    </size>
+   </property>
+   <widget class="QMenu" name="Broadcast">
+    <property name="title">
+     <string>Broadcast</string>
+    </property>
+    <addaction name="read_sbm"/>
+   </widget>
+   <widget class="QMenu" name="menuConnection">
+    <property name="title">
+     <string>Connection</string>
+    </property>
+    <addaction name="connect_to_host"/>
+    <addaction name="send_ncm"/>
+    <addaction name="send_ccm"/>
+    <addaction name="send_sqm"/>
+   </widget>
+   <addaction name="Broadcast"/>
+   <addaction name="menuConnection"/>
+  </widget>
+  <action name="read_sbm">
+   <property name="text">
+    <string>Read SBM</string>
+   </property>
+  </action>
+  <action name="connect_to_host">
+   <property name="text">
+    <string>Connect To Host</string>
+   </property>
+  </action>
+  <action name="send_ncm">
+   <property name="text">
+    <string>Send NCM</string>
+   </property>
+  </action>
+  <action name="send_ccm">
+   <property name="text">
+    <string>Send CCM</string>
+   </property>
+  </action>
+  <action name="send_sqm">
+   <property name="text">
+    <string>Send SQM</string>
+   </property>
+  </action>
+ </widget>
+ <tabstops>
+  <tabstop>pbRLM</tabstop>
+  <tabstop>spinBox_mode</tabstop>
+  <tabstop>spinBox_row_count</tabstop>
+  <tabstop>spinBox_beginning_row</tabstop>
+  <tabstop>pbSBMfreeze</tabstop>
+  <tabstop>terminal</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>
