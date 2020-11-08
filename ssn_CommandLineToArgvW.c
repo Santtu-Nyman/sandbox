@@ -66,7 +66,7 @@ WCHAR** ssn_CommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 		}
 
 		size_t executable_name_length = (size_t)GetModuleFileNameW(0, (WCHAR*)((uintptr_t)executable_name_buffer + (2 * sizeof(WCHAR*))), (executable_name_buffer_size - (2 * sizeof(WCHAR*))) / sizeof(WCHAR));
-		if (!executable_name_length || executable_name_length > executable_name_buffer_size)
+		if (!executable_name_length || executable_name_length > (executable_name_buffer_size / sizeof(WCHAR)))
 		{
 			WCHAR** new_executable_name_buffer = (WCHAR**)LocalReAlloc(executable_name_buffer, (2 * sizeof(WCHAR*)) + ((max_file_name_length + 1) * sizeof(WCHAR)), 0);
 			if (!new_executable_name_buffer)
@@ -87,7 +87,7 @@ WCHAR** ssn_CommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 			}
 
 			executable_name_length = (size_t)(size_t)GetModuleFileNameW(0, (WCHAR*)((uintptr_t)executable_name_buffer + (2 * sizeof(WCHAR*))), (executable_name_buffer_size - (2 * sizeof(WCHAR*))) / sizeof(WCHAR));
-			if (!executable_name_length || executable_name_length > executable_name_buffer_size)
+			if (!executable_name_length || executable_name_length > (executable_name_buffer_size / sizeof(WCHAR)))
 			{
 				DWORD realloc_error = GetLastError();
 				LocalFree(executable_name_buffer);
