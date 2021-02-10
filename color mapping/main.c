@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 #include "ssn_display_window.h"
 
 void vector_3d(float alpha, float beta, float length, float* x, float* z, float* y)
@@ -65,8 +66,8 @@ void test_color_map(int width, int height, size_t intensity_stride, const float*
 	absolute_mask = _mm_shuffle_epi32(absolute_mask, 0);
 	__m128i opaque_alpha = _mm_cvtsi32_si128((int)0xFF000000);
 	opaque_alpha = _mm_shuffle_epi32(opaque_alpha, 0);
-	size_t intensity_row_jump = ((size_t)width * sizeof(float)) - intensity_stride;
-	size_t image_row_jump = ((size_t)width * sizeof(uint32_t)) - image_stride;
+	size_t intensity_row_jump = intensity_stride - ((size_t)width * sizeof(float));
+	size_t image_row_jump = image_stride - ((size_t)width * sizeof(uint32_t));
 	for (int y = 0; y != height; ++y)
 	{
 		const float* intensity_data_end = intensity_data + (width & ~0x3);
@@ -121,9 +122,78 @@ void test_color_map(int width, int height, size_t intensity_stride, const float*
 	*/
 }
 
+void jet_color_map(int width, int height, size_t intensity_stride, const float* intensity, size_t image_stride, uint32_t* image)
+{
+	/*
+		x >= 0.0
+		x <= 1.0
+		r >= 0.0
+		r <= 255.0
+		g >= 0.0
+		g <= 255.0
+		b >= 0.0
+		b <= 255.0
+		a = 255.0
+		r = max(0.0, min(255.0, abs(x + -0.75) * -1020.0 + 382.5))
+		g = max(0.0, min(255.0, abs(x +  -0.5) * -1020.0 + 382.5))
+		b = max(0.0, min(255.0, abs(x + -0.25) * -1020.0 + 382.5))
+		a = max(0.0, min(255.0, abs(x +   0.0) *     0.0 + 382.5)) = 255.0
+	*/
+	__m128i shuffle_control = _mm_cvtsi32_si128((int)0x0C000408);
+	shuffle_control = _mm_insert_epi16(shuffle_control, (int)0x8080, (int)2);
+	shuffle_control = _mm_insert_epi16(shuffle_control, (int)0x8080, (int)3);
+	shuffle_control = _mm_shuffle_epi32(shuffle_control, (int)0x54); // { 8, 4, 0, 12, null, null, null, null, null, null, null, null, null, null, null, null }
+	__m128 absolute_mask = _mm_castsi128_ps(_mm_cvtsi32_si128((int)0x7FFFFFFF)); // everything except sing bit set
+	absolute_mask = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(absolute_mask), (int)0x00));
+	__m128 offsets = _mm_castsi128_ps(_mm_cvtsi32_si128((int)0xBF400000));
+	offsets = _mm_castsi128_ps(_mm_insert_epi16(_mm_castps_si128(offsets), (int)0xBF00, (int)3));
+	offsets = _mm_castsi128_ps(_mm_insert_epi16(_mm_castps_si128(offsets), (int)0xBE80, (int)5)); // { -0.75f, -0.5f, -0.25f, 0.0f }
+	__m128 multipliers = _mm_castsi128_ps(_mm_cvtsi32_si128((int)0xC47F0000));
+	multipliers = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(multipliers), (int)0x40)); // { -1020.0f, -1020.0f, -1020.0f, 0.0f }
+	__m128 increments = _mm_castsi128_ps(_mm_cvtsi32_si128((int)0x43BF4000));
+	increments = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(increments), (int)0x00)); // { 382.5f, 382.5f, 382.5f, 382.5f }
+	__m128 clamp_max = _mm_castsi128_ps(_mm_cvtsi32_si128((int)0x437F0000));
+	clamp_max = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(clamp_max), (int)0x00)); // { 255.0f, 255.0f, 255.0f, 255.0f }
+	__m128 clamp_min = _mm_setzero_ps();
+	__m128 data = _mm_undefined_ps();
+	size_t intensity_row_size = (size_t)width * sizeof(float);
+	size_t intensity_row_jump = intensity_stride - intensity_row_size;
+	size_t image_row_jump = image_stride - ((size_t)width * sizeof(uint32_t));
+	for (const float* intensity_end = (const float*)((uintptr_t)intensity + ((size_t)height * intensity_stride));
+		intensity != intensity_end;
+		intensity = (const float*)((uintptr_t)intensity + intensity_row_jump), image = (uint32_t*)((uintptr_t)image + image_row_jump))
+	{
+		for (const float* intensity_row_end = (const float*)((uintptr_t)intensity + intensity_row_size); intensity != intensity_row_end; ++intensity, ++image)
+		{
+			data = _mm_load_ps1(intensity);
+			data = _mm_add_ps(data, offsets);
+			data = _mm_and_ps(data, absolute_mask);
+			//data = _mm_mul_ps(data, multipliers);
+			//data = _mm_add_ps(data, increments);
+			data = _mm_fmadd_ps(data, multipliers, increments); /* FMA is needed for this */
+			data = _mm_min_ps(data, clamp_max);
+			data = _mm_max_ps(data, clamp_min);
+			data = _mm_castsi128_ps(_mm_cvttps_epi32(data));
+			data = _mm_castsi128_ps(_mm_shuffle_epi8(_mm_castps_si128(data), shuffle_control)); /* SSSE3 is needed for this */
+			_mm_storeu_si32((void*)image, _mm_castps_si128(data));
+		}
+	}
+}
+
 void map_color_of_map(int width, int height, size_t value_stride, float* value_map, size_t color_stride, uint32_t* color_map)
 {
-	test_color_map(width, height, value_stride, value_map, color_stride, color_map);
+	uint64_t performance_frequency;
+	uint64_t start_time;
+	uint64_t end_time;
+	QueryPerformanceFrequency((LARGE_INTEGER*)&performance_frequency);
+	QueryPerformanceCounter((LARGE_INTEGER*)&start_time);
+	for (int c = 100; c--;)
+	{
+		jet_color_map(width, height, value_stride, value_map, color_stride, color_map);
+	}
+	QueryPerformanceCounter((LARGE_INTEGER*)&end_time);
+	printf("jet_color_map AVG: %f\n", ((double)(end_time - start_time) / (double)performance_frequency) / 100.0);
+
 	/*
 	float* value_row = value_map;
 	uint32_t* color_row = color_map;
@@ -201,8 +271,46 @@ void vd_map_process(int width, int height, size_t stride, float* map, float radi
 	}
 }
 
+void squeeze_2d(int width, int height, size_t stride, float* map)
+{
+	float min_value = *map;
+	float max_value = *map;
+	float* row = map;
+	for (int i = 0; i != height; ++i)
+	{
+		for (int j = 0; j != width; ++j)
+		{
+			float value = row[j];
+			if (value < min_value)
+				min_value = value;
+			if (value > max_value)
+				max_value = value;
+		}
+		row = (float*)((uintptr_t)row + stride);
+	}
+	float scaling_multiplier = 1.0f / (max_value - min_value);
+	float scaling_increment = scaling_multiplier * -min_value;
+	row = map;
+	for (int i = 0; i != height; ++i)
+	{
+		for (int j = 0; j != width; ++j)
+		{
+			float value = row[j];
+			row[j] = value * scaling_multiplier + scaling_increment;
+			//assert(row[j] >= -0.01f && row[j] <= 1.01f);
+		}
+		row = (float*)((uintptr_t)row + stride);
+	}
+}
+
 int main(int argv, char** argc)
 {
+	const float tau = 6.28318530718f;
+
+	
+	return 0;
+	
+	/*
 	const float tau = 6.28318530718f;
 
 	for (;;)
@@ -237,4 +345,5 @@ int main(int argv, char** argc)
 	}
 
 	return 0;
+	*/
 }
