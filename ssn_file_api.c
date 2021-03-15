@@ -27,7 +27,7 @@ static size_t ssn_internal_root_directory_length(size_t path_langth, const char*
 {
 	if (path_langth > 4 && path[0] == '\\' && path[1] == '\\' && path[2] == '?' && path[3] == '\\')
 	{
-		if (path_langth > 6 && path[4] != '\\' && path[4] != '/' && path[5] == ':' && path[6] == '\\')
+		if (path_langth > 6 && path[4] != '\\' && path[4] != '/' && path[5] == ':' && (path[6] == '\\' || path[6] == '/'))
 			return 7;
 		else if ((path[4] == 'U' || path[4] == 'u') && (path[5] == 'N' || path[5] == 'n') && (path[6] == 'C' || path[6] == 'c') && (path[7] == '\\' || path[7] == '/'))
 		{
@@ -48,7 +48,7 @@ static size_t ssn_internal_root_directory_length(size_t path_langth, const char*
 	}
 	else
 	{
-		if (path_langth > 2 && path[0] != '\\' && path[0] != '/' && path[1] == ':' && path[2] == '\\')
+		if (path_langth > 2 && path[0] != '\\' && path[0] != '/' && path[1] == ':' && (path[2] == '\\' || path[2] == '/'))
 			return 3;
 		else if (path_langth > 2 && (path[0] == '\\' || path[0] == '/') && (path[1] == '\\' || path[1] == '/'))
 		{
