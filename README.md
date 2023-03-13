@@ -1,2 +1,2 @@
 # sandbox
-Random code snippets, old projects, some documents and stuff
+This repository exist for self plagiarism. It contains random code snippets, old projects, some documents and stuff.
