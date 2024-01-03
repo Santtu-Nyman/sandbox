@@ -35,7 +35,7 @@ static SIZE_T ssn_win32_absolute_path_volume_directory_part_length(SIZE_T path_l
 {
 	if (path_length > 4 && path[0] == L'\\' && path[1] == L'\\' && path[2] == L'?' && path[3] == L'\\')
 	{
-		if (path_length > 6 && (path[4] != L'\\' && path[4] != L'/') && path[5] == L':' && path[6] == L'\\')
+		if (path_length > 6 && (path[4] != L'\\' && path[4] != L'/') && path[5] == L':' && (path[6] == L'\\' || path[6] == L'/'))
 		{
 			return 7;
 		}
@@ -68,7 +68,7 @@ static SIZE_T ssn_win32_absolute_path_volume_directory_part_length(SIZE_T path_l
 	}
 	else if (path_length > 4 && path[0] == L'\\' && path[1] == L'?' && path[2] == L'?' && path[3] == L'\\')
 	{
-		if (path_length > 6 && (path[4] != L'\\' && path[4] != L'/') && path[5] == L':' && path[6] == L'\\')
+		if (path_length > 6 && (path[4] != L'\\' && path[4] != L'/') && path[5] == L':' && (path[6] == L'\\' || path[6] == L'/'))
 		{
 			return 7;
 		}
@@ -101,7 +101,7 @@ static SIZE_T ssn_win32_absolute_path_volume_directory_part_length(SIZE_T path_l
 	}
 	else
 	{
-		if (path_length > 2 && path[0] != L'\\' && path[0] != L'/' && path[1] == L':' && path[2] == L'\\')
+		if (path_length > 2 && path[0] != L'\\' && path[0] != L'/' && path[1] == L':' && (path[2] == L'\\' || path[2] == L'/'))
 		{
 			return 3;
 		}
@@ -697,7 +697,7 @@ static SIZE_T ssn_win32_absolute_path_volume_directory_part_length_utf8(SIZE_T p
 {
 	if (path_length > 4 && path[0] == '\\' && path[1] == '\\' && path[2] == '?' && path[3] == '\\')
 	{
-		if (path_length > 6 && (path[4] != '\\' && path[4] != '/') && path[5] == ':' && path[6] == '\\')
+		if (path_length > 6 && (path[4] != '\\' && path[4] != '/') && path[5] == ':' && (path[6] == '\\' || path[6] == '/'))
 		{
 			return 7;
 		}
@@ -730,7 +730,7 @@ static SIZE_T ssn_win32_absolute_path_volume_directory_part_length_utf8(SIZE_T p
 	}
 	else if (path_length > 4 && path[0] == '\\' && path[1] == '?' && path[2] == '?' && path[3] == '\\')
 	{
-		if (path_length > 6 && (path[4] != '\\' && path[4] != '/') && path[5] == ':' && path[6] == '\\')
+		if (path_length > 6 && (path[4] != '\\' && path[4] != '/') && path[5] == ':' && (path[6] == '\\' || path[6] == '/'))
 		{
 			return 7;
 		}
@@ -763,7 +763,7 @@ static SIZE_T ssn_win32_absolute_path_volume_directory_part_length_utf8(SIZE_T p
 	}
 	else
 	{
-		if (path_length > 2 && path[0] != '\\' && path[0] != '/' && path[1] == ':' && path[2] == '\\')
+		if (path_length > 2 && path[0] != '\\' && path[0] != '/' && path[1] == ':' && (path[2] == '\\' || path[2] == '/'))
 		{
 			return 3;
 		}
