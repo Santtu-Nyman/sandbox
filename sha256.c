@@ -160,7 +160,7 @@ void Sha256Finalize(Sha256Context* Context, void* Digest)
 	uint64_t BitSize = Context->Size << 3;
 	for (int i = 0; i < 8; i++)
 	{
-		Context->Input[56 + i] = (uint8_t)(BitSize >> ((7 - i) * 8));
+		Context->Input[56 + i] = (uint8_t)(BitSize >> ((7 - i) << 3));
 	}
 	Sha256InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
 	for (int i = 0; i < 8; i++)
