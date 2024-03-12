@@ -183,6 +183,10 @@ void UuidInternalSha256Finalize(UuidInternalSha256Context* Context, void* Digest
 typedef struct
 {
 	void* BufferAddress;
+	WCHAR* ImageFilePath;
+	DWORD ImageFilePathLength;
+	HANDLE ImageFileHandle;
+	BY_HANDLE_FILE_INFORMATION ImageFileInformation;
 	DWORD ComputerNameLength;
 	WCHAR ComputerName[MAX_COMPUTERNAME_LENGTH + 1];
 	SYSTEM_INFO SystemInfo;
@@ -235,17 +239,71 @@ typedef struct
 
 static void UuidInternalGenerateRandomSeed(uint64_t* Nonce, void* RandomSeed)
 {
+	SYSTEM_INFO SystemInfo;
+	memset(&SystemInfo, 0, sizeof(SYSTEM_INFO));
+	GetSystemInfo(&SystemInfo);
+	if (!SystemInfo.dwPageSize)
+	{
+#if defined(_M_IX86) || defined(_M_X64) || defined(_M_AMD64) || defined(__x86_64__) || defined(__x86_64) || defined(__i386__) || defined(__i386)
+		SystemInfo.dwPageSize = 0x1000;
+#else
+		SystemInfo.dwPageSize = 0x10000;
+#endif
+	}
+
+	WCHAR ImageFilePathShortBuffer[MAX_PATH + 1];
+	WCHAR* ImageFilePath = &ImageFilePathShortBuffer[0];
+	DWORD ImageFilePathLength = GetModuleFileNameW(0, ImageFilePath, MAX_PATH + 1);
+	HANDLE ImageFileHandle = INVALID_HANDLE_VALUE;
+	BY_HANDLE_FILE_INFORMATION ImageFileInformation;
+	memset(&ImageFileInformation, 0, sizeof(BY_HANDLE_FILE_INFORMATION));
+	if (!ImageFilePathLength || ImageFilePathLength > MAX_PATH)
+	{
+		ImageFilePath = (WCHAR*)VirtualAlloc(0, ((((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR)) + ((size_t)SystemInfo.dwPageSize - 1)) & ~((size_t)SystemInfo.dwPageSize - 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+		if (ImageFilePath)
+		{
+			ImageFilePathLength = GetModuleFileNameW(0, ImageFilePath, UNICODE_STRING_MAX_CHARS + 1);
+			if (!ImageFilePathLength || ImageFilePathLength > UNICODE_STRING_MAX_CHARS)
+			{
+				VirtualFree(ImageFilePath, 0, MEM_RELEASE);
+				ImageFilePath = &ImageFilePathShortBuffer[0];
+				ImageFilePathLength = 0;
+			}
+		}
+		else
+		{
+			ImageFilePath = &ImageFilePathShortBuffer[0];
+			ImageFilePathLength = 0;
+		}
+	}
+	if (ImageFilePathLength)
+	{
+		ImageFileHandle = CreateFileW(ImageFilePath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, 0, 0);
+		if (ImageFilePath != &ImageFilePathShortBuffer[0])
+		{
+			VirtualFree(ImageFilePath, 0, MEM_RELEASE);
+		}
+		if (ImageFileHandle != INVALID_HANDLE_VALUE)
+		{
+			GetFileInformationByHandle(ImageFileHandle, &ImageFileInformation);
+			CloseHandle(ImageFileHandle);
+		}
+	}
+
 	HANDLE CurrentProcess = GetCurrentProcess();
 	HANDLE CurrentThread = GetCurrentThread();
 	DWORD64 SystemTime = 0;
 	GetSystemTimeAsFileTime((FILETIME*)&SystemTime);
 	UuidInternalGenerateRandomSeedData Data;
-
 	memset(&Data, 0, sizeof(UuidInternalGenerateRandomSeedData));
 	Data.BufferAddress = &Data;
+	Data.ImageFilePath = ImageFilePath;
+	Data.ImageFilePathLength = ImageFilePathLength;
+	Data.ImageFileHandle = ImageFileHandle;
+	memcpy(&Data.ImageFileInformation, &ImageFileInformation, sizeof(BY_HANDLE_FILE_INFORMATION));
 	Data.ComputerNameLength = MAX_COMPUTERNAME_LENGTH + 1;
 	GetComputerNameW(&Data.ComputerName[0], &Data.ComputerNameLength);
-	GetSystemInfo(&Data.SystemInfo);
+	memcpy(&Data.SystemInfo, &SystemInfo, sizeof(SYSTEM_INFO));
 	Data.LargePageMinimum = GetLargePageMinimum();
 	GetPhysicallyInstalledSystemMemory(&Data.PhysicallyInstalledSystemMemory);
 	Data.MaximumProcessorGroupCount = GetMaximumProcessorGroupCount();
