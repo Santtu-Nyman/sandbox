@@ -183,8 +183,6 @@ void UuidInternalSha256Finalize(UuidInternalSha256Context* Context, void* Digest
 typedef struct
 {
 	void* BufferAddress;
-	WCHAR* ImageFilePath;
-	DWORD ImageFilePathLength;
 	HANDLE ImageFileHandle;
 	BY_HANDLE_FILE_INFORMATION ImageFileInformation;
 	DWORD ComputerNameLength;
@@ -192,13 +190,16 @@ typedef struct
 	SYSTEM_INFO SystemInfo;
 	SIZE_T LargePageMinimum;
 	ULONGLONG PhysicallyInstalledSystemMemory;
+	BOOL AutomaticSystemResume;
 	WORD MaximumProcessorGroupCount;
 	DWORD FirstGroupMaximumProcessorCount;
 	ULONG HighestNumaNodeNumber;
 	HMODULE ImageBase;
 	HMODULE Kernel32;
+	HMODULE Advapi32;
 	HANDLE CurrentProcess;
 	HANDLE CurrentThread;
+	HANDLE CurrentProcessToken;
 	WCHAR* CommandLine;
 	STARTUPINFOW StartupInfo;
 	DWORD ThreadErrorMode;
@@ -237,6 +238,14 @@ typedef struct
 	DWORD64 ProcessorClockCycles;
 } UuidInternalGenerateRandomSeedData;
 
+#define UUID_INTERNAL_EXPECTED_TOKEN_USER_SIZE (sizeof(TOKEN_USER) + (size_t)&((const SID*)0)->SubAuthority[5])
+#define UUID_INTERNAL_MAX_USER_NAME_SIZE (((size_t)256 + 1) * sizeof(WCHAR))
+#define UUID_INTERNAL_MAX_FILE_PATH_SIZE (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR))
+#define UUID_INTERNAL_HW_PROFILE_SIZE (sizeof(HW_PROFILE_INFOW))
+#define UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 (UUID_INTERNAL_EXPECTED_TOKEN_USER_SIZE > UUID_INTERNAL_MAX_USER_NAME_SIZE ? UUID_INTERNAL_EXPECTED_TOKEN_USER_SIZE : UUID_INTERNAL_MAX_USER_NAME_SIZE)
+#define UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1 (UUID_INTERNAL_MAX_FILE_PATH_SIZE > UUID_INTERNAL_HW_PROFILE_SIZE ? UUID_INTERNAL_MAX_FILE_PATH_SIZE : UUID_INTERNAL_HW_PROFILE_SIZE)
+#define UUID_INTERNAL_TEMPORAL_BUFFER_SIZE (UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 > UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1 ? UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 : UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1)
+
 static void UuidInternalGenerateRandomSeed(uint64_t* Nonce, void* RandomSeed)
 {
 	SYSTEM_INFO SystemInfo;
@@ -250,55 +259,108 @@ static void UuidInternalGenerateRandomSeed(uint64_t* Nonce, void* RandomSeed)
 		SystemInfo.dwPageSize = 0x10000;
 #endif
 	}
+	size_t BufferSize = (UUID_INTERNAL_TEMPORAL_BUFFER_SIZE + ((size_t)SystemInfo.dwPageSize - 1)) & ~((size_t)SystemInfo.dwPageSize - 1);
+	void* Buffer = (void*)VirtualAlloc(0, BufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
-	WCHAR ImageFilePathShortBuffer[MAX_PATH + 1];
-	WCHAR* ImageFilePath = &ImageFilePathShortBuffer[0];
-	DWORD ImageFilePathLength = GetModuleFileNameW(0, ImageFilePath, MAX_PATH + 1);
+	HMODULE Kernel32Module = GetModuleHandleW(L"Kernel32.dll");
+
+	DWORD64 SystemTime = 0;
+	GetSystemTimeAsFileTime((FILETIME*)&SystemTime);
+
+	UuidInternalSha256Context Sha256Context;
+	UuidInternalSha256Initialize(&Sha256Context);
+
 	HANDLE ImageFileHandle = INVALID_HANDLE_VALUE;
 	BY_HANDLE_FILE_INFORMATION ImageFileInformation;
 	memset(&ImageFileInformation, 0, sizeof(BY_HANDLE_FILE_INFORMATION));
-	if (!ImageFilePathLength || ImageFilePathLength > MAX_PATH)
+	if (Buffer)
 	{
-		ImageFilePath = (WCHAR*)VirtualAlloc(0, ((((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR)) + ((size_t)SystemInfo.dwPageSize - 1)) & ~((size_t)SystemInfo.dwPageSize - 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-		if (ImageFilePath)
+		WCHAR* ImageFilePath = (WCHAR*)Buffer;
+		DWORD ImageFilePathLength = GetModuleFileNameW(0, ImageFilePath, UNICODE_STRING_MAX_CHARS + 1);
+		if (!ImageFilePathLength || ImageFilePathLength > UNICODE_STRING_MAX_CHARS)
 		{
-			ImageFilePathLength = GetModuleFileNameW(0, ImageFilePath, UNICODE_STRING_MAX_CHARS + 1);
-			if (!ImageFilePathLength || ImageFilePathLength > UNICODE_STRING_MAX_CHARS)
-			{
-				VirtualFree(ImageFilePath, 0, MEM_RELEASE);
-				ImageFilePath = &ImageFilePathShortBuffer[0];
-				ImageFilePathLength = 0;
-			}
-		}
-		else
-		{
-			ImageFilePath = &ImageFilePathShortBuffer[0];
+			ImageFilePath = 0;
 			ImageFilePathLength = 0;
 		}
-	}
-	if (ImageFilePathLength)
-	{
-		ImageFileHandle = CreateFileW(ImageFilePath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, 0, 0);
-		if (ImageFilePath != &ImageFilePathShortBuffer[0])
+		if (ImageFilePathLength)
 		{
-			VirtualFree(ImageFilePath, 0, MEM_RELEASE);
-		}
-		if (ImageFileHandle != INVALID_HANDLE_VALUE)
-		{
-			GetFileInformationByHandle(ImageFileHandle, &ImageFileInformation);
-			CloseHandle(ImageFileHandle);
+			ImageFileHandle = CreateFileW(ImageFilePath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, 0, 0);
+			if (ImageFileHandle != INVALID_HANDLE_VALUE)
+			{
+				GetFileInformationByHandle(ImageFileHandle, &ImageFileInformation);
+				CloseHandle(ImageFileHandle);
+			}
+			UuidInternalSha256Update(&Sha256Context, (size_t)ImageFilePathLength * sizeof(WCHAR), ImageFilePath);
 		}
 	}
 
+	HMODULE Advapi32Module = LoadLibraryW(L"Advapi32.dll");
+	BOOL (WINAPI* OpenProcessTokenProcedure)(HANDLE ProcessHandle, DWORD DesiredAccess, PHANDLE TokenHandle) = 0;
+	BOOL (WINAPI* GetTokenInformationProcedure)(HANDLE TokenHandle, TOKEN_INFORMATION_CLASS TokenInformationClass, LPVOID TokenInformation, DWORD TokenInformationLength, PDWORD ReturnLength) = 0;
+	DWORD (WINAPI* GetLengthSidProcedure)(PSID pSid) = 0;
+	BOOL (WINAPI* GetUserNameWProcedure)(LPWSTR lpBuffer, LPDWORD pcbBuffer) = 0;
+	BOOL (WINAPI * GetCurrentHwProfileWProcedure)(LPHW_PROFILE_INFOW lpHwProfileInfo) = 0;
+	if (Advapi32Module)
+	{
+		OpenProcessTokenProcedure = (BOOL (WINAPI*)(HANDLE, DWORD, PHANDLE))GetProcAddress(Advapi32Module, "OpenProcessToken");
+		GetTokenInformationProcedure = (BOOL (WINAPI*)(HANDLE, TOKEN_INFORMATION_CLASS, LPVOID, DWORD, PDWORD))GetProcAddress(Advapi32Module, "GetTokenInformation");
+		GetLengthSidProcedure = (DWORD (WINAPI*)(PSID))GetProcAddress(Advapi32Module, "GetLengthSid");
+		GetUserNameWProcedure = (BOOL (WINAPI*)(LPWSTR, LPDWORD))GetProcAddress(Advapi32Module, "GetUserNameW");
+		GetCurrentHwProfileWProcedure = (BOOL (WINAPI*)(LPHW_PROFILE_INFOW))GetProcAddress(Advapi32Module, "GetCurrentHwProfileW");
+	}
+
 	HANDLE CurrentProcess = GetCurrentProcess();
+	HANDLE CurrentProcessTokenHandle = 0;
+	if (Buffer && OpenProcessTokenProcedure && GetTokenInformationProcedure && GetLengthSidProcedure)
+	{
+		if (OpenProcessTokenProcedure(CurrentProcess, TOKEN_QUERY, &CurrentProcessTokenHandle))
+		{
+			DWORD TokenUserSize = 0;
+			TOKEN_USER* TokenUserData = (TOKEN_USER*)Buffer;
+			memset(TokenUserData, 0, BufferSize);
+			if (GetTokenInformationProcedure(CurrentProcessTokenHandle, TokenUser, TokenUserData, (DWORD)BufferSize, &TokenUserSize))
+			{
+				DWORD TokenUserSIDSize = GetLengthSidProcedure(TokenUserData->User.Sid);
+				UuidInternalSha256Update(&Sha256Context, (size_t)TokenUserSIDSize, TokenUserData->User.Sid);
+			}
+			CloseHandle(CurrentProcessTokenHandle);
+		}
+	}
+
+	if (Buffer && GetUserNameWProcedure)
+	{
+		WCHAR* UserName = (WCHAR*)Buffer;
+		DWORD UserNameLength = (DWORD)(BufferSize / sizeof(WCHAR));
+		memset(UserName, 0, (size_t)UserNameLength * sizeof(WCHAR));
+		if (GetUserNameWProcedure(UserName, &UserNameLength))
+		{
+			UuidInternalSha256Update(&Sha256Context, (size_t)UserNameLength * sizeof(WCHAR), UserName);
+		}
+	}
+
+	if (Buffer && GetCurrentHwProfileWProcedure)
+	{
+		HW_PROFILE_INFOW* HwProfileInfo = (HW_PROFILE_INFOW*)Buffer;
+		if (GetCurrentHwProfileWProcedure(HwProfileInfo))
+		{
+			UuidInternalSha256Update(&Sha256Context, sizeof(HW_PROFILE_INFOW), HwProfileInfo);
+		}
+	}
+
+	if (Advapi32Module)
+	{
+		FreeLibrary(Advapi32Module);
+	}
+
+	if (Buffer)
+	{
+		VirtualFree(Buffer, 0, MEM_RELEASE);
+	}
+
 	HANDLE CurrentThread = GetCurrentThread();
-	DWORD64 SystemTime = 0;
-	GetSystemTimeAsFileTime((FILETIME*)&SystemTime);
 	UuidInternalGenerateRandomSeedData Data;
 	memset(&Data, 0, sizeof(UuidInternalGenerateRandomSeedData));
-	Data.BufferAddress = &Data;
-	Data.ImageFilePath = ImageFilePath;
-	Data.ImageFilePathLength = ImageFilePathLength;
+	Data.BufferAddress = Buffer;
 	Data.ImageFileHandle = ImageFileHandle;
 	memcpy(&Data.ImageFileInformation, &ImageFileInformation, sizeof(BY_HANDLE_FILE_INFORMATION));
 	Data.ComputerNameLength = MAX_COMPUTERNAME_LENGTH + 1;
@@ -306,13 +368,16 @@ static void UuidInternalGenerateRandomSeed(uint64_t* Nonce, void* RandomSeed)
 	memcpy(&Data.SystemInfo, &SystemInfo, sizeof(SYSTEM_INFO));
 	Data.LargePageMinimum = GetLargePageMinimum();
 	GetPhysicallyInstalledSystemMemory(&Data.PhysicallyInstalledSystemMemory);
+	Data.AutomaticSystemResume = IsSystemResumeAutomatic();
 	Data.MaximumProcessorGroupCount = GetMaximumProcessorGroupCount();
 	Data.FirstGroupMaximumProcessorCount = GetMaximumProcessorCount(0);
 	GetNumaHighestNodeNumber(&Data.HighestNumaNodeNumber);
 	Data.ImageBase = (HMODULE)&__ImageBase;
-	Data.Kernel32 = GetModuleHandleW(L"Kernel32.dll");
+	Data.Kernel32 = Kernel32Module;
+	Data.Advapi32 = Advapi32Module;
 	Data.CurrentProcess = CurrentProcess;
 	Data.CurrentThread = CurrentThread;
+	Data.CurrentProcessToken = CurrentProcessTokenHandle;
 	Data.CommandLine = GetCommandLineW();
 	GetStartupInfoW(&Data.StartupInfo);
 	Data.ThreadErrorMode = GetThreadErrorMode();
@@ -348,8 +413,6 @@ static void UuidInternalGenerateRandomSeed(uint64_t* Nonce, void* RandomSeed)
 
 	*Nonce = (uint64_t)SystemTime;
 
-	UuidInternalSha256Context Sha256Context;
-	UuidInternalSha256Initialize(&Sha256Context);
 	UuidInternalSha256Update(&Sha256Context, sizeof(UuidInternalGenerateRandomSeedData), &Data);
 	UuidInternalSha256Finalize(&Sha256Context, RandomSeed);
 }
