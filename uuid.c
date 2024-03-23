@@ -183,7 +183,10 @@ void UuidInternalSha256Finalize(UuidInternalSha256Context* Context, void* Digest
 typedef struct
 {
 	void* BufferAddress;
+	DWORD CpuId0To1ABCD[8];
+	DWORD CpuId80000000To80000004ABCD[20];
 	HANDLE ImageFileHandle;
+	HANDLE VolumeHandle;
 	BY_HANDLE_FILE_INFORMATION ImageFileInformation;
 	DWORD ComputerNameLength;
 	WCHAR ComputerName[MAX_COMPUTERNAME_LENGTH + 1];
@@ -194,6 +197,8 @@ typedef struct
 	WORD MaximumProcessorGroupCount;
 	DWORD FirstGroupMaximumProcessorCount;
 	ULONG HighestNumaNodeNumber;
+	DWORD RegistryQuotaAllowed;
+	DWORD RegistryQuotaUsed;
 	HMODULE ImageBase;
 	HMODULE Kernel32;
 	HMODULE Advapi32;
@@ -224,6 +229,7 @@ typedef struct
 	int CurrentThreadPriority;
 	DWORD CurrentProcessClass;
 	DWORD CurrentProcessHandleCount;
+	SYSTEMTIME LocalTime;
 	IO_COUNTERS CurrentProcessIoCounters;
 	FILETIME CurrentProcessCreationTime;
 	FILETIME CurrentProcessExitTime;
@@ -240,7 +246,7 @@ typedef struct
 
 #define UUID_INTERNAL_EXPECTED_TOKEN_USER_SIZE (sizeof(TOKEN_USER) + (size_t)&((const SID*)0)->SubAuthority[5])
 #define UUID_INTERNAL_MAX_USER_NAME_SIZE (((size_t)256 + 1) * sizeof(WCHAR))
-#define UUID_INTERNAL_MAX_FILE_PATH_SIZE (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR))
+#define UUID_INTERNAL_MAX_FILE_PATH_SIZE ((size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR)))
 #define UUID_INTERNAL_HW_PROFILE_SIZE (sizeof(HW_PROFILE_INFOW))
 #define UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 (UUID_INTERNAL_EXPECTED_TOKEN_USER_SIZE > UUID_INTERNAL_MAX_USER_NAME_SIZE ? UUID_INTERNAL_EXPECTED_TOKEN_USER_SIZE : UUID_INTERNAL_MAX_USER_NAME_SIZE)
 #define UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1 (UUID_INTERNAL_MAX_FILE_PATH_SIZE > UUID_INTERNAL_HW_PROFILE_SIZE ? UUID_INTERNAL_MAX_FILE_PATH_SIZE : UUID_INTERNAL_HW_PROFILE_SIZE)
@@ -248,6 +254,9 @@ typedef struct
 
 static void UuidInternalGenerateRandomSeed(uint64_t* Nonce, void* RandomSeed)
 {
+	UuidInternalSha256Context Sha256Context;
+	UuidInternalSha256Initialize(&Sha256Context);
+
 	SYSTEM_INFO SystemInfo;
 	memset(&SystemInfo, 0, sizeof(SYSTEM_INFO));
 	GetSystemInfo(&SystemInfo);
@@ -260,17 +269,59 @@ static void UuidInternalGenerateRandomSeed(uint64_t* Nonce, void* RandomSeed)
 #endif
 	}
 	size_t BufferSize = (UUID_INTERNAL_TEMPORAL_BUFFER_SIZE + ((size_t)SystemInfo.dwPageSize - 1)) & ~((size_t)SystemInfo.dwPageSize - 1);
+	size_t SMBIOSFirmwareTableBufferSize = ((size_t)GetSystemFirmwareTable(0x52534D42, 0, 0, 0) + ((size_t)SystemInfo.dwPageSize - 1)) & ~((size_t)SystemInfo.dwPageSize - 1);
+	if (SMBIOSFirmwareTableBufferSize > BufferSize)
+	{
+		BufferSize = SMBIOSFirmwareTableBufferSize;
+	}
 	void* Buffer = (void*)VirtualAlloc(0, BufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	if (Buffer)
+	{
+		size_t SMBIOSFirmwareTableSize = (size_t)GetSystemFirmwareTable(0x52534D42, 0, Buffer, (DWORD)SMBIOSFirmwareTableBufferSize);
+		if (SMBIOSFirmwareTableSize)
+		{
+			UuidInternalSha256Update(&Sha256Context, SMBIOSFirmwareTableSize, Buffer);
+		}
+	}
+
+	WCHAR* EnvironmentBlock = GetEnvironmentStringsW();
+	if (EnvironmentBlock)
+	{
+		size_t EnvironmentBlockSize = 0;
+		while (EnvironmentBlock[EnvironmentBlockSize] || EnvironmentBlock[EnvironmentBlockSize + 1])
+		{
+			EnvironmentBlockSize++;
+		}
+		EnvironmentBlockSize += 2;
+		EnvironmentBlockSize *= sizeof(WCHAR);
+		UuidInternalSha256Update(&Sha256Context, EnvironmentBlockSize, EnvironmentBlock);
+		FreeEnvironmentStringsW(EnvironmentBlock);
+	}
+
+	if (Buffer)
+	{
+		WCHAR* SystemDirectoryPath = (WCHAR*)Buffer;
+		size_t SystemDirectoryPathLength = (size_t)GetSystemDirectoryW(SystemDirectoryPath, UNICODE_STRING_MAX_CHARS + 1);
+		if (SystemDirectoryPathLength && SystemDirectoryPathLength < UNICODE_STRING_MAX_CHARS + 1)
+		{
+			UuidInternalSha256Update(&Sha256Context, SystemDirectoryPathLength * sizeof(WCHAR), SystemDirectoryPath);
+		}
+
+		WCHAR* WindowsDirectoryPath = (WCHAR*)Buffer;
+		size_t WindowsDirectoryPathLength = (size_t)GetSystemWindowsDirectoryW(WindowsDirectoryPath, UNICODE_STRING_MAX_CHARS + 1);
+		if (WindowsDirectoryPathLength && WindowsDirectoryPathLength < UNICODE_STRING_MAX_CHARS + 1)
+		{
+			UuidInternalSha256Update(&Sha256Context, WindowsDirectoryPathLength * sizeof(WCHAR), WindowsDirectoryPath);
+		}
+	}
 
 	HMODULE Kernel32Module = GetModuleHandleW(L"Kernel32.dll");
 
 	DWORD64 SystemTime = 0;
 	GetSystemTimeAsFileTime((FILETIME*)&SystemTime);
 
-	UuidInternalSha256Context Sha256Context;
-	UuidInternalSha256Initialize(&Sha256Context);
-
 	HANDLE ImageFileHandle = INVALID_HANDLE_VALUE;
+	HANDLE VolumeHandle = INVALID_HANDLE_VALUE;
 	BY_HANDLE_FILE_INFORMATION ImageFileInformation;
 	memset(&ImageFileInformation, 0, sizeof(BY_HANDLE_FILE_INFORMATION));
 	if (Buffer)
@@ -291,6 +342,40 @@ static void UuidInternalGenerateRandomSeed(uint64_t* Nonce, void* RandomSeed)
 				CloseHandle(ImageFileHandle);
 			}
 			UuidInternalSha256Update(&Sha256Context, (size_t)ImageFilePathLength * sizeof(WCHAR), ImageFilePath);
+
+			WCHAR* VolumeMountPath = (WCHAR*)((uintptr_t)Buffer + (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR)));
+			if (GetVolumePathNameW(ImageFilePath, VolumeMountPath, UNICODE_STRING_MAX_CHARS + 1))
+			{
+				WCHAR* VolumeGuidPath = (WCHAR*)Buffer;
+				if (GetVolumeNameForVolumeMountPointW(VolumeMountPath, VolumeGuidPath, UNICODE_STRING_MAX_CHARS + 1))
+				{
+					size_t VolumeGuidPathLength = wcslen(VolumeGuidPath);
+					UuidInternalSha256Update(&Sha256Context, (size_t)VolumeGuidPathLength * sizeof(WCHAR), VolumeGuidPath);
+
+					DWORD DiskFreeSpaceData[4] = { 0, 0, 0, 0 };
+					if (GetDiskFreeSpaceW(VolumeGuidPath, &DiskFreeSpaceData[0], &DiskFreeSpaceData[1], &DiskFreeSpaceData[2], &DiskFreeSpaceData[3]))
+					{
+						UuidInternalSha256Update(&Sha256Context, (size_t)4 * sizeof(DWORD), &DiskFreeSpaceData[0]);
+					}
+
+					VolumeHandle = CreateFileW(VolumeGuidPath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+					if (VolumeHandle)
+					{
+						WCHAR* VolumeName = (WCHAR*)Buffer;
+						WCHAR* VolumeFileSystemName = (WCHAR*)((uintptr_t)Buffer + (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR)));
+						DWORD VolumeData[3] = { 0, 0, 0 };
+						if (GetVolumeInformationByHandleW(VolumeHandle, VolumeName, UNICODE_STRING_MAX_CHARS + 1, &VolumeData[0], &VolumeData[1], &VolumeData[2], VolumeFileSystemName, UNICODE_STRING_MAX_CHARS + 1))
+						{
+							size_t VolumeNameLength = wcslen(VolumeName);
+							size_t VolumeFileSystemNameLength = wcslen(VolumeFileSystemName);
+							UuidInternalSha256Update(&Sha256Context, VolumeNameLength * sizeof(WCHAR), VolumeName);
+							UuidInternalSha256Update(&Sha256Context, VolumeFileSystemNameLength * sizeof(WCHAR), VolumeFileSystemName);
+							UuidInternalSha256Update(&Sha256Context, (size_t)3 * sizeof(DWORD), &VolumeData[0]);
+						}
+						CloseHandle(VolumeHandle);
+					}
+				}
+			}
 		}
 	}
 
@@ -361,7 +446,18 @@ static void UuidInternalGenerateRandomSeed(uint64_t* Nonce, void* RandomSeed)
 	UuidInternalGenerateRandomSeedData Data;
 	memset(&Data, 0, sizeof(UuidInternalGenerateRandomSeedData));
 	Data.BufferAddress = Buffer;
+	__cpuidex((int*)&Data.CpuId0To1ABCD[0], 0, 0);
+	if (Data.CpuId0To1ABCD[0] >= 1)
+	{
+		__cpuidex((int*)&Data.CpuId0To1ABCD[4], 1, 0);
+	}
+	__cpuidex((int*)&Data.CpuId80000000To80000004ABCD[0], (int)0x80000000, 0);
+	for (DWORD n = (Data.CpuId80000000To80000004ABCD[0] < (DWORD)0x80000004) ? Data.CpuId80000000To80000004ABCD[0] : (DWORD)0x80000004, i = (DWORD)0x80000001; i <= n; i++)
+	{
+		__cpuidex((int*)&Data.CpuId80000000To80000004ABCD[i * 4], (DWORD)i, 0);
+	}
 	Data.ImageFileHandle = ImageFileHandle;
+	Data.VolumeHandle = VolumeHandle;
 	memcpy(&Data.ImageFileInformation, &ImageFileInformation, sizeof(BY_HANDLE_FILE_INFORMATION));
 	Data.ComputerNameLength = MAX_COMPUTERNAME_LENGTH + 1;
 	GetComputerNameW(&Data.ComputerName[0], &Data.ComputerNameLength);
@@ -372,6 +468,7 @@ static void UuidInternalGenerateRandomSeed(uint64_t* Nonce, void* RandomSeed)
 	Data.MaximumProcessorGroupCount = GetMaximumProcessorGroupCount();
 	Data.FirstGroupMaximumProcessorCount = GetMaximumProcessorCount(0);
 	GetNumaHighestNodeNumber(&Data.HighestNumaNodeNumber);
+	GetSystemRegistryQuota(&Data.RegistryQuotaAllowed, &Data.RegistryQuotaUsed);
 	Data.ImageBase = (HMODULE)&__ImageBase;
 	Data.Kernel32 = Kernel32Module;
 	Data.Advapi32 = Advapi32Module;
@@ -401,6 +498,7 @@ static void UuidInternalGenerateRandomSeed(uint64_t* Nonce, void* RandomSeed)
 	Data.CurrentThreadPriority = GetThreadPriority(CurrentThread);
 	Data.CurrentProcessClass = GetPriorityClass(CurrentProcess);
 	GetProcessHandleCount(CurrentProcess, &Data.CurrentProcessHandleCount);
+	GetLocalTime(&Data.LocalTime);
 	GetProcessIoCounters(CurrentProcess, &Data.CurrentProcessIoCounters);
 	GetProcessTimes(CurrentProcess, &Data.CurrentProcessCreationTime, &Data.CurrentProcessExitTime, &Data.CurrentProcessKernelTime, &Data.CurrentProcessUserTime);
 	QueryProcessCycleTime(CurrentProcess, &Data.CurrentProcessCycleCount);
