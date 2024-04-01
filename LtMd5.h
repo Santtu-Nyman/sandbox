@@ -28,8 +28,8 @@
 		OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef MD5_H
-#define MD5_H
+#ifndef LT_MD5_H
+#define LT_MD5_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,19 +38,19 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-#define MD5_DIGEST_SIZE 16
+#define LT_MD5_DIGEST_SIZE 16
 
 typedef struct
 {
 	uint64_t Size;
 	uint32_t Buffer[4];
 	uint8_t Input[64];
-} Md5Context;
+} LtMd5Context;
 
-void Md5Initialize(Md5Context* Context);
+void LtMd5Initialize(LtMd5Context* Context);
 /*
 	Procedure:
-		Md5Initialize
+		LtMd5Initialize
 
 	Description:
 		This procedure initilizes a new MD5 calculation context.
@@ -61,10 +61,10 @@ void Md5Initialize(Md5Context* Context);
 			Address of the MD5 calculation context.
 */
 
-void Md5Update(Md5Context* Context, size_t InputSize, const void* InputData);
+void LtMd5Update(LtMd5Context* Context, size_t InputSize, const void* InputData);
 /*
 	Procedure:
-		Md5Update
+		LtMd5Update
 
 	Description:
 		This procedure processes a chunk of input data for MD5 calculation.
@@ -81,10 +81,10 @@ void Md5Update(Md5Context* Context, size_t InputSize, const void* InputData);
 			pointer to the location that contains the next data chunk to process in the hash calculation.
 */
 
-void Md5Finalize(Md5Context* Context, void* Digest);
+void LtMd5Finalize(LtMd5Context* Context, void* Digest);
 /*
 	Procedure:
-		Md5Finalize
+		LtMd5Finalize
 
 	Description:
 		This procedure finalizes calculating the MD5 and invalidates the calculation context.
@@ -103,4 +103,4 @@ void Md5Finalize(Md5Context* Context, void* Digest);
 }
 #endif // __cplusplus
 
-#endif // MD5_H
+#endif // LT_MD5_H

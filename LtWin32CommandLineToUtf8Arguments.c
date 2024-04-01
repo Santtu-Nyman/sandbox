@@ -33,36 +33,34 @@
 extern "C" {
 #endif
 
-#include "ssn_native_command_to_arguments.h"
+#define WIN32_LEAN_AND_MEAN
+#include "LtWin32CommandLineToUtf8Arguments.h"
+#include "LtUtf8Utf16Converter.h"
 
-#if 1
-#define SYS_EINVAL 22
-#define SYS_ENOMEM 12
-#define SYS_ENOENT 2
-#define SYS_EIO 5
-#else
-#include <errno.h>
-#define SYS_EINVAL EINVAL
-#define SYS_ENOMEM ENOMEM
-#define SYS_ENOENT ENOENT
-#define SYS_EIO EIO
-#endif
-
-int ssn_native_command_to_arguments(const WCHAR* native_command, size_t* argument_count_address, char*** argument_table_address)
+DWORD LtWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* argument_count_address, char*** argument_table_address)
 {
-	const size_t max_file_name_length = 0x7FFF;
-	const int int_max = (int)(((unsigned int)~0) >> 1);
+	const size_t max_file_name_length = UNICODE_STRING_MAX_CHARS;
 
 	SYSTEM_INFO system_info;
+	memset(&system_info, 0, sizeof(SYSTEM_INFO));
 	GetSystemInfo(&system_info);
-	size_t page_size = system_info.dwPageSize ? (size_t)system_info.dwPageSize : 1;
-
-	int native_command_length = 0;
-	while (native_command[native_command_length])
+	size_t page_size = (size_t)system_info.dwPageSize;
+	if (!page_size)
 	{
-		++native_command_length;
-		if (native_command_length == int_max)
-			return SYS_EINVAL;
+#if defined(_M_IX86) || defined(_M_X64) || defined(_M_AMD64) || defined(__x86_64__) || defined(__x86_64) || defined(__i386__) || defined(__i386)
+		page_size = 0x1000;
+#else
+		page_size = 0x10000;
+#endif
+	}
+
+	size_t native_command_length = 0;
+	if (native_command)
+	{
+		while (native_command[native_command_length])
+		{
+			native_command_length++;
+		}
 	}
 
 	if (!native_command_length)
@@ -70,7 +68,7 @@ int ssn_native_command_to_arguments(const WCHAR* native_command, size_t* argumen
 		size_t utf16_executable_name_size = (((MAX_PATH + 1) * sizeof(WCHAR)) + (page_size - 1)) & ~(page_size - 1);
 		WCHAR* utf16_executable_name = (WCHAR*)VirtualAlloc(0, utf16_executable_name_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 		if (!utf16_executable_name)
-			return SYS_ENOMEM;
+			return ERROR_OUTOFMEMORY;
 
 		size_t utf16_executable_name_length = (size_t)GetModuleFileNameW(0, utf16_executable_name, (DWORD)(utf16_executable_name_size / sizeof(WCHAR)));
 		if (!utf16_executable_name_length || utf16_executable_name_length > (utf16_executable_name_size / sizeof(WCHAR)))
@@ -79,73 +77,56 @@ int ssn_native_command_to_arguments(const WCHAR* native_command, size_t* argumen
 			utf16_executable_name_size = (((max_file_name_length + 1) * sizeof(WCHAR)) + (page_size - 1)) & ~(page_size - 1);
 			utf16_executable_name = (WCHAR*)VirtualAlloc(0, utf16_executable_name_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 			if (!utf16_executable_name)
-				return SYS_ENOMEM;
+				return ERROR_OUTOFMEMORY;
 
 			utf16_executable_name_length = (size_t)GetModuleFileNameW(0, utf16_executable_name, (DWORD)(utf16_executable_name_size / sizeof(WCHAR)));
 			if (!utf16_executable_name_length || utf16_executable_name_length > (utf16_executable_name_size / sizeof(WCHAR)))
 			{
+				DWORD GetModuleFileNameError = GetLastError();
+				if (GetModuleFileNameError == ERROR_SUCCESS)
+				{
+					GetModuleFileNameError = ERROR_UNIDENTIFIED_ERROR;
+				}
 				VirtualFree(utf16_executable_name, 0, MEM_RELEASE);
-				return SYS_ENOENT;
+				return GetModuleFileNameError;
 			}
 		}
-
-		int utf8_executable_name_length = WideCharToMultiByte(CP_UTF8, 0, utf16_executable_name, (int)utf16_executable_name_length, 0, 0, 0, 0);
-		if (!utf8_executable_name_length)
-			return SYS_EINVAL;
-
-		size_t utf8_table_size = (((2 * sizeof(char*)) + ((size_t)utf8_executable_name_length + 1)) + (page_size - 1)) & ~(page_size - 1);
+		
+		size_t utf8_executable_name_length = LtConvertUtf16LeToUtf8(utf16_executable_name_length, utf16_executable_name, 0, 0);
+		size_t utf8_table_size = (((2 * sizeof(char*)) + (utf8_executable_name_length + 1)) + (page_size - 1)) & ~(page_size - 1);
 		char** utf8_table = (char**)VirtualAlloc(0, utf8_table_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 		if (!utf8_table)
 		{
 			VirtualFree(utf16_executable_name, 0, MEM_RELEASE);
-			return SYS_ENOMEM;
+			return ERROR_OUTOFMEMORY;
 		}
-
-		utf8_table[0] = (char*)((uintptr_t)utf8_table + (2 * sizeof(char*)));
+		char* utf8_executable_name = (char*)((uintptr_t)utf8_table + (2 * sizeof(char*)));
+		utf8_table[0] = utf8_executable_name;
 		utf8_table[1] = 0;
-		if (WideCharToMultiByte(CP_UTF8, 0, utf16_executable_name, (int)utf16_executable_name_length, (char*)((uintptr_t)utf8_table + (2 * sizeof(char*))), utf8_executable_name_length, 0, 0) != utf8_executable_name_length)
-		{
-			VirtualFree(utf16_executable_name, 0, MEM_RELEASE);
-			VirtualFree(utf8_table, 0, MEM_RELEASE);
-			return SYS_EINVAL;
-		}
-		*(char*)((uintptr_t)utf8_table + (2 * sizeof(char*)) + (size_t)utf8_executable_name_length) = 0;
-		VirtualFree(utf16_executable_name, 0, MEM_RELEASE);
+		LtConvertUtf16LeToUtf8(utf16_executable_name_length, utf16_executable_name, utf8_executable_name_length, utf8_executable_name);
+		utf8_executable_name[utf8_executable_name_length] = 0;
 
-		DWORD ignored_old_page_protection;
-		if (!VirtualProtect(utf8_table, utf8_table_size, PAGE_READONLY, &ignored_old_page_protection))
-		{
-			VirtualFree(utf8_table, 0, MEM_RELEASE);
-			return SYS_EIO;
-		}
+		VirtualFree(utf16_executable_name, 0, MEM_RELEASE);
 
 		*argument_count_address = 1;
 		*argument_table_address = utf8_table;
 		return 0;
 	}
 
-	int command_length = WideCharToMultiByte(CP_UTF8, 0, native_command, native_command_length, 0, 0, 0, 0);
-	if (!command_length)
-		return SYS_EINVAL;
-
+	size_t command_length = LtConvertUtf16LeToUtf8(native_command_length, native_command, 0, 0);
 	size_t command_size = (((size_t)command_length + 1) + (page_size - 1)) & ~(page_size - 1);
 	char* command = (char*)VirtualAlloc(0, command_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 	if (!command)
-		return SYS_ENOMEM;
+		return ERROR_OUTOFMEMORY;
+	LtConvertUtf16LeToUtf8(native_command_length, native_command, command_length, command);
+	command[command_length] = 0;
 
-	if (WideCharToMultiByte(CP_UTF8, 0, native_command, native_command_length, command, (int)command_length, 0, 0) != command_length)
-	{
-		VirtualFree(command, 0, MEM_RELEASE);
-		return SYS_EINVAL;
-	}
-	*(char*)((uintptr_t)command + command_length) = 0;
-
-	int argument_count = 0;
-	int argument_character_count = 0;
-	int in_argument = 1;
-	int in_quotes = 0;
-	int backslash_count = 0;
-	for (int i = 0; i != command_length; ++i)
+	size_t argument_count = 0;
+	size_t argument_character_count = 0;
+	size_t in_argument = 1;
+	size_t in_quotes = 0;
+	size_t backslash_count = 0;
+	for (size_t i = 0; i != command_length; ++i)
 	{
 		if (command[i] == '\\')
 		{
@@ -216,14 +197,14 @@ int ssn_native_command_to_arguments(const WCHAR* native_command, size_t* argumen
 	if (!argument_table)
 	{
 		VirtualFree(command, 0, MEM_RELEASE);
-		return SYS_ENOMEM;
+		return ERROR_OUTOFMEMORY;
 	}
 
 	char* argument_write = (char*)((uintptr_t)argument_table + (((size_t)argument_count + 1) * sizeof(char*)));
 	in_argument = 1;
 	in_quotes = 0;
 	backslash_count = 0;
-	int argument_index = 0;
+	size_t argument_index = 0;
 	argument_table[0] = argument_write;
 	for (int i = 0; i != command_length; ++i)
 	{
@@ -315,14 +296,8 @@ int ssn_native_command_to_arguments(const WCHAR* native_command, size_t* argumen
 	argument_table[argument_count] = 0;
 
 	VirtualFree(command, 0, MEM_RELEASE);
-	DWORD ignored_old_page_protection;
-	if (!VirtualProtect(argument_table, argument_table_size, PAGE_READONLY, &ignored_old_page_protection))
-	{
-		VirtualFree(argument_table, 0, MEM_RELEASE);
-		return SYS_EIO;
-	}
 
-	*argument_count_address = (size_t)argument_count;
+	*argument_count_address = argument_count;
 	*argument_table_address = argument_table;
 	return 0;
 }

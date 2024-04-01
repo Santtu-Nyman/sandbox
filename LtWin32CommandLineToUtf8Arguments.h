@@ -8,9 +8,9 @@
 		There are three differences to the functioning of CommandLineToArgvW.
 		The strings in argument table are UTF-8 encoded,
 		memory is allocated with VirtualAlloc instead LocalAlloc and
-		the function returns POSIX error code instead of Windows error code.
+		the function returns a Win32 error code.
 
-		This function does only depend on kernel32.dll.
+		This function does only depend on kernel32.dll, but it does need "LtUtf8Utf16Converter.c" for UTF conversions.
 		It is pretty much impossible to do any better on dependencies with Windows than this.
 
 		Parameter native_command specifies the native command returned by GetCommandLineW.
@@ -24,7 +24,6 @@
 		The argument table and the strings are allocated in single block of memory.
 		This block can be freed using VirtualFree with type MEM_RELEASE.
 		Note that with MEM_RELEASE type VirtualFree size must be zero.
-		This block is places in read only memory (virtual page protection PAGE_READONLY).
 
 	License
 		This is free and unencumbered software released into the public domain.
@@ -53,8 +52,8 @@
 		For more information, please refer to <https://unlicense.org>
 */
 
-#ifndef SSN_NATIVE_COMMAND_TO_ARGUMENTS_H
-#define SSN_NATIVE_COMMAND_TO_ARGUMENTS_H
+#ifndef LT_NATIVE_COMMAND_TO_ARGUMENTS_H
+#define LT_NATIVE_COMMAND_TO_ARGUMENTS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,7 +62,7 @@ extern "C" {
 #include <Windows.h>
 #include <stddef.h>
 	
-int ssn_native_command_to_arguments(const WCHAR* native_command, size_t* argument_count_address, char*** argument_table_address);
+DWORD LtWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* argument_count_address, char*** argument_table_address);
 
 #ifdef __cplusplus
 }

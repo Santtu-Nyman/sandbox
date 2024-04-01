@@ -28,8 +28,8 @@
 		OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef SHA256_H
-#define SHA256_H
+#ifndef LT_SHA256_H
+#define LT_SHA256_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,19 +38,19 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-#define SHA256_DIGEST_SIZE 32
+#define LT_SHA256_DIGEST_SIZE 32
 
 typedef struct
 {
 	uint64_t Size;
 	uint32_t Buffer[8];
 	uint8_t Input[64];
-} Sha256Context;
+} LtSha256Context;
 
-void Sha256Initialize(Sha256Context* Context);
+void LtSha256Initialize(LtSha256Context* Context);
 /*
 	Procedure:
-		Sha256Initialize
+		LtSha256Initialize
 
 	Description:
 		This procedure initilizes a new SHA-256 calculation context.
@@ -61,10 +61,10 @@ void Sha256Initialize(Sha256Context* Context);
 			Address of the SHA-256 calculation context.
 */
 
-void Sha256Update(Sha256Context* Context, size_t InputSize, const void* InputData);
+void LtSha256Update(LtSha256Context* Context, size_t InputSize, const void* InputData);
 /*
 	Procedure:
-		Sha256Update
+		LtSha256Update
 
 	Description:
 		This procedure processes a chunk of input data for SHA-256 calculation.
@@ -81,10 +81,10 @@ void Sha256Update(Sha256Context* Context, size_t InputSize, const void* InputDat
 			pointer to the location that contains the next data chunk to process in the hash calculation.
 */
 
-void Sha256Finalize(Sha256Context* Context, void* Digest);
+void LtSha256Finalize(LtSha256Context* Context, void* Digest);
 /*
 	Procedure:
-		Sha256Finalize
+		LtSha256Finalize
 
 	Description:
 		This procedure finalizes calculating the SHA-256 and invalidates the calculation context.

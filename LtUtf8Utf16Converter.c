@@ -28,9 +28,8 @@
 extern "C" {
 #endif // __cplusplus
 
-#include "ssn_utf8_utf16_converter.h"
-#include <stddef.h>
-#include <stdint.h>
+#define WIN32_LEAN_AND_MEAN
+#include "LtUtf8Utf16Converter.h"
 
 #if defined(_M_IX86) || defined(_M_X64) || defined(_M_AMD64) || defined(__x86_64__) || defined(__x86_64) || defined(__i386__) || defined(__i386)
 #define LT_UTF8_UTF16_CONVERTER_LOAD_U16LE(P) (*((const uint16_t*)(P)))
@@ -50,13 +49,15 @@ extern "C" {
 #define LT_UTF8_UTF16_CONVERTER_UNREACHABLE() do {} while (0)
 #endif
 
-size_t ssn_convert_utf8_to_utf16le(size_t utf8_lenght, const uint8_t* utf8, size_t utf16_buffer_length, uint16_t* utf16_buffer)
+size_t LtConvertUtf8ToUtf16Le(size_t Utf8Length, const char* Utf8Data, size_t Utf16BufferLength, WCHAR* Utf16Buffer)
 {
 	// WARNING BE VERY CAREFUL WHEN MODIFYING THIS PROCEDURE! IT IS EXTREMELY FINICKY AND IT HAS BEEN WELL TESTED
+	const uint8_t* utf8 = (const uint8_t*)Utf8Data;
+	uint16_t* utf16 = (uint16_t*)Utf16Buffer;
 	size_t utf16_length = 0;
-	for (size_t utf8_index = 0; utf8_index != utf8_lenght;)
+	for (size_t utf8_index = 0; utf8_index != Utf8Length;)
 	{
-		size_t code_unit_data_size_limit = utf8_lenght - utf8_index;
+		size_t code_unit_data_size_limit = Utf8Length - utf8_index;
 		uint32_t code_unit_data;
 		if (code_unit_data_size_limit > 3)
 		{
@@ -130,21 +131,21 @@ size_t ssn_convert_utf8_to_utf16le(size_t utf8_lenght, const uint8_t* utf8, size
 		}
 		if (utf_code_point < (uint32_t)0x10000)
 		{
-			if (utf16_length + 1 <= utf16_buffer_length)
+			if (utf16_length + 1 <= Utf16BufferLength)
 			{
-				LT_UTF8_UTF16_CONVERTER_STORE_U16LE(utf16_buffer + utf16_length, (uint16_t)utf_code_point);
+				LT_UTF8_UTF16_CONVERTER_STORE_U16LE(utf16 + utf16_length, (uint16_t)utf_code_point);
 			}
 			utf16_length += 1;
 		}
 		else
 		{
-			if (utf16_length + 2 <= utf16_buffer_length)
+			if (utf16_length + 2 <= Utf16BufferLength)
 			{
 				uint32_t temporal = utf_code_point - (uint32_t)0x10000;
 				uint16_t leading_utf16_surrogate = (uint16_t)((temporal >> 10) | (uint32_t)0xD800);
 				uint16_t trailing_utf16_surrogate = (uint16_t)((temporal & 0x3FF) | (uint32_t)0xDC00);
-				LT_UTF8_UTF16_CONVERTER_STORE_U16LE(utf16_buffer + utf16_length, leading_utf16_surrogate);
-				LT_UTF8_UTF16_CONVERTER_STORE_U16LE(utf16_buffer + utf16_length + 1, trailing_utf16_surrogate);
+				LT_UTF8_UTF16_CONVERTER_STORE_U16LE(utf16 + utf16_length, leading_utf16_surrogate);
+				LT_UTF8_UTF16_CONVERTER_STORE_U16LE(utf16 + utf16_length + 1, trailing_utf16_surrogate);
 			}
 			utf16_length += 2;
 		}
@@ -152,16 +153,18 @@ size_t ssn_convert_utf8_to_utf16le(size_t utf8_lenght, const uint8_t* utf8, size
 	return utf16_length;
 }
 
-size_t ssn_convert_utf16le_to_utf8(size_t utf16_lenght, const uint16_t* utf16, size_t utf8_buffer_length, uint8_t* utf8_buffer)
+size_t LtConvertUtf16LeToUtf8(size_t Utf16Length, const WCHAR* Utf16Data, size_t Utf8BufferLength, char* Utf8Buffer)
 {
 	// WARNING BE VERY CAREFUL WHEN MODIFYING THIS PROCEDURE! IT IS EXTREMELY FINICKY AND IT HAS BEEN WELL TESTED
+	const uint16_t* utf16 = (const uint16_t*)Utf16Data;
+	uint8_t* utf8 = (uint8_t*)Utf8Buffer;
 	size_t utf8_length = 0;
-	for (size_t utf16_index = 0; utf16_index != utf16_lenght;)
+	for (size_t utf16_index = 0; utf16_index != Utf16Length;)
 	{
 		uint16_t first_utf16_code_unit = LT_UTF8_UTF16_CONVERTER_LOAD_U16LE(utf16 + utf16_index);
 		utf16_index++;
 		uint16_t second_utf16_code_unit = 0;
-		if (((first_utf16_code_unit >> 10) == 0x36) && (utf16_index != utf16_lenght))
+		if (((first_utf16_code_unit >> 10) == 0x36) && (utf16_index != Utf16Length))
 		{
 			uint16_t possible_second_utf16_code_unit = LT_UTF8_UTF16_CONVERTER_LOAD_U16LE(utf16 + utf16_index);
 			if ((possible_second_utf16_code_unit >> 10) == 0x37)
@@ -190,42 +193,42 @@ size_t ssn_convert_utf16le_to_utf8(size_t utf16_lenght, const uint16_t* utf16, s
 		if (utf_code_point < 0x80)
 		{
 			// Encode 7 bit code point as 1 byte
-			if (utf8_length + 1 <= utf8_buffer_length)
+			if (utf8_length + 1 <= Utf8BufferLength)
 			{
-				utf8_buffer[utf8_length] = (uint8_t)utf_code_point;
+				utf8[utf8_length] = (uint8_t)utf_code_point;
 			}
 			utf8_length += 1;
 		}
 		else if (utf_code_point < 0x800)
 		{
 			// Encode 13 bit code point as 2 bytes
-			if (utf8_length + 2 <= utf8_buffer_length)
+			if (utf8_length + 2 <= Utf8BufferLength)
 			{
-				utf8_buffer[utf8_length] = 0xC0 | (uint8_t)(utf_code_point >> 6);
-				utf8_buffer[utf8_length + 1] = 0x80 | (uint8_t)(utf_code_point & 0x3F);
+				utf8[utf8_length] = 0xC0 | (uint8_t)(utf_code_point >> 6);
+				utf8[utf8_length + 1] = 0x80 | (uint8_t)(utf_code_point & 0x3F);
 			}
 			utf8_length += 2;
 		}
 		else if (utf_code_point < 0x10000)
 		{
 			//  Encode 16 bit code point as 3 bytes
-			if (utf8_length + 3 <= utf8_buffer_length)
+			if (utf8_length + 3 <= Utf8BufferLength)
 			{
-				utf8_buffer[utf8_length] = 0xE0 | (uint8_t)(utf_code_point >> 12);
-				utf8_buffer[utf8_length + 1] = 0x80 | (uint8_t)((utf_code_point >> 6) & 0x3F);
-				utf8_buffer[utf8_length + 2] = 0x80 | (uint8_t)(utf_code_point & 0x3F);
+				utf8[utf8_length] = 0xE0 | (uint8_t)(utf_code_point >> 12);
+				utf8[utf8_length + 1] = 0x80 | (uint8_t)((utf_code_point >> 6) & 0x3F);
+				utf8[utf8_length + 2] = 0x80 | (uint8_t)(utf_code_point & 0x3F);
 			}
 			utf8_length += 3;
 		}
 		else
 		{
 			//  Encode 21 bit code point as 4 bytes. Any code point from utf-16 will fit
-			if (utf8_length + 4 <= utf8_buffer_length)
+			if (utf8_length + 4 <= Utf8BufferLength)
 			{
-				utf8_buffer[utf8_length] = 0xF0 | (uint8_t)(utf_code_point >> 18);
-				utf8_buffer[utf8_length + 1] = 0x80 | (uint8_t)((utf_code_point >> 12) & 0x3F);
-				utf8_buffer[utf8_length + 2] = 0x80 | (uint8_t)((utf_code_point >> 6) & 0x3F);
-				utf8_buffer[utf8_length + 3] = 0x80 | (uint8_t)(utf_code_point & 0x3F);
+				utf8[utf8_length] = 0xF0 | (uint8_t)(utf_code_point >> 18);
+				utf8[utf8_length + 1] = 0x80 | (uint8_t)((utf_code_point >> 12) & 0x3F);
+				utf8[utf8_length + 2] = 0x80 | (uint8_t)((utf_code_point >> 6) & 0x3F);
+				utf8[utf8_length + 3] = 0x80 | (uint8_t)(utf_code_point & 0x3F);
 			}
 			utf8_length += 4;
 		}
@@ -233,13 +236,15 @@ size_t ssn_convert_utf16le_to_utf8(size_t utf16_lenght, const uint16_t* utf16, s
 	return utf8_length;
 }
 
-size_t ssn_convert_utf8_to_utf16be(size_t utf8_lenght, const uint8_t* utf8, size_t utf16_buffer_length, uint16_t* utf16_buffer)
+size_t LtConvertUtf8ToUtf16Be(size_t Utf8Length, const char* Utf8Data, size_t Utf16BufferLength, WCHAR* Utf16Buffer)
 {
 	// WARNING BE VERY CAREFUL WHEN MODIFYING THIS PROCEDURE! IT IS EXTREMELY FINICKY AND IT HAS BEEN MOSTLY COPIED FROM THE UTF-16BE VERSION THAT HAS BEEN WELL TESTED
+	const uint8_t* utf8 = (const uint8_t*)Utf8Data;
+	uint16_t* utf16 = (uint16_t*)Utf16Buffer;
 	size_t utf16_length = 0;
-	for (size_t utf8_index = 0; utf8_index != utf8_lenght;)
+	for (size_t utf8_index = 0; utf8_index != Utf8Length;)
 	{
-		size_t code_unit_data_size_limit = utf8_lenght - utf8_index;
+		size_t code_unit_data_size_limit = Utf8Length - utf8_index;
 		uint32_t code_unit_data;
 		if (code_unit_data_size_limit > 3)
 		{
@@ -313,24 +318,24 @@ size_t ssn_convert_utf8_to_utf16be(size_t utf8_lenght, const uint8_t* utf8, size
 		}
 		if (utf_code_point < (uint32_t)0x10000)
 		{
-			if (utf16_length + 1 <= utf16_buffer_length)
+			if (utf16_length + 1 <= Utf16BufferLength)
 			{
 				utf_code_point = (utf_code_point << 8) | (utf_code_point >> 8);
-				LT_UTF8_UTF16_CONVERTER_STORE_U16LE(utf16_buffer + utf16_length, (uint16_t)utf_code_point);
+				LT_UTF8_UTF16_CONVERTER_STORE_U16LE(utf16 + utf16_length, (uint16_t)utf_code_point);
 			}
 			utf16_length += 1;
 		}
 		else
 		{
-			if (utf16_length + 2 <= utf16_buffer_length)
+			if (utf16_length + 2 <= Utf16BufferLength)
 			{
 				uint32_t temporal = utf_code_point - (uint32_t)0x10000;
 				uint16_t leading_utf16_surrogate = (uint16_t)((temporal >> 10) | (uint32_t)0xD800);
 				uint16_t trailing_utf16_surrogate = (uint16_t)((temporal & 0x3FF) | (uint32_t)0xDC00);
 				leading_utf16_surrogate = (leading_utf16_surrogate << 8) | (leading_utf16_surrogate >> 8);
-				LT_UTF8_UTF16_CONVERTER_STORE_U16LE(utf16_buffer + utf16_length, leading_utf16_surrogate);
+				LT_UTF8_UTF16_CONVERTER_STORE_U16LE(utf16 + utf16_length, leading_utf16_surrogate);
 				trailing_utf16_surrogate = (trailing_utf16_surrogate << 8) | (trailing_utf16_surrogate >> 8);
-				LT_UTF8_UTF16_CONVERTER_STORE_U16LE(utf16_buffer + utf16_length + 1, trailing_utf16_surrogate);
+				LT_UTF8_UTF16_CONVERTER_STORE_U16LE(utf16 + utf16_length + 1, trailing_utf16_surrogate);
 			}
 			utf16_length += 2;
 		}
@@ -338,17 +343,19 @@ size_t ssn_convert_utf8_to_utf16be(size_t utf8_lenght, const uint8_t* utf8, size
 	return utf16_length;
 }
 
-size_t ssn_convert_utf16be_to_utf8(size_t utf16_lenght, const uint16_t* utf16, size_t utf8_buffer_length, uint8_t* utf8_buffer)
+size_t LtConvertUtf16BeToUtf8(size_t Utf16Length, const WCHAR* Utf16Data, size_t Utf8BufferLength, char* Utf8Buffer)
 {
 	// WARNING BE VERY CAREFUL WHEN MODIFYING THIS PROCEDURE! IT IS EXTREMELY FINICKY AND IT HAS BEEN MOSTLY COPIED FROM THE UTF-16BE VERSION THAT HAS BEEN WELL TESTED
+	const uint16_t* utf16 = (const uint16_t*)Utf16Data;
+	uint8_t* utf8 = (uint8_t*)Utf8Buffer;
 	size_t utf8_length = 0;
-	for (size_t utf16_index = 0; utf16_index != utf16_lenght;)
+	for (size_t utf16_index = 0; utf16_index != Utf16Length;)
 	{
 		uint16_t first_utf16_code_unit = LT_UTF8_UTF16_CONVERTER_LOAD_U16LE(utf16 + utf16_index);
 		first_utf16_code_unit = (first_utf16_code_unit << 8) | (first_utf16_code_unit >> 8);
 		utf16_index++;
 		uint16_t second_utf16_code_unit = 0;
-		if (((first_utf16_code_unit >> 10) == 0x36) && (utf16_index != utf16_lenght))
+		if (((first_utf16_code_unit >> 10) == 0x36) && (utf16_index != Utf16Length))
 		{
 			uint16_t possible_second_utf16_code_unit = LT_UTF8_UTF16_CONVERTER_LOAD_U16LE(utf16 + utf16_index);
 			possible_second_utf16_code_unit = (possible_second_utf16_code_unit << 8) | (possible_second_utf16_code_unit >> 8);
@@ -378,42 +385,42 @@ size_t ssn_convert_utf16be_to_utf8(size_t utf16_lenght, const uint16_t* utf16, s
 		if (utf_code_point < 0x80)
 		{
 			// Encode 7 bit code point as 1 byte
-			if (utf8_length + 1 <= utf8_buffer_length)
+			if (utf8_length + 1 <= Utf8BufferLength)
 			{
-				utf8_buffer[utf8_length] = (uint8_t)utf_code_point;
+				utf8[utf8_length] = (uint8_t)utf_code_point;
 			}
 			utf8_length += 1;
 		}
 		else if (utf_code_point < 0x800)
 		{
 			// Encode 13 bit code point as 2 bytes
-			if (utf8_length + 2 <= utf8_buffer_length)
+			if (utf8_length + 2 <= Utf8BufferLength)
 			{
-				utf8_buffer[utf8_length] = 0xC0 | (uint8_t)(utf_code_point >> 6);
-				utf8_buffer[utf8_length + 1] = 0x80 | (uint8_t)(utf_code_point & 0x3F);
+				utf8[utf8_length] = 0xC0 | (uint8_t)(utf_code_point >> 6);
+				utf8[utf8_length + 1] = 0x80 | (uint8_t)(utf_code_point & 0x3F);
 			}
 			utf8_length += 2;
 		}
 		else if (utf_code_point < 0x10000)
 		{
 			//  Encode 16 bit code point as 3 bytes
-			if (utf8_length + 3 <= utf8_buffer_length)
+			if (utf8_length + 3 <= Utf8BufferLength)
 			{
-				utf8_buffer[utf8_length] = 0xE0 | (uint8_t)(utf_code_point >> 12);
-				utf8_buffer[utf8_length + 1] = 0x80 | (uint8_t)((utf_code_point >> 6) & 0x3F);
-				utf8_buffer[utf8_length + 2] = 0x80 | (uint8_t)(utf_code_point & 0x3F);
+				utf8[utf8_length] = 0xE0 | (uint8_t)(utf_code_point >> 12);
+				utf8[utf8_length + 1] = 0x80 | (uint8_t)((utf_code_point >> 6) & 0x3F);
+				utf8[utf8_length + 2] = 0x80 | (uint8_t)(utf_code_point & 0x3F);
 			}
 			utf8_length += 3;
 		}
 		else
 		{
 			//  Encode 21 bit code point as 4 bytes. Any code point from utf-16 will fit
-			if (utf8_length + 4 <= utf8_buffer_length)
+			if (utf8_length + 4 <= Utf8BufferLength)
 			{
-				utf8_buffer[utf8_length] = 0xF0 | (uint8_t)(utf_code_point >> 18);
-				utf8_buffer[utf8_length + 1] = 0x80 | (uint8_t)((utf_code_point >> 12) & 0x3F);
-				utf8_buffer[utf8_length + 2] = 0x80 | (uint8_t)((utf_code_point >> 6) & 0x3F);
-				utf8_buffer[utf8_length + 3] = 0x80 | (uint8_t)(utf_code_point & 0x3F);
+				utf8[utf8_length] = 0xF0 | (uint8_t)(utf_code_point >> 18);
+				utf8[utf8_length + 1] = 0x80 | (uint8_t)((utf_code_point >> 12) & 0x3F);
+				utf8[utf8_length + 2] = 0x80 | (uint8_t)((utf_code_point >> 6) & 0x3F);
+				utf8[utf8_length + 3] = 0x80 | (uint8_t)(utf_code_point & 0x3F);
 			}
 			utf8_length += 4;
 		}

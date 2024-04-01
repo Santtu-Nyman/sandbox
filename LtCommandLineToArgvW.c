@@ -33,21 +33,20 @@
 extern "C" {
 #endif
 
-#include "ssn_CommandLineToArgvW.h"
+#define WIN32_LEAN_AND_MEAN
+#include "LtCommandLineToArgvW.h"
 
-WCHAR** ssn_CommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
+WCHAR** LtCommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 {
-	const size_t max_file_name_length = 0x7FFF;
-	const int int_max = (int)(((unsigned int)~0) >> 1);
+	const size_t max_file_name_length = UNICODE_STRING_MAX_CHARS;
+	const size_t int_max = (int)(((unsigned int)~0) >> 1);
 
-	int command_length = 0;
-	while (lpCmdLine[command_length])
+	size_t command_length = 0;
+	if (lpCmdLine)
 	{
-		++command_length;
-		if (command_length == int_max)
+		while (lpCmdLine[command_length])
 		{
-			SetLastError(ERROR_INVALID_PARAMETER);
-			return 0;
+			command_length++;
 		}
 	}
 
@@ -113,12 +112,12 @@ WCHAR** ssn_CommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 		return executable_name_buffer;
 	}
 
-	int argument_count = 0;
-	int argument_character_count = 0;
+	size_t argument_count = 0;
+	size_t argument_character_count = 0;
 	int in_argument = 1;
 	int in_quotes = 0;
-	int backslash_count = 0;
-	for (int i = 0; i != command_length; ++i)
+	size_t backslash_count = 0;
+	for (size_t i = 0; i != command_length; ++i)
 	{
 		if (lpCmdLine[i] == L'\\')
 		{
@@ -192,9 +191,9 @@ WCHAR** ssn_CommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 	in_argument = 1;
 	in_quotes = 0;
 	backslash_count = 0;
-	int argument_index = 0;
+	size_t argument_index = 0;
 	argument_table[0] = argument_write;
-	for (int i = 0; i != command_length; ++i)
+	for (size_t i = 0; i != command_length; ++i)
 	{
 		if (lpCmdLine[i] == L'\\')
 		{
@@ -283,7 +282,14 @@ WCHAR** ssn_CommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 	}
 	argument_table[argument_count] = 0;
 
-	*pNumArgs = argument_count;
+	if (argument_count > int_max)
+	{
+		LocalFree(argument_table);
+		SetLastError(ERROR_INVALID_PARAMETER);
+		return 0;
+	}
+
+	*pNumArgs = (int)argument_count;
 	SetLastError(ERROR_SUCCESS);
 	return argument_table;
 }

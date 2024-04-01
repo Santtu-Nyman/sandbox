@@ -8,9 +8,11 @@
 		or UTF-8 encoding. However the UTF-8 versions of the functionality use UTF-16 length 
 		for MAX_PATH logic and in determining when to use extended path prefix.
 
-		This library does depend on the "ssn_utf8_utf16_converter.c".
+		This library does depend on the "LtUtf8Utf16Converter.c".
 
 	Version history
+		version 1.0.0 2024-04-01
+			Bug fixes.
 		version 1.0.0 2023-02-25
 			First publicly available version.
 
@@ -37,8 +39,8 @@
 		For more information, please refer to <https://unlicense.org>
 */
 
-#ifndef SSN_WIN32_FILE_PATH_H
-#define SSN_WIN32_FILE_PATH_H
+#ifndef LT_WIN32_FILE_PATH_H
+#define LT_WIN32_FILE_PATH_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,20 +48,20 @@ extern "C" {
 
 #include <Windows.h>
 
-BOOL ssn_win32_is_path_fully_qualified(SIZE_T path_length, const WCHAR* path);
+BOOL LtWin32IsPathFullyQualified(SIZE_T PathLength, const WCHAR* Path);
 
-SIZE_T ssn_win32_get_fully_qualified_path(SIZE_T path_length, const WCHAR* path, SIZE_T base_path_length, const WCHAR* base_path, SIZE_T path_buffer_size, WCHAR* path_buffer);
+SIZE_T LtWin32GetFullyQualifiedPath(SIZE_T PathLength, const WCHAR* Path, SIZE_T BasePathLength, const WCHAR* BasePath, SIZE_T PathBufferSize, WCHAR* PathBuffer);
 
-SIZE_T ssn_win32_get_volume_directory_path(SIZE_T path_length, const WCHAR* path, SIZE_T base_path_length, const WCHAR* base_path, SIZE_T path_buffer_size, WCHAR* path_buffer);
+SIZE_T LtWin32GetVolumeDirectoryPath(SIZE_T PathLength, const WCHAR* Path, SIZE_T BasePathLength, const WCHAR* BasePath, SIZE_T PathBufferSize, WCHAR* PathBuffer);
 
-BOOL ssn_win32_is_path_fully_qualified_utf8(SIZE_T path_length, const char* path);
+BOOL LtWin32IsPathFullyQualifiedUtf8(SIZE_T PathLength, const char* Path);
 
-SIZE_T ssn_win32_get_fully_qualified_path_utf8(SIZE_T path_length, const char* path, SIZE_T base_path_length, const char* base_path, SIZE_T path_buffer_size, char* path_buffer);
+SIZE_T LtWin32GetFullyQualifiedPathUtf8(SIZE_T PathLength, const char* Path, SIZE_T BasePathLength, const char* BasePath, SIZE_T PathBufferSize, char* PathBuffer);
 
-SIZE_T ssn_win32_get_volume_directory_path_utf8(SIZE_T path_length, const char* path, SIZE_T base_path_length, const char* base_path, SIZE_T path_buffer_size, char* path_buffer);
+SIZE_T LtWin32GetVolumeDirectoryPathUtf8(SIZE_T PathLength, const char* Path, SIZE_T BasePathLength, const char* BasePath, SIZE_T PathBufferSize, char* PathBuffer);
 
 #ifdef __cplusplus
 }
 #endif // __cplusplus
 
-#endif // SSN_WIN32_FILE_PATH_H
+#endif // LT_WIN32_FILE_PATH_H
