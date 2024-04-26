@@ -52,8 +52,8 @@
 		For more information, please refer to <https://unlicense.org>
 */
 
-#ifndef LT_NATIVE_COMMAND_TO_ARGUMENTS_H
-#define LT_NATIVE_COMMAND_TO_ARGUMENTS_H
+#ifndef FL_WIN32_COMMAND_LINE_TO_UTF8_ARGUMENTS_H
+#define FL_WIN32_COMMAND_LINE_TO_UTF8_ARGUMENTS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,10 +62,10 @@ extern "C" {
 #include <Windows.h>
 #include <stddef.h>
 	
-DWORD LtWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* argument_count_address, char*** argument_table_address);
+DWORD FlWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* argument_count_address, char*** argument_table_address);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif // FL_WIN32_COMMAND_LINE_TO_UTF8_ARGUMENTS_H

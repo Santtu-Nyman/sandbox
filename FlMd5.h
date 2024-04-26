@@ -28,8 +28,8 @@
 		OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef LT_MD5_H
-#define LT_MD5_H
+#ifndef FL_MD5_H
+#define FL_MD5_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,19 +38,19 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-#define LT_MD5_DIGEST_SIZE 16
+#define FL_MD5_DIGEST_SIZE 16
 
 typedef struct
 {
 	uint64_t Size;
 	uint32_t Buffer[4];
 	uint8_t Input[64];
-} LtMd5Context;
+} FlMd5Context;
 
-void LtMd5Initialize(LtMd5Context* Context);
+void FlMd5CreateHash(FlMd5Context* Context);
 /*
 	Procedure:
-		LtMd5Initialize
+		FlMd5CreateHash
 
 	Description:
 		This procedure initilizes a new MD5 calculation context.
@@ -61,10 +61,10 @@ void LtMd5Initialize(LtMd5Context* Context);
 			Address of the MD5 calculation context.
 */
 
-void LtMd5Update(LtMd5Context* Context, size_t InputSize, const void* InputData);
+void FlMd5HashData(FlMd5Context* Context, size_t InputSize, const void* InputData);
 /*
 	Procedure:
-		LtMd5Update
+		FlMd5HashData
 
 	Description:
 		This procedure processes a chunk of input data for MD5 calculation.
@@ -72,7 +72,7 @@ void LtMd5Update(LtMd5Context* Context, size_t InputSize, const void* InputData)
 
 	Parameters:
 		Context:
-			Address of the MD5 calculation context.
+			Address of the initialized MD5 calculation context.
 
 		InputSize:
 			Size of the next data chunk to process in bytes.
@@ -81,10 +81,10 @@ void LtMd5Update(LtMd5Context* Context, size_t InputSize, const void* InputData)
 			pointer to the location that contains the next data chunk to process in the hash calculation.
 */
 
-void LtMd5Finalize(LtMd5Context* Context, void* Digest);
+void FlMd5FinishHash(FlMd5Context* Context, void* Digest);
 /*
 	Procedure:
-		LtMd5Finalize
+		FlMd5FinishHash
 
 	Description:
 		This procedure finalizes calculating the MD5 and invalidates the calculation context.
@@ -93,7 +93,7 @@ void LtMd5Finalize(LtMd5Context* Context, void* Digest);
 
 	Parameters:
 		Context:
-			Address of the MD5 calculation context.
+			Address of the initialized MD5 calculation context.
 
 		Digest:
 			The calculated 16 byte MD5 digest is stored in the location pointed by this parameter.
@@ -103,4 +103,4 @@ void LtMd5Finalize(LtMd5Context* Context, void* Digest);
 }
 #endif // __cplusplus
 
-#endif // LT_MD5_H
+#endif // FL_MD5_H

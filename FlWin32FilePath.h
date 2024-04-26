@@ -8,7 +8,7 @@
 		or UTF-8 encoding. However the UTF-8 versions of the functionality use UTF-16 length 
 		for MAX_PATH logic and in determining when to use extended path prefix.
 
-		This library does depend on the "LtUtf8Utf16Converter.c".
+		This library does depend on the "FlUtf8Utf16Converter.c".
 
 	Version history
 		version 1.0.0 2024-04-01
@@ -39,8 +39,8 @@
 		For more information, please refer to <https://unlicense.org>
 */
 
-#ifndef LT_WIN32_FILE_PATH_H
-#define LT_WIN32_FILE_PATH_H
+#ifndef FL_WIN32_FILE_PATH_H
+#define FL_WIN32_FILE_PATH_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,20 +48,20 @@ extern "C" {
 
 #include <Windows.h>
 
-BOOL LtWin32IsPathFullyQualified(SIZE_T PathLength, const WCHAR* Path);
+BOOL FlWin32IsPathFullyQualified(SIZE_T PathLength, const WCHAR* Path);
 
-SIZE_T LtWin32GetFullyQualifiedPath(SIZE_T PathLength, const WCHAR* Path, SIZE_T BasePathLength, const WCHAR* BasePath, SIZE_T PathBufferSize, WCHAR* PathBuffer);
+SIZE_T FlWin32GetFullyQualifiedPath(SIZE_T PathLength, const WCHAR* Path, SIZE_T BasePathLength, const WCHAR* BasePath, SIZE_T PathBufferSize, WCHAR* PathBuffer);
 
-SIZE_T LtWin32GetVolumeDirectoryPath(SIZE_T PathLength, const WCHAR* Path, SIZE_T BasePathLength, const WCHAR* BasePath, SIZE_T PathBufferSize, WCHAR* PathBuffer);
+SIZE_T FlWin32GetVolumeDirectoryPath(SIZE_T PathLength, const WCHAR* Path, SIZE_T BasePathLength, const WCHAR* BasePath, SIZE_T PathBufferSize, WCHAR* PathBuffer);
 
-BOOL LtWin32IsPathFullyQualifiedUtf8(SIZE_T PathLength, const char* Path);
+BOOL FlWin32IsPathFullyQualifiedUtf8(SIZE_T PathLength, const char* Path);
 
-SIZE_T LtWin32GetFullyQualifiedPathUtf8(SIZE_T PathLength, const char* Path, SIZE_T BasePathLength, const char* BasePath, SIZE_T PathBufferSize, char* PathBuffer);
+SIZE_T FlWin32GetFullyQualifiedPathUtf8(SIZE_T PathLength, const char* Path, SIZE_T BasePathLength, const char* BasePath, SIZE_T PathBufferSize, char* PathBuffer);
 
-SIZE_T LtWin32GetVolumeDirectoryPathUtf8(SIZE_T PathLength, const char* Path, SIZE_T BasePathLength, const char* BasePath, SIZE_T PathBufferSize, char* PathBuffer);
+SIZE_T FlWin32GetVolumeDirectoryPathUtf8(SIZE_T PathLength, const char* Path, SIZE_T BasePathLength, const char* BasePath, SIZE_T PathBufferSize, char* PathBuffer);
 
 #ifdef __cplusplus
 }
 #endif // __cplusplus
 
-#endif // LT_WIN32_FILE_PATH_H
+#endif // FL_WIN32_FILE_PATH_H

@@ -27,8 +27,8 @@
 		OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef LT_UUID_H
-#define LT_UUID_H
+#ifndef FL_UUID_H
+#define FL_UUID_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,10 +37,10 @@ extern "C" {
 #include <stddef.h>
 #include <Windows.h>
 
-void LtUuidCreateRandomId(void* Uuid);
+void FlUuidCreateRandomId(void* Uuid);
 /*
 	Procedure:
-		LtUuidCreateRandomId
+		FlUuidCreateRandomId
 
 	Description:
 		This procedure creates a new random UUID.
@@ -52,10 +52,10 @@ void LtUuidCreateRandomId(void* Uuid);
 			Pointer to a buffer that will receive a new random UUID.
 */
 
-size_t LtUuidEncodeStringUtf8(const void* Uuid, char* Buffer);
+size_t FlUuidEncodeStringUtf8(const void* Uuid, char* Buffer);
 /*
 	Procedure:
-		LtUuidEncodeString
+		FlUuidEncodeString
 
 	Description:
 		This procedure prints UUID into non-null terminated UTF-8 string.
@@ -74,10 +74,10 @@ size_t LtUuidEncodeStringUtf8(const void* Uuid, char* Buffer);
 		The procedure returns the length of the string that is always 38.
 */
 
-size_t LtUuidDecodeStringUtf8(void* Uuid, size_t Length, const char* String);
+size_t FlUuidDecodeStringUtf8(void* Uuid, size_t Length, const char* String);
 /*
 	Procedure:
-		LtUuidDecodeString
+		FlUuidDecodeString
 
 	Description:
 		This procedure decodes non-null terminated UTF-8 string encoding an UUID value.
@@ -101,10 +101,10 @@ size_t LtUuidDecodeStringUtf8(void* Uuid, size_t Length, const char* String);
 
 */
 
-size_t LtUuidEncodeStringUtf16(const void* Uuid, WCHAR* Buffer);
+size_t FlUuidEncodeStringUtf16(const void* Uuid, WCHAR* Buffer);
 /*
 	Procedure:
-		LtUuidEncodeString
+		FlUuidEncodeString
 
 	Description:
 		This procedure prints UUID into non-null terminated UTF-16 string.
@@ -123,10 +123,10 @@ size_t LtUuidEncodeStringUtf16(const void* Uuid, WCHAR* Buffer);
 		The procedure returns the length of the string that is always 38.
 */
 
-size_t LtUuidDecodeStringUtf16(void* Uuid, size_t Length, const WCHAR* String);
+size_t FlUuidDecodeStringUtf16(void* Uuid, size_t Length, const WCHAR* String);
 /*
 	Procedure:
-		LtUuidDecodeString
+		FlUuidDecodeString
 
 	Description:
 		This procedure decodes non-null terminated UTF-16 string encoding an UUID value.
@@ -154,4 +154,4 @@ size_t LtUuidDecodeStringUtf16(void* Uuid, size_t Length, const WCHAR* String);
 }
 #endif // __cplusplus
 
-#endif // LT_UUID_H
+#endif // FL_UUID_H

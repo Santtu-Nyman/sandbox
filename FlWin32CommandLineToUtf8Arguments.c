@@ -34,10 +34,10 @@ extern "C" {
 #endif
 
 #define WIN32_LEAN_AND_MEAN
-#include "LtWin32CommandLineToUtf8Arguments.h"
-#include "LtUtf8Utf16Converter.h"
+#include "FlWin32CommandLineToUtf8Arguments.h"
+#include "FlUtf8Utf16Converter.h"
 
-DWORD LtWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* argument_count_address, char*** argument_table_address)
+DWORD FlWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* argument_count_address, char*** argument_table_address)
 {
 	const size_t max_file_name_length = UNICODE_STRING_MAX_CHARS;
 
@@ -68,7 +68,9 @@ DWORD LtWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* arg
 		size_t utf16_executable_name_size = (((MAX_PATH + 1) * sizeof(WCHAR)) + (page_size - 1)) & ~(page_size - 1);
 		WCHAR* utf16_executable_name = (WCHAR*)VirtualAlloc(0, utf16_executable_name_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 		if (!utf16_executable_name)
+		{
 			return ERROR_OUTOFMEMORY;
+		}
 
 		size_t utf16_executable_name_length = (size_t)GetModuleFileNameW(0, utf16_executable_name, (DWORD)(utf16_executable_name_size / sizeof(WCHAR)));
 		if (!utf16_executable_name_length || utf16_executable_name_length > (utf16_executable_name_size / sizeof(WCHAR)))
@@ -77,7 +79,9 @@ DWORD LtWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* arg
 			utf16_executable_name_size = (((max_file_name_length + 1) * sizeof(WCHAR)) + (page_size - 1)) & ~(page_size - 1);
 			utf16_executable_name = (WCHAR*)VirtualAlloc(0, utf16_executable_name_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 			if (!utf16_executable_name)
+			{
 				return ERROR_OUTOFMEMORY;
+			}
 
 			utf16_executable_name_length = (size_t)GetModuleFileNameW(0, utf16_executable_name, (DWORD)(utf16_executable_name_size / sizeof(WCHAR)));
 			if (!utf16_executable_name_length || utf16_executable_name_length > (utf16_executable_name_size / sizeof(WCHAR)))
@@ -92,7 +96,7 @@ DWORD LtWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* arg
 			}
 		}
 		
-		size_t utf8_executable_name_length = LtConvertUtf16LeToUtf8(utf16_executable_name_length, utf16_executable_name, 0, 0);
+		size_t utf8_executable_name_length = FlConvertUtf16LeToUtf8(utf16_executable_name_length, utf16_executable_name, 0, 0);
 		size_t utf8_table_size = (((2 * sizeof(char*)) + (utf8_executable_name_length + 1)) + (page_size - 1)) & ~(page_size - 1);
 		char** utf8_table = (char**)VirtualAlloc(0, utf8_table_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 		if (!utf8_table)
@@ -103,7 +107,7 @@ DWORD LtWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* arg
 		char* utf8_executable_name = (char*)((uintptr_t)utf8_table + (2 * sizeof(char*)));
 		utf8_table[0] = utf8_executable_name;
 		utf8_table[1] = 0;
-		LtConvertUtf16LeToUtf8(utf16_executable_name_length, utf16_executable_name, utf8_executable_name_length, utf8_executable_name);
+		FlConvertUtf16LeToUtf8(utf16_executable_name_length, utf16_executable_name, utf8_executable_name_length, utf8_executable_name);
 		utf8_executable_name[utf8_executable_name_length] = 0;
 
 		VirtualFree(utf16_executable_name, 0, MEM_RELEASE);
@@ -113,12 +117,14 @@ DWORD LtWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* arg
 		return 0;
 	}
 
-	size_t command_length = LtConvertUtf16LeToUtf8(native_command_length, native_command, 0, 0);
+	size_t command_length = FlConvertUtf16LeToUtf8(native_command_length, native_command, 0, 0);
 	size_t command_size = (((size_t)command_length + 1) + (page_size - 1)) & ~(page_size - 1);
 	char* command = (char*)VirtualAlloc(0, command_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 	if (!command)
+	{
 		return ERROR_OUTOFMEMORY;
-	LtConvertUtf16LeToUtf8(native_command_length, native_command, command_length, command);
+	}
+	FlConvertUtf16LeToUtf8(native_command_length, native_command, command_length, command);
 	command[command_length] = 0;
 
 	size_t argument_count = 0;
@@ -143,9 +149,13 @@ DWORD LtWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* arg
 				in_quotes = !in_quotes;
 			}
 			else if (backslash_count && (backslash_count & 1))
+			{
 				argument_character_count += (backslash_count / 2) + 1;
+			}
 			else
+			{
 				in_quotes = !in_quotes;
+			}
 			if (quoted_double_quote)
 			{
 				++argument_character_count;
@@ -163,7 +173,9 @@ DWORD LtWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* arg
 					backslash_count = 0;
 				}
 				if (in_quotes)
+				{
 					++argument_character_count;
+				}
 				else
 				{
 					in_argument = 0;
@@ -228,17 +240,23 @@ DWORD LtWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* arg
 			if (backslash_count && !(backslash_count & 1))
 			{
 				for (char* fill_end = argument_write + (backslash_count / 2); argument_write != fill_end;)
+				{
 					*argument_write++ = '\\';
+				}
 				in_quotes = !in_quotes;
 			}
 			else if (backslash_count && (backslash_count & 1))
 			{
 				for (char* fill_end = argument_write + (backslash_count / 2); argument_write != fill_end;)
+				{
 					*argument_write++ = '\\';
+				}
 				*argument_write++ = '\"';
 			}
 			else
+			{
 				in_quotes = !in_quotes;
+			}
 			if (quoted_double_quote)
 			{
 				*argument_write++ = '\"';
@@ -253,11 +271,15 @@ DWORD LtWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* arg
 				if (backslash_count)
 				{
 					for (char* fill_end = argument_write + backslash_count; argument_write != fill_end;)
+					{
 						*argument_write++ = '\\';
+					}
 					backslash_count = 0;
 				}
 				if (in_quotes)
+				{
 					*argument_write++ = command[i];
+				}
 				else
 				{
 					in_argument = 0;
@@ -276,7 +298,9 @@ DWORD LtWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* arg
 			if (backslash_count)
 			{
 				for (char* fill_end = argument_write + backslash_count; argument_write != fill_end;)
+				{
 					*argument_write++ = '\\';
+				}
 				backslash_count = 0;
 			}
 			*argument_write++ = command[i];
@@ -287,7 +311,9 @@ DWORD LtWin32CommandLineToUtf8Arguments(const WCHAR* native_command, size_t* arg
 		if (backslash_count)
 		{
 			for (char* fill_end = argument_write + backslash_count; argument_write != fill_end;)
+			{
 				*argument_write++ = '\\';
+			}
 			backslash_count = 0;
 		}
 		*argument_write++ = 0;

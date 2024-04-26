@@ -32,12 +32,12 @@
 extern "C" {
 #endif // __cplusplus
 
-#include "LtSha256.h"
+#include "FlSha256.h"
 #include <string.h>
 
-#define LT_SHA256_INTERNAL_ROTATE_RIGHT_32(X, N) ((X >> N) | (X << (32 - N)))
+#define FL_SHA256_INTERNAL_ROTATE_RIGHT_32(X, N) (((X) >> (N)) | ((X) << (32 - (N))))
 
-static const uint32_t LtSha256InternalConstantTableK[64] = {
+static const uint32_t FlSha256InternalConstantTableK[64] = {
 	0x428a2f98lu, 0x71374491lu, 0xb5c0fbcflu, 0xe9b5dba5lu, 0x3956c25blu, 0x59f111f1lu, 0x923f82a4lu, 0xab1c5ed5lu,
 	0xd807aa98lu, 0x12835b01lu, 0x243185belu, 0x550c7dc3lu, 0x72be5d74lu, 0x80deb1felu, 0x9bdc06a7lu, 0xc19bf174lu,
 	0xe49b69c1lu, 0xefbe4786lu, 0x0fc19dc6lu, 0x240ca1cclu, 0x2de92c6flu, 0x4a7484aalu, 0x5cb0a9dclu, 0x76f988dalu,
@@ -47,7 +47,7 @@ static const uint32_t LtSha256InternalConstantTableK[64] = {
 	0x19a4c116lu, 0x1e376c08lu, 0x2748774clu, 0x34b0bcb5lu, 0x391c0cb3lu, 0x4ed8aa4alu, 0x5b9cca4flu, 0x682e6ff3lu,
 	0x748f82eelu, 0x78a5636flu, 0x84c87814lu, 0x8cc70208lu, 0x90befffalu, 0xa4506ceblu, 0xbef9a3f7lu, 0xc67178f2lu };
 
-static void LtSha256InternalConsumeChunk(uint32_t* h, const uint32_t* p)
+static void FlSha256InternalConsumeChunk(uint32_t* h, const uint32_t* p)
 {
 	uint32_t ah[8];
 	uint32_t w[16];
@@ -59,10 +59,10 @@ static void LtSha256InternalConsumeChunk(uint32_t* h, const uint32_t* p)
 	{
 		uint32_t wx = p[i];
 		wx = (wx >> 24) | ((wx >> 8) & 0xff00) | ((wx << 8) & 0xff0000) | (wx << 24);
-		uint32_t s1 = LT_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 6) ^ LT_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 11) ^ LT_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 25);
+		uint32_t s1 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 6) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 11) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 25);
 		uint32_t ch = (ah[4] & ah[5]) ^ (~ah[4] & ah[6]);
-		uint32_t temp1 = ah[7] + s1 + ch + LtSha256InternalConstantTableK[i] + wx;
-		uint32_t s0 = LT_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 2) ^ LT_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 13) ^ LT_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 22);
+		uint32_t temp1 = ah[7] + s1 + ch + FlSha256InternalConstantTableK[i] + wx;
+		uint32_t s0 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 2) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 13) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 22);
 		uint32_t maj = (ah[0] & ah[1]) ^ (ah[0] & ah[2]) ^ (ah[1] & ah[2]);
 		uint32_t temp2 = s0 + maj;
 		w[i] = wx;
@@ -78,13 +78,13 @@ static void LtSha256InternalConsumeChunk(uint32_t* h, const uint32_t* p)
 	for (int i = 0; i < 48; i++)
 	{
 		int j = i & 0xf;
-		uint32_t s0 = LT_SHA256_INTERNAL_ROTATE_RIGHT_32(w[(j + 1) & 0xf], 7) ^ LT_SHA256_INTERNAL_ROTATE_RIGHT_32(w[(j + 1) & 0xf], 18) ^ (w[(j + 1) & 0xf] >> 3);
-		uint32_t s1 = LT_SHA256_INTERNAL_ROTATE_RIGHT_32(w[(j + 14) & 0xf], 17) ^ LT_SHA256_INTERNAL_ROTATE_RIGHT_32(w[(j + 14) & 0xf], 19) ^ (w[(j + 14) & 0xf] >> 10);
+		uint32_t s0 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(w[(j + 1) & 0xf], 7) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(w[(j + 1) & 0xf], 18) ^ (w[(j + 1) & 0xf] >> 3);
+		uint32_t s1 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(w[(j + 14) & 0xf], 17) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(w[(j + 14) & 0xf], 19) ^ (w[(j + 14) & 0xf] >> 10);
 		uint32_t wx = w[j] + s0 + w[(j + 9) & 0xf] + s1;
-		uint32_t s3 = LT_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 6) ^ LT_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 11) ^ LT_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 25);
+		uint32_t s3 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 6) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 11) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 25);
 		uint32_t ch = (ah[4] & ah[5]) ^ (~ah[4] & ah[6]);
-		uint32_t temp1 = ah[7] + s3 + ch + LtSha256InternalConstantTableK[((i & 0x30) + 16) | j] + wx;
-		uint32_t s2 = LT_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 2) ^ LT_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 13) ^ LT_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 22);
+		uint32_t temp1 = ah[7] + s3 + ch + FlSha256InternalConstantTableK[((i & 0x30) + 16) | j] + wx;
+		uint32_t s2 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 2) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 13) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 22);
 		uint32_t maj = (ah[0] & ah[1]) ^ (ah[0] & ah[2]) ^ (ah[1] & ah[2]);
 		uint32_t temp2 = s2 + maj;
 		w[j] = wx;
@@ -103,7 +103,7 @@ static void LtSha256InternalConsumeChunk(uint32_t* h, const uint32_t* p)
 	}
 }
 
-void LtSha256Initialize(LtSha256Context* Context)
+void FlSha256CreateHash(FlSha256Context* Context)
 {
 	Context->Size = 0;
 	Context->Buffer[0] = 0x6a09e667lu;
@@ -117,7 +117,7 @@ void LtSha256Initialize(LtSha256Context* Context)
 	memset(&Context->Input, 0, 64);
 }
 
-void LtSha256Update(LtSha256Context* Context, size_t InputSize, const void* InputData)
+void FlSha256HashData(FlSha256Context* Context, size_t InputSize, const void* InputData)
 {
 	const uint8_t* Input = (const uint8_t*)InputData;
 	int InitialStepOffset = (int)(Context->Size & 0x3F);
@@ -132,20 +132,20 @@ void LtSha256Update(LtSha256Context* Context, size_t InputSize, const void* Inpu
 	{
 		return;
 	}
-	LtSha256InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
+	FlSha256InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
 	Input += (size_t)InitialStepInputSize;
 	InputSize -= (size_t)InitialStepInputSize;
 	while (InputSize >= 64)
 	{
 		memcpy(Context->Input, Input, 64);
-		LtSha256InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
+		FlSha256InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
 		Input += 64;
 		InputSize -= 64;
 	}
 	memcpy(Context->Input, Input, InputSize);
 }
 
-void LtSha256Finalize(LtSha256Context* Context, void* Digest)
+void FlSha256FinishHash(FlSha256Context* Context, void* Digest)
 {
 	size_t ChunkIndex = Context->Size & 0x3F;
 	Context->Input[ChunkIndex] = 0x80;
@@ -153,7 +153,7 @@ void LtSha256Finalize(LtSha256Context* Context, void* Digest)
 	if (ChunkIndex > 56)
 	{
 		memset(Context->Input + ChunkIndex, 0, 64 - ChunkIndex);
-		LtSha256InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
+		FlSha256InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
 		ChunkIndex = 0;
 	}
 	memset(Context->Input + ChunkIndex, 0, 56 - ChunkIndex);
@@ -162,14 +162,14 @@ void LtSha256Finalize(LtSha256Context* Context, void* Digest)
 	{
 		Context->Input[56 + i] = (uint8_t)(BitSize >> ((7 - i) << 3));
 	}
-	LtSha256InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
+	FlSha256InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
 	for (int i = 0; i < 8; i++)
 	{
 		uint32_t swap = Context->Buffer[i];
 		swap = (swap >> 24) | ((swap >> 8) & 0xff00) | ((swap << 8) & 0xff0000) | (swap << 24);
 		Context->Buffer[i] = swap;
 	}
-	memcpy(Digest, Context->Buffer, LT_SHA256_DIGEST_SIZE);
+	memcpy(Digest, Context->Buffer, FL_SHA256_DIGEST_SIZE);
 }
 
 #ifdef __cplusplus

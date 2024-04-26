@@ -34,7 +34,7 @@ extern "C" {
 #endif
 
 #define WIN32_LEAN_AND_MEAN
-#include "LtCommandLineToArgvW.h"
+#include "FlCommandLineToArgvW.h"
 
 WCHAR** LtCommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 {
@@ -54,7 +54,9 @@ WCHAR** LtCommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 	{
 		WCHAR** executable_name_buffer = (WCHAR**)LocalAlloc(LMEM_FIXED, (2 * sizeof(WCHAR*)) + ((MAX_PATH + 1) * sizeof(WCHAR)));
 		if (!executable_name_buffer)
+		{
 			return 0;
+		}
 		size_t executable_name_buffer_size = LocalSize(executable_name_buffer);
 		if (!executable_name_buffer_size)
 		{
@@ -134,9 +136,13 @@ WCHAR** LtCommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 				in_quotes = !in_quotes;
 			}
 			else if (backslash_count && (backslash_count & 1))
+			{
 				argument_character_count += (backslash_count / 2) + 1;
+			}
 			else
+			{
 				in_quotes = !in_quotes;
+			}
 			if (quoted_double_quote)
 			{
 				++argument_character_count;
@@ -154,7 +160,9 @@ WCHAR** LtCommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 					backslash_count = 0;
 				}
 				if (in_quotes)
+				{
 					++argument_character_count;
+				}
 				else
 				{
 					in_argument = 0;
@@ -185,7 +193,9 @@ WCHAR** LtCommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 
 	WCHAR** argument_table = (WCHAR**)LocalAlloc(LMEM_FIXED, (((size_t)argument_count + 1) * sizeof(WCHAR*)) + (((size_t)argument_character_count + (size_t)argument_count) * sizeof(WCHAR)));
 	if (!argument_table)
+	{
 		return 0;
+	}
 
 	WCHAR* argument_write = (WCHAR*)((uintptr_t)argument_table + (((size_t)argument_count + 1) * sizeof(WCHAR*)));
 	in_argument = 1;
@@ -215,17 +225,23 @@ WCHAR** LtCommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 			if (backslash_count && !(backslash_count & 1))
 			{
 				for (WCHAR* fill_end = argument_write + (backslash_count / 2); argument_write != fill_end;)
+				{
 					*argument_write++ = L'\\';
+				}
 				in_quotes = !in_quotes;
 			}
 			else if (backslash_count && (backslash_count & 1))
 			{
 				for (WCHAR* fill_end = argument_write + (backslash_count / 2); argument_write != fill_end;)
+				{
 					*argument_write++ = L'\\';
+				}
 				*argument_write++ = L'\"';
 			}
 			else
+			{
 				in_quotes = !in_quotes;
+			}
 			if (quoted_double_quote)
 			{
 				*argument_write++ = L'\"';
@@ -240,11 +256,15 @@ WCHAR** LtCommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 				if (backslash_count)
 				{
 					for (WCHAR* fill_end = argument_write + backslash_count; argument_write != fill_end;)
+					{
 						*argument_write++ = L'\\';
+					}
 					backslash_count = 0;
 				}
 				if (in_quotes)
+				{
 					*argument_write++ = lpCmdLine[i];
+				}
 				else
 				{
 					in_argument = 0;
@@ -263,7 +283,9 @@ WCHAR** LtCommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 			if (backslash_count)
 			{
 				for (WCHAR* fill_end = argument_write + backslash_count; argument_write != fill_end;)
+				{
 					*argument_write++ = L'\\';
+				}
 				backslash_count = 0;
 			}
 			*argument_write++ = lpCmdLine[i];
@@ -274,7 +296,9 @@ WCHAR** LtCommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 		if (backslash_count)
 		{
 			for (WCHAR* fill_end = argument_write + backslash_count; argument_write != fill_end;)
+			{
 				*argument_write++ = L'\\';
+			}
 			backslash_count = 0;
 		}
 		*argument_write++ = 0;

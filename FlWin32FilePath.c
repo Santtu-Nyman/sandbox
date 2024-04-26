@@ -29,11 +29,11 @@ extern "C" {
 #endif // __cplusplus
 
 #define WIN32_LEAN_AND_MEAN
-#include "LtWin32FilePath.h"
-#include "LtUtf8Utf16Converter.h"
+#include "FlWin32FilePath.h"
+#include "FlUtf8Utf16Converter.h"
 
-#define LT_IS_HEX_WCHAR(C) (((int)(C) >= (int)L'0' && (int)(C) <= (int)L'9') || ((int)(C) >= (int)L'A' && (int)(C) <= (int)L'F') || ((int)(C) >= (int)L'a' && (int)(C) <= (int)L'f'))
-#define LT_IS_HEX_CHAR(C) (((int)(C) >= (int)'0' && (int)(C) <= (int)'9') || ((int)(C) >= (int)'A' && (int)(C) <= (int)'F') || ((int)(C) >= (int)'a' && (int)(C) <= (int)'f'))
+#define FL_IS_HEX_WCHAR(C) (((int)(C) >= (int)L'0' && (int)(C) <= (int)L'9') || ((int)(C) >= (int)L'A' && (int)(C) <= (int)L'F') || ((int)(C) >= (int)L'a' && (int)(C) <= (int)L'f'))
+#define FL_IS_HEX_CHAR(C) (((int)(C) >= (int)'0' && (int)(C) <= (int)'9') || ((int)(C) >= (int)'A' && (int)(C) <= (int)'F') || ((int)(C) >= (int)'a' && (int)(C) <= (int)'f'))
 
 static SIZE_T lt_win32_absolute_path_volume_directory_part_length(SIZE_T path_length, const WCHAR* path)
 {
@@ -51,42 +51,42 @@ static SIZE_T lt_win32_absolute_path_volume_directory_part_length(SIZE_T path_le
 			(path[8] == L'M' || path[8] == L'm') &&
 			(path[9] == L'E' || path[9] == L'e') &&
 			path[10] == L'{' &&
-			LT_IS_HEX_WCHAR(path[11]) &&
-			LT_IS_HEX_WCHAR(path[12]) &&
-			LT_IS_HEX_WCHAR(path[13]) &&
-			LT_IS_HEX_WCHAR(path[14]) &&
-			LT_IS_HEX_WCHAR(path[15]) &&
-			LT_IS_HEX_WCHAR(path[16]) &&
-			LT_IS_HEX_WCHAR(path[17]) &&
-			LT_IS_HEX_WCHAR(path[18]) &&
+			FL_IS_HEX_WCHAR(path[11]) &&
+			FL_IS_HEX_WCHAR(path[12]) &&
+			FL_IS_HEX_WCHAR(path[13]) &&
+			FL_IS_HEX_WCHAR(path[14]) &&
+			FL_IS_HEX_WCHAR(path[15]) &&
+			FL_IS_HEX_WCHAR(path[16]) &&
+			FL_IS_HEX_WCHAR(path[17]) &&
+			FL_IS_HEX_WCHAR(path[18]) &&
 			path[19] == L'-' &&
-			LT_IS_HEX_WCHAR(path[20]) &&
-			LT_IS_HEX_WCHAR(path[21]) &&
-			LT_IS_HEX_WCHAR(path[22]) &&
-			LT_IS_HEX_WCHAR(path[23]) &&
+			FL_IS_HEX_WCHAR(path[20]) &&
+			FL_IS_HEX_WCHAR(path[21]) &&
+			FL_IS_HEX_WCHAR(path[22]) &&
+			FL_IS_HEX_WCHAR(path[23]) &&
 			path[24] == L'-' &&
-			LT_IS_HEX_WCHAR(path[25]) &&
-			LT_IS_HEX_WCHAR(path[26]) &&
-			LT_IS_HEX_WCHAR(path[27]) &&
-			LT_IS_HEX_WCHAR(path[28]) &&
+			FL_IS_HEX_WCHAR(path[25]) &&
+			FL_IS_HEX_WCHAR(path[26]) &&
+			FL_IS_HEX_WCHAR(path[27]) &&
+			FL_IS_HEX_WCHAR(path[28]) &&
 			path[29] == L'-' &&
-			LT_IS_HEX_WCHAR(path[30]) &&
-			LT_IS_HEX_WCHAR(path[31]) &&
-			LT_IS_HEX_WCHAR(path[32]) &&
-			LT_IS_HEX_WCHAR(path[33]) &&
+			FL_IS_HEX_WCHAR(path[30]) &&
+			FL_IS_HEX_WCHAR(path[31]) &&
+			FL_IS_HEX_WCHAR(path[32]) &&
+			FL_IS_HEX_WCHAR(path[33]) &&
 			path[34] == L'-' &&
-			LT_IS_HEX_WCHAR(path[35]) &&
-			LT_IS_HEX_WCHAR(path[36]) &&
-			LT_IS_HEX_WCHAR(path[37]) &&
-			LT_IS_HEX_WCHAR(path[38]) &&
-			LT_IS_HEX_WCHAR(path[39]) &&
-			LT_IS_HEX_WCHAR(path[40]) &&
-			LT_IS_HEX_WCHAR(path[41]) &&
-			LT_IS_HEX_WCHAR(path[42]) &&
-			LT_IS_HEX_WCHAR(path[43]) &&
-			LT_IS_HEX_WCHAR(path[44]) &&
-			LT_IS_HEX_WCHAR(path[45]) &&
-			LT_IS_HEX_WCHAR(path[46]) &&
+			FL_IS_HEX_WCHAR(path[35]) &&
+			FL_IS_HEX_WCHAR(path[36]) &&
+			FL_IS_HEX_WCHAR(path[37]) &&
+			FL_IS_HEX_WCHAR(path[38]) &&
+			FL_IS_HEX_WCHAR(path[39]) &&
+			FL_IS_HEX_WCHAR(path[40]) &&
+			FL_IS_HEX_WCHAR(path[41]) &&
+			FL_IS_HEX_WCHAR(path[42]) &&
+			FL_IS_HEX_WCHAR(path[43]) &&
+			FL_IS_HEX_WCHAR(path[44]) &&
+			FL_IS_HEX_WCHAR(path[45]) &&
+			FL_IS_HEX_WCHAR(path[46]) &&
 			path[47] == L'}' &&
 			path[48] == L'\\')
 		{
@@ -187,7 +187,7 @@ static SIZE_T lt_win32_absolute_path_volume_directory_part_length(SIZE_T path_le
 	}
 }
 
-BOOL LtWin32IsPathFullyQualified(SIZE_T PathLength, const WCHAR* Path)
+BOOL FlWin32IsPathFullyQualified(SIZE_T PathLength, const WCHAR* Path)
 {
 	size_t path_volume_directory_part_length = lt_win32_absolute_path_volume_directory_part_length(PathLength, Path);
 	if (!path_volume_directory_part_length)
@@ -217,7 +217,7 @@ BOOL LtWin32IsPathFullyQualified(SIZE_T PathLength, const WCHAR* Path)
 	return TRUE;
 }
 
-SIZE_T LtWin32GetFullyQualifiedPath(SIZE_T PathLength, const WCHAR* Path, SIZE_T BasePathLength, const WCHAR* BasePath, SIZE_T PathBufferSize, WCHAR* PathBuffer)
+SIZE_T FlWin32GetFullyQualifiedPath(SIZE_T PathLength, const WCHAR* Path, SIZE_T BasePathLength, const WCHAR* BasePath, SIZE_T PathBufferSize, WCHAR* PathBuffer)
 {
 	size_t path_volume_part_length = lt_win32_absolute_path_volume_directory_part_length(PathLength, Path);
 	// Remove trailing '\' if Path is longer than volume directory Path. Volume directory length is zero when Path is relative
@@ -659,7 +659,7 @@ SIZE_T LtWin32GetFullyQualifiedPath(SIZE_T PathLength, const WCHAR* Path, SIZE_T
 	}
 }
 
-SIZE_T LtWin32GetVolumeDirectoryPath(SIZE_T PathLength, const WCHAR* Path, SIZE_T BasePathLength, const WCHAR* BasePath, SIZE_T PathBufferSize, WCHAR* PathBuffer)
+SIZE_T FlWin32GetVolumeDirectoryPath(SIZE_T PathLength, const WCHAR* Path, SIZE_T BasePathLength, const WCHAR* BasePath, SIZE_T PathBufferSize, WCHAR* PathBuffer)
 {
 	size_t path_volume_part_length = lt_win32_absolute_path_volume_directory_part_length(PathLength, Path);
 	if (!BasePathLength && !PathLength)
@@ -762,42 +762,42 @@ static SIZE_T lt_win32_absolute_path_volume_directory_part_length_utf8(SIZE_T pa
 			(path[8] == 'M' || path[8] == 'm') &&
 			(path[9] == 'E' || path[9] == 'e') &&
 			path[10] == '{' &&
-			LT_IS_HEX_CHAR(path[11]) &&
-			LT_IS_HEX_CHAR(path[12]) &&
-			LT_IS_HEX_CHAR(path[13]) &&
-			LT_IS_HEX_CHAR(path[14]) &&
-			LT_IS_HEX_CHAR(path[15]) &&
-			LT_IS_HEX_CHAR(path[16]) &&
-			LT_IS_HEX_CHAR(path[17]) &&
-			LT_IS_HEX_CHAR(path[18]) &&
+			FL_IS_HEX_CHAR(path[11]) &&
+			FL_IS_HEX_CHAR(path[12]) &&
+			FL_IS_HEX_CHAR(path[13]) &&
+			FL_IS_HEX_CHAR(path[14]) &&
+			FL_IS_HEX_CHAR(path[15]) &&
+			FL_IS_HEX_CHAR(path[16]) &&
+			FL_IS_HEX_CHAR(path[17]) &&
+			FL_IS_HEX_CHAR(path[18]) &&
 			path[19] == '-' &&
-			LT_IS_HEX_CHAR(path[20]) &&
-			LT_IS_HEX_CHAR(path[21]) &&
-			LT_IS_HEX_CHAR(path[22]) &&
-			LT_IS_HEX_CHAR(path[23]) &&
+			FL_IS_HEX_CHAR(path[20]) &&
+			FL_IS_HEX_CHAR(path[21]) &&
+			FL_IS_HEX_CHAR(path[22]) &&
+			FL_IS_HEX_CHAR(path[23]) &&
 			path[24] == '-' &&
-			LT_IS_HEX_CHAR(path[25]) &&
-			LT_IS_HEX_CHAR(path[26]) &&
-			LT_IS_HEX_CHAR(path[27]) &&
-			LT_IS_HEX_CHAR(path[28]) &&
+			FL_IS_HEX_CHAR(path[25]) &&
+			FL_IS_HEX_CHAR(path[26]) &&
+			FL_IS_HEX_CHAR(path[27]) &&
+			FL_IS_HEX_CHAR(path[28]) &&
 			path[29] == '-' &&
-			LT_IS_HEX_CHAR(path[30]) &&
-			LT_IS_HEX_CHAR(path[31]) &&
-			LT_IS_HEX_CHAR(path[32]) &&
-			LT_IS_HEX_CHAR(path[33]) &&
+			FL_IS_HEX_CHAR(path[30]) &&
+			FL_IS_HEX_CHAR(path[31]) &&
+			FL_IS_HEX_CHAR(path[32]) &&
+			FL_IS_HEX_CHAR(path[33]) &&
 			path[34] == '-' &&
-			LT_IS_HEX_CHAR(path[35]) &&
-			LT_IS_HEX_CHAR(path[36]) &&
-			LT_IS_HEX_CHAR(path[37]) &&
-			LT_IS_HEX_CHAR(path[38]) &&
-			LT_IS_HEX_CHAR(path[39]) &&
-			LT_IS_HEX_CHAR(path[40]) &&
-			LT_IS_HEX_CHAR(path[41]) &&
-			LT_IS_HEX_CHAR(path[42]) &&
-			LT_IS_HEX_CHAR(path[43]) &&
-			LT_IS_HEX_CHAR(path[44]) &&
-			LT_IS_HEX_CHAR(path[45]) &&
-			LT_IS_HEX_CHAR(path[46]) &&
+			FL_IS_HEX_CHAR(path[35]) &&
+			FL_IS_HEX_CHAR(path[36]) &&
+			FL_IS_HEX_CHAR(path[37]) &&
+			FL_IS_HEX_CHAR(path[38]) &&
+			FL_IS_HEX_CHAR(path[39]) &&
+			FL_IS_HEX_CHAR(path[40]) &&
+			FL_IS_HEX_CHAR(path[41]) &&
+			FL_IS_HEX_CHAR(path[42]) &&
+			FL_IS_HEX_CHAR(path[43]) &&
+			FL_IS_HEX_CHAR(path[44]) &&
+			FL_IS_HEX_CHAR(path[45]) &&
+			FL_IS_HEX_CHAR(path[46]) &&
 			path[47] == '}' &&
 			path[48] == '\\')
 		{
@@ -898,7 +898,7 @@ static SIZE_T lt_win32_absolute_path_volume_directory_part_length_utf8(SIZE_T pa
 	}
 }
 
-BOOL LtWin32IsPathFullyQualifiedUtf8(SIZE_T PathLength, const char* Path)
+BOOL FlWin32IsPathFullyQualifiedUtf8(SIZE_T PathLength, const char* Path)
 {
 	size_t path_volume_directory_part_length = lt_win32_absolute_path_volume_directory_part_length_utf8(PathLength, Path);
 	if (!path_volume_directory_part_length)
@@ -906,7 +906,7 @@ BOOL LtWin32IsPathFullyQualifiedUtf8(SIZE_T PathLength, const char* Path)
 		return FALSE;
 	}
 
-	size_t utf16_fully_qualified_length = LtConvertUtf8ToUtf16Le(PathLength, Path, 0, 0);
+	size_t utf16_fully_qualified_length = FlConvertUtf8ToUtf16Le(PathLength, Path, 0, 0);
 	BOOL extended_prefix = ((PathLength > 4 && Path[0] == '\\' && Path[1] == '?' && Path[2] == '?' && Path[3] == '\\') || (PathLength > 4 && Path[0] == '\\' && Path[1] == '\\' && Path[2] == '?' && Path[3] == '\\'));
 	if ((utf16_fully_qualified_length > (MAX_PATH - 1)) && !extended_prefix)
 	{
@@ -929,7 +929,7 @@ BOOL LtWin32IsPathFullyQualifiedUtf8(SIZE_T PathLength, const char* Path)
 	return TRUE;
 }
 
-SIZE_T LtWin32GetFullyQualifiedPathUtf8(SIZE_T PathLength, const char* Path, SIZE_T BasePathLength, const char* BasePath, SIZE_T PathBufferSize, char* PathBuffer)
+SIZE_T FlWin32GetFullyQualifiedPathUtf8(SIZE_T PathLength, const char* Path, SIZE_T BasePathLength, const char* BasePath, SIZE_T PathBufferSize, char* PathBuffer)
 {
 	size_t path_volume_part_length = lt_win32_absolute_path_volume_directory_part_length_utf8(PathLength, Path);
 	// Remove trailing '\' if Path is longer than volume directory Path. Volume directory length is zero when Path is relative
@@ -964,7 +964,7 @@ SIZE_T LtWin32GetFullyQualifiedPathUtf8(SIZE_T PathLength, const char* Path, SIZ
 		}
 
 		size_t fully_qualified_length = path_volume_part_length;
-		size_t fully_qualified_utf16_length = LtConvertUtf8ToUtf16Le(path_volume_part_length, Path, 0, 0);
+		size_t fully_qualified_utf16_length = FlConvertUtf8ToUtf16Le(path_volume_part_length, Path, 0, 0);
 		for (size_t offset = PathLength, component_count = 0, component_erase_count = 0; offset != path_volume_part_length;)
 		{
 			size_t component_lenght = 0;
@@ -986,7 +986,7 @@ SIZE_T LtWin32GetFullyQualifiedPathUtf8(SIZE_T PathLength, const char* Path, SIZ
 				if (!component_erase_count)
 				{
 					fully_qualified_length += component_lenght + 1;
-					fully_qualified_utf16_length += LtConvertUtf8ToUtf16Le(component_lenght, Path + component_offset, 0, 0) + 1;
+					fully_qualified_utf16_length += FlConvertUtf8ToUtf16Le(component_lenght, Path + component_offset, 0, 0) + 1;
 					component_count++;
 				}
 				else
@@ -1166,7 +1166,7 @@ SIZE_T LtWin32GetFullyQualifiedPathUtf8(SIZE_T PathLength, const char* Path, SIZ
 				if (!relative_path_component_erase_count)
 				{
 					relative_path_length += component_lenght + 1;
-					relative_path_utf16_length += LtConvertUtf8ToUtf16Le(component_lenght, Path + component_offset, 0, 0) + 1;
+					relative_path_utf16_length += FlConvertUtf8ToUtf16Le(component_lenght, Path + component_offset, 0, 0) + 1;
 					relative_path_component_count++;
 				}
 				else
@@ -1192,7 +1192,7 @@ SIZE_T LtWin32GetFullyQualifiedPathUtf8(SIZE_T PathLength, const char* Path, SIZ
 		// Get the base Path component count and length after making it fully qualified. Also erase components as required from the relative sub Path
 		size_t base_path_component_count = 0;
 		size_t base_path_fully_qualified_length = base_path_volume_part_length;
-		size_t base_path_fully_qualified_utf16_length = LtConvertUtf8ToUtf16Le(base_path_volume_part_length, BasePath, 0, 0);
+		size_t base_path_fully_qualified_utf16_length = FlConvertUtf8ToUtf16Le(base_path_volume_part_length, BasePath, 0, 0);
 		for (size_t offset = BasePathLength, component_erase_count = relative_path_component_erase_count; offset != base_path_volume_part_length;)
 		{
 			size_t component_lenght = 0;
@@ -1214,7 +1214,7 @@ SIZE_T LtWin32GetFullyQualifiedPathUtf8(SIZE_T PathLength, const char* Path, SIZ
 				if (!component_erase_count)
 				{
 					base_path_fully_qualified_length += component_lenght + 1;
-					base_path_fully_qualified_utf16_length += LtConvertUtf8ToUtf16Le(component_lenght, BasePath + component_offset, 0, 0) + 1;
+					base_path_fully_qualified_utf16_length += FlConvertUtf8ToUtf16Le(component_lenght, BasePath + component_offset, 0, 0) + 1;
 					base_path_component_count++;
 				}
 				else
@@ -1390,7 +1390,7 @@ SIZE_T LtWin32GetFullyQualifiedPathUtf8(SIZE_T PathLength, const char* Path, SIZ
 	}
 }
 
-SIZE_T LtWin32GetVolumeDirectoryPathUtf8(SIZE_T PathLength, const char* Path, SIZE_T BasePathLength, const char* BasePath, SIZE_T PathBufferSize, char* PathBuffer)
+SIZE_T FlWin32GetVolumeDirectoryPathUtf8(SIZE_T PathLength, const char* Path, SIZE_T BasePathLength, const char* BasePath, SIZE_T PathBufferSize, char* PathBuffer)
 {
 	size_t path_volume_part_length = lt_win32_absolute_path_volume_directory_part_length_utf8(PathLength, Path);
 	if (!BasePathLength && !PathLength)
@@ -1426,7 +1426,7 @@ SIZE_T LtWin32GetVolumeDirectoryPathUtf8(SIZE_T PathLength, const char* Path, SI
 	}
 
 	size_t fully_qualified_length = path_volume_part_length;
-	size_t utf16_fully_qualified_length = LtConvertUtf8ToUtf16Le(fully_qualified_length, Path, 0, 0);
+	size_t utf16_fully_qualified_length = FlConvertUtf8ToUtf16Le(fully_qualified_length, Path, 0, 0);
 	BOOL add_extended_prefix = FALSE;
 	BOOL remove_extended_prefix = FALSE;
 	if ((!extended_prefix && (utf16_fully_qualified_length > (MAX_PATH - 1))) || (extended_prefix && ((network_path ? (utf16_fully_qualified_length - 6) : (utf16_fully_qualified_length - 4)) > (MAX_PATH - 1))))

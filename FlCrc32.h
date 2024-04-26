@@ -1,21 +1,8 @@
 /*
-	Implementation for Win32 function CommandLineToArgvW by Santtu Nyman.
-	git repository https://github.com/Santtu-Nyman/sandbox
+	Simple CRC32 implementation by Santtu S. Nyman.
 
-	Description
-		Alternative implementation of Win32 function CommandLineToArgvW.
+	License:
 
-		The point of this implementation is to avoid linking the Shell32.dll.
-		This dll has approximately one useful function which is CommandLineToArgvW and this
-		is annoying, because in order to use it you need link the whole bloated module.
-
-		My implementation of CommandLineToArgvW does only depend on kernel32.dll.
-		It is pretty much impossible to do any better on dependencies with Windows than this.
-
-		Read documentation of CommandLineToArgvW function from Microsoft for understanding how this function works.
-		The functioning of CommandLineToArgvW and LtCommandLineToArgvW are identical.
-
-	License
 		This is free and unencumbered software released into the public domain.
 
 		Anyone is free to copy, modify, publish, use, compile, sell, or
@@ -38,23 +25,26 @@
 		OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 		ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 		OTHER DEALINGS IN THE SOFTWARE.
-
-		For more information, please refer to <https://unlicense.org>
 */
 
-#ifndef LT_COMMAND_LINE_TO_ARGV_W_H
-#define LT_COMMAND_LINE_TO_ARGV_W_H
+#ifndef LT_CRC32_H
+#define LT_CRC32_H
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // __cplusplus
 
-#include <Windows.h>
+#include <stddef.h>
+#include <stdint.h>
 
-WCHAR** LtCommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs);
+uint32_t LtCrc32Create();
+
+uint32_t LtCrc32Data(uint32_t Crc32Context, size_t data_size, const void* data);
+
+uint32_t LtCrc32Finish(uint32_t Crc32Context);
 
 #ifdef __cplusplus
 }
-#endif
+#endif // __cplusplus
 
-#endif // LT_COMMAND_LINE_TO_ARGV_W_H
+#endif // LT_CRC32_H

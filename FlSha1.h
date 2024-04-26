@@ -1,5 +1,5 @@
 /*
-	Santtu S. Nyman's 2024 version of Alain Mosnier's public domain SHA-256 implementation ( https://github.com/amosnier/sha-2 Sunday, 10 March 2024 ).
+	Santtu S. Nyman's 2024 version of r10nw7fd3's public domain SHA1 implementation ( https://github.com/clibs/sha1/ Friday, 26 April 2024 ).
 	This modified implementation is released to public domain as well.
 
 	License:
@@ -28,8 +28,8 @@
 		OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef LT_SHA256_H
-#define LT_SHA256_H
+#ifndef FL_SHA1_H
+#define FL_SHA1_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,41 +38,42 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-#define LT_SHA256_DIGEST_SIZE 32
+#define FL_SHA1_DIGEST_SIZE 20
 
 typedef struct
 {
-	uint64_t Size;
-	uint32_t Buffer[8];
-	uint8_t Input[64];
-} LtSha256Context;
+	uint32_t count[2];
+	uint32_t state[5];
+	uint32_t padding;
+	uint8_t buffer[64];
+} FlSha1Context;
 
-void LtSha256Initialize(LtSha256Context* Context);
+void FlSha1CreateHash(FlSha1Context* Context);
 /*
 	Procedure:
-		LtSha256Initialize
+		FlSha1CreateHash
 
 	Description:
-		This procedure initilizes a new SHA-256 calculation context.
+		This procedure initilizes a new Sha1 calculation context.
 		The pre-initialization contents of the context are ignored and overridden on initialization.
 
 	Parameters:
 		Context:
-			Address of the SHA-256 calculation context.
+			Address of the Sha1 calculation context.
 */
 
-void LtSha256Update(LtSha256Context* Context, size_t InputSize, const void* InputData);
+void FlSha1HashData(FlSha1Context* Context, size_t InputSize, const void* InputData);
 /*
 	Procedure:
-		LtSha256Update
+		FlSha1HashData
 
 	Description:
-		This procedure processes a chunk of input data for SHA-256 calculation.
+		This procedure processes a chunk of input data for Sha1 calculation.
 		The user may combine arbitrary number of input chunks for a hash calculation by calling this procedure repeatedly passing input chunks in order.
 
 	Parameters:
 		Context:
-			Address of the SHA-256 calculation context.
+			Address of the initialized Sha1 calculation context.
 
 		InputSize:
 			Size of the next data chunk to process in bytes.
@@ -81,26 +82,26 @@ void LtSha256Update(LtSha256Context* Context, size_t InputSize, const void* Inpu
 			pointer to the location that contains the next data chunk to process in the hash calculation.
 */
 
-void LtSha256Finalize(LtSha256Context* Context, void* Digest);
+void FlSha1FinishHash(FlSha1Context* Context, void* Digest);
 /*
 	Procedure:
-		LtSha256Finalize
+		FlSha1FinishHash
 
 	Description:
-		This procedure finalizes calculating the SHA-256 and invalidates the calculation context.
+		This procedure finalizes calculating the Sha1 and invalidates the calculation context.
 		The context may not be used again before it has been re-initialized.
 		Calling this procedure immediately after context initialization calculates disgust of no input.
-		
+
 	Parameters:
 		Context:
-			Address of the SHA-256 calculation context.
+			Address of the initialized Sha1 calculation context.
 
 		Digest:
-			The calculated 32 byte SHA-256 digest is stored in the location pointed by this parameter.
+			The calculated 20 byte Sha1 digest is stored in the location pointed by this parameter.
 */
 
 #ifdef __cplusplus
 }
 #endif // __cplusplus
 
-#endif // SHA256_H
+#endif // FL_SHA1_H

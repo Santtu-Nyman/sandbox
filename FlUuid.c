@@ -32,9 +32,9 @@ extern "C" {
 #endif // __cplusplus
 
 #define WIN32_LEAN_AND_MEAN
-#include "LtUuid.h"
-#include "LtSha256.h"
-#include "LtWin32FilePath.h"
+#include "FlUuid.h"
+#include "FlSha256.h"
+#include "FlWin32FilePath.h"
 #include <stdint.h>
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
@@ -100,17 +100,17 @@ typedef struct
 	LARGE_INTEGER PerformanceFrequency;
 	LARGE_INTEGER PerformanceCounter;
 	DWORD64 ProcessorClockCycles;
-} LtUuidInternalGenerateRandomSeedData;
+} FlUuidInternalGenerateRandomSeedData;
 
-#define LT_UUID_INTERNAL_EXPECTED_TOKEN_USER_SIZE (sizeof(TOKEN_USER) + (size_t)&((const SID*)0)->SubAuthority[5])
-#define LT_UUID_INTERNAL_MAX_USER_NAME_SIZE (((size_t)256 + 1) * sizeof(WCHAR))
-#define LT_UUID_INTERNAL_MAX_FILE_PATH_SIZE ((size_t)2 * (((size_t)MAX_PATH + 1) * sizeof(WCHAR)))
-#define LT_UUID_INTERNAL_HW_PROFILE_SIZE (sizeof(HW_PROFILE_INFOW))
-#define LT_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 (LT_UUID_INTERNAL_EXPECTED_TOKEN_USER_SIZE > LT_UUID_INTERNAL_MAX_USER_NAME_SIZE ? LT_UUID_INTERNAL_EXPECTED_TOKEN_USER_SIZE : LT_UUID_INTERNAL_MAX_USER_NAME_SIZE)
-#define LT_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1 (LT_UUID_INTERNAL_MAX_FILE_PATH_SIZE > LT_UUID_INTERNAL_HW_PROFILE_SIZE ? LT_UUID_INTERNAL_MAX_FILE_PATH_SIZE : LT_UUID_INTERNAL_HW_PROFILE_SIZE)
-#define LT_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE (LT_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 > LT_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1 ? LT_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 : LT_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1)
+#define FL_UUID_INTERNAL_EXPECTED_TOKEN_USER_SIZE (sizeof(TOKEN_USER) + (size_t)&((const SID*)0)->SubAuthority[5])
+#define FL_UUID_INTERNAL_MAX_USER_NAME_SIZE (((size_t)256 + 1) * sizeof(WCHAR))
+#define FL_UUID_INTERNAL_MAX_FILE_PATH_SIZE ((size_t)2 * (((size_t)MAX_PATH + 1) * sizeof(WCHAR)))
+#define FL_UUID_INTERNAL_HW_PROFILE_SIZE (sizeof(HW_PROFILE_INFOW))
+#define FL_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 (FL_UUID_INTERNAL_EXPECTED_TOKEN_USER_SIZE > FL_UUID_INTERNAL_MAX_USER_NAME_SIZE ? FL_UUID_INTERNAL_EXPECTED_TOKEN_USER_SIZE : FL_UUID_INTERNAL_MAX_USER_NAME_SIZE)
+#define FL_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1 (FL_UUID_INTERNAL_MAX_FILE_PATH_SIZE > FL_UUID_INTERNAL_HW_PROFILE_SIZE ? FL_UUID_INTERNAL_MAX_FILE_PATH_SIZE : FL_UUID_INTERNAL_HW_PROFILE_SIZE)
+#define FL_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE (FL_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 > FL_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1 ? FL_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 : FL_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1)
 
-__declspec(noinline) static void LtUuidInternalGenerateRandomSeed(uint64_t* Nonce, void* RandomSeed)
+__declspec(noinline) static void FlUuidInternalGenerateRandomSeed(uint64_t* Nonce, void* RandomSeed)
 {
 	HANDLE CurrentProcess = GetCurrentProcess();
 	HANDLE CurrentProcessTokenHandle = 0;
@@ -138,10 +138,10 @@ __declspec(noinline) static void LtUuidInternalGenerateRandomSeed(uint64_t* Nonc
 #endif
 	}
 
-	LtSha256Context Sha256Context;
-	LtSha256Initialize(&Sha256Context);
+	FlSha256Context Sha256Context;
+	FlSha256CreateHash(&Sha256Context);
 
-	size_t BufferSize = (LT_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE + ((size_t)SystemInfo.dwPageSize - 1)) & ~((size_t)SystemInfo.dwPageSize - 1);
+	size_t BufferSize = (FL_UUID_INTERNAL_TEMPORAL_BUFFER_SIZE + ((size_t)SystemInfo.dwPageSize - 1)) & ~((size_t)SystemInfo.dwPageSize - 1);
 	size_t SMBIOSFirmwareTableBufferSize = (size_t)GetSystemFirmwareTable(0x52534D42, 0, 0, 0);
 	SMBIOSFirmwareTableBufferSize = (SMBIOSFirmwareTableBufferSize + ((size_t)SystemInfo.dwPageSize - 1)) & ~((size_t)SystemInfo.dwPageSize - 1);
 	if (SMBIOSFirmwareTableBufferSize > BufferSize)
@@ -160,7 +160,7 @@ __declspec(noinline) static void LtUuidInternalGenerateRandomSeed(uint64_t* Nonc
 			size_t SMBIOSFirmwareTableSize = (size_t)GetSystemFirmwareTable(0x52534D42, 0, Buffer, (DWORD)BufferSize);
 			if (SMBIOSFirmwareTableSize && SMBIOSFirmwareTableSize <= BufferSize)
 			{
-				LtSha256Update(&Sha256Context, SMBIOSFirmwareTableSize, Buffer);
+				FlSha256HashData(&Sha256Context, SMBIOSFirmwareTableSize, Buffer);
 			}
 			else if (SMBIOSFirmwareTableSize)
 			{
@@ -173,7 +173,7 @@ __declspec(noinline) static void LtUuidInternalGenerateRandomSeed(uint64_t* Nonc
 			size_t SystemDirectoryPathLength = (size_t)GetSystemDirectoryW(SystemDirectoryPath, (UINT)BufferTextSpaceLength);
 			if (SystemDirectoryPathLength && SystemDirectoryPathLength < BufferTextSpaceLength)
 			{
-				LtSha256Update(&Sha256Context, SystemDirectoryPathLength * sizeof(WCHAR), SystemDirectoryPath);
+				FlSha256HashData(&Sha256Context, SystemDirectoryPathLength * sizeof(WCHAR), SystemDirectoryPath);
 			}
 			else if (SystemDirectoryPathLength)
 			{
@@ -185,7 +185,7 @@ __declspec(noinline) static void LtUuidInternalGenerateRandomSeed(uint64_t* Nonc
 			size_t WindowsDirectoryPathLength = (size_t)GetSystemWindowsDirectoryW(WindowsDirectoryPath, (UINT)BufferTextSpaceLength);
 			if (WindowsDirectoryPathLength && WindowsDirectoryPathLength < BufferTextSpaceLength)
 			{
-				LtSha256Update(&Sha256Context, WindowsDirectoryPathLength * sizeof(WCHAR), WindowsDirectoryPath);
+				FlSha256HashData(&Sha256Context, WindowsDirectoryPathLength * sizeof(WCHAR), WindowsDirectoryPath);
 			}
 			else if (WindowsDirectoryPathLength)
 			{
@@ -200,7 +200,7 @@ __declspec(noinline) static void LtUuidInternalGenerateRandomSeed(uint64_t* Nonc
 			size_t ImageFilePathLength = 0;
 			if (RawImageFilePathLength && RawImageFilePathLength < BufferTextSpaceLength)
 			{
-				ImageFilePathLength = LtWin32GetFullyQualifiedPath(RawImageFilePathLength, RawImageFilePath, 0, 0, BufferTextSpaceLength - 1, ImageFilePath);
+				ImageFilePathLength = FlWin32GetFullyQualifiedPath(RawImageFilePathLength, RawImageFilePath, 0, 0, BufferTextSpaceLength - 1, ImageFilePath);
 				if (ImageFilePathLength && ImageFilePathLength < BufferTextSpaceLength)
 				{
 					ImageFilePath[ImageFilePathLength] = 0;
@@ -233,7 +233,7 @@ __declspec(noinline) static void LtUuidInternalGenerateRandomSeed(uint64_t* Nonc
 					GetFileInformationByHandle(ImageFileHandle, &ImageFileInformation);
 					CloseHandle(ImageFileHandle);
 				}
-				LtSha256Update(&Sha256Context, ImageFilePathLength * sizeof(WCHAR), ImageFilePath);
+				FlSha256HashData(&Sha256Context, ImageFilePathLength * sizeof(WCHAR), ImageFilePath);
 				
 				WCHAR* VolumeMountPath = (WCHAR*)Buffer;
 				memset(VolumeMountPath, 0, BufferTextSpaceLength * sizeof(WCHAR));
@@ -244,12 +244,12 @@ __declspec(noinline) static void LtUuidInternalGenerateRandomSeed(uint64_t* Nonc
 					if (GetVolumeNameForVolumeMountPointW(VolumeMountPath, VolumeGuidPath, (DWORD)BufferTextSpaceLength))
 					{
 						size_t VolumeGuidPathLength = wcslen(VolumeGuidPath);
-						LtSha256Update(&Sha256Context, (size_t)VolumeGuidPathLength * sizeof(WCHAR), VolumeGuidPath);
+						FlSha256HashData(&Sha256Context, (size_t)VolumeGuidPathLength * sizeof(WCHAR), VolumeGuidPath);
 
 						DWORD DiskFreeSpaceData[4] = { 0, 0, 0, 0 };
 						if (GetDiskFreeSpaceW(VolumeGuidPath, &DiskFreeSpaceData[0], &DiskFreeSpaceData[1], &DiskFreeSpaceData[2], &DiskFreeSpaceData[3]))
 						{
-							LtSha256Update(&Sha256Context, (size_t)4 * sizeof(DWORD), &DiskFreeSpaceData[0]);
+							FlSha256HashData(&Sha256Context, (size_t)4 * sizeof(DWORD), &DiskFreeSpaceData[0]);
 						}
 
 						VolumeHandle = CreateFileW(VolumeGuidPath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
@@ -264,9 +264,9 @@ __declspec(noinline) static void LtUuidInternalGenerateRandomSeed(uint64_t* Nonc
 							{
 								size_t VolumeNameLength = wcslen(VolumeName);
 								size_t VolumeFileSystemNameLength = wcslen(VolumeFileSystemName);
-								LtSha256Update(&Sha256Context, VolumeNameLength * sizeof(WCHAR), VolumeName);
-								LtSha256Update(&Sha256Context, VolumeFileSystemNameLength * sizeof(WCHAR), VolumeFileSystemName);
-								LtSha256Update(&Sha256Context, (size_t)3 * sizeof(DWORD), &VolumeData[0]);
+								FlSha256HashData(&Sha256Context, VolumeNameLength * sizeof(WCHAR), VolumeName);
+								FlSha256HashData(&Sha256Context, VolumeFileSystemNameLength * sizeof(WCHAR), VolumeFileSystemName);
+								FlSha256HashData(&Sha256Context, (size_t)3 * sizeof(DWORD), &VolumeData[0]);
 							}
 							else
 							{
@@ -323,7 +323,7 @@ __declspec(noinline) static void LtUuidInternalGenerateRandomSeed(uint64_t* Nonc
 						if (GetTokenInformationProcedure(CurrentProcessTokenHandle, TokenUser, TokenUserData, (DWORD)BufferSize, &TokenUserSize))
 						{
 							DWORD TokenUserSIDSize = GetLengthSidProcedure(TokenUserData->User.Sid);
-							LtSha256Update(&Sha256Context, (size_t)TokenUserSIDSize, TokenUserData->User.Sid);
+							FlSha256HashData(&Sha256Context, (size_t)TokenUserSIDSize, TokenUserData->User.Sid);
 						}
 						else
 						{
@@ -345,7 +345,7 @@ __declspec(noinline) static void LtUuidInternalGenerateRandomSeed(uint64_t* Nonc
 					memset(UserName, 0, (size_t)UserNameLength * sizeof(WCHAR));
 					if (GetUserNameWProcedure(UserName, &UserNameLength))
 					{
-						LtSha256Update(&Sha256Context, (size_t)UserNameLength * sizeof(WCHAR), UserName);
+						FlSha256HashData(&Sha256Context, (size_t)UserNameLength * sizeof(WCHAR), UserName);
 					}
 					else
 					{
@@ -364,7 +364,7 @@ __declspec(noinline) static void LtUuidInternalGenerateRandomSeed(uint64_t* Nonc
 					memset(HwProfileInfo, 0, sizeof(HW_PROFILE_INFOW));
 					if (GetCurrentHwProfileWProcedure(HwProfileInfo))
 					{
-						LtSha256Update(&Sha256Context, sizeof(HW_PROFILE_INFOW), HwProfileInfo);
+						FlSha256HashData(&Sha256Context, sizeof(HW_PROFILE_INFOW), HwProfileInfo);
 					}
 				}
 
@@ -383,7 +383,7 @@ __declspec(noinline) static void LtUuidInternalGenerateRandomSeed(uint64_t* Nonc
 				}
 				else
 				{
-					LtSha256Initialize(&Sha256Context);
+					FlSha256CreateHash(&Sha256Context);
 				}
 			}
 			else
@@ -403,13 +403,13 @@ __declspec(noinline) static void LtUuidInternalGenerateRandomSeed(uint64_t* Nonc
 		}
 		EnvironmentBlockSize += 2;
 		EnvironmentBlockSize *= sizeof(WCHAR);
-		LtSha256Update(&Sha256Context, EnvironmentBlockSize, EnvironmentBlock);
+		FlSha256HashData(&Sha256Context, EnvironmentBlockSize, EnvironmentBlock);
 		FreeEnvironmentStringsW(EnvironmentBlock);
 	}
 
 	HANDLE CurrentThread = GetCurrentThread();
-	LtUuidInternalGenerateRandomSeedData Data;
-	memset(&Data, 0, sizeof(LtUuidInternalGenerateRandomSeedData));
+	FlUuidInternalGenerateRandomSeedData Data;
+	memset(&Data, 0, sizeof(FlUuidInternalGenerateRandomSeedData));
 	Data.BufferAddress = Buffer;
 	__cpuidex((int*)&Data.CpuId0To1ABCD[0], 0, 0);
 	if (Data.CpuId0To1ABCD[0] >= 1)
@@ -476,8 +476,8 @@ __declspec(noinline) static void LtUuidInternalGenerateRandomSeed(uint64_t* Nonc
 
 	*Nonce = (uint64_t)SystemTime;
 
-	LtSha256Update(&Sha256Context, sizeof(LtUuidInternalGenerateRandomSeedData), &Data);
-	LtSha256Finalize(&Sha256Context, RandomSeed);
+	FlSha256HashData(&Sha256Context, sizeof(FlUuidInternalGenerateRandomSeedData), &Data);
+	FlSha256FinishHash(&Sha256Context, RandomSeed);
 }
 
 volatile uint64_t UuidInternalRngNonce;
@@ -488,13 +488,13 @@ volatile uint32_t UuidInternalRngAtomicCounter;
 #endif // _WIN64
 volatile uint64_t UuidInternalRngState[4];
 
-static void LtUuidInternalGenerateRandomBits(void* Buffer)
+static void FlUuidInternalGenerateRandomBits(void* Buffer)
 {
 	uint64_t Nonce = UuidInternalRngNonce;
 	if (!Nonce)
 	{
 		uint64_t RandomSeed[4];
-		LtUuidInternalGenerateRandomSeed(&Nonce, &RandomSeed);
+		FlUuidInternalGenerateRandomSeed(&Nonce, &RandomSeed);
 		UuidInternalRngNonce = Nonce;
 		UuidInternalRngState[0] = RandomSeed[0];
 		UuidInternalRngState[1] = RandomSeed[1];
@@ -517,10 +517,10 @@ static void LtUuidInternalGenerateRandomBits(void* Buffer)
 		UuidInternalRngState[3] };
 
 	uint64_t NextRngState[4];
-	LtSha256Context Sha256Context;
-	LtSha256Initialize(&Sha256Context);
-	LtSha256Update(&Sha256Context, sizeof(RngBuffer), &RngBuffer);
-	LtSha256Finalize(&Sha256Context, &NextRngState);
+	FlSha256Context Sha256Context;
+	FlSha256CreateHash(&Sha256Context);
+	FlSha256HashData(&Sha256Context, sizeof(RngBuffer), &RngBuffer);
+	FlSha256FinishHash(&Sha256Context, &NextRngState);
 	UuidInternalRngState[0] = NextRngState[0];
 	UuidInternalRngState[1] = NextRngState[1];
 	UuidInternalRngState[2] = NextRngState[2];
@@ -529,15 +529,15 @@ static void LtUuidInternalGenerateRandomBits(void* Buffer)
 	memcpy(Buffer, &NextRngState, 16);
 }
 
-void LtUuidCreateRandomId(void* Uuid)
+void FlUuidCreateRandomId(void* Uuid)
 {
 	uint8_t* RandomIdBytes = (uint8_t*)Uuid;
-	LtUuidInternalGenerateRandomBits(RandomIdBytes);
+	FlUuidInternalGenerateRandomBits(RandomIdBytes);
 	RandomIdBytes[7] = (RandomIdBytes[7] & 0x0F) | 0x40;
 	RandomIdBytes[8] = (RandomIdBytes[8] & 0x3F) | 0x80;
 }
 
-size_t LtUuidEncodeStringUtf8(const void* Uuid, char* Buffer)
+size_t FlUuidEncodeStringUtf8(const void* Uuid, char* Buffer)
 {
 	// The length is always 38, so having a length parameter is pointless
 	*Buffer++ = '{';
@@ -558,7 +558,7 @@ size_t LtUuidEncodeStringUtf8(const void* Uuid, char* Buffer)
 	return 38;
 }
 
-size_t LtUuidDecodeStringUtf8(void* Uuid, size_t Length, const char* String)
+size_t FlUuidDecodeStringUtf8(void* Uuid, size_t Length, const char* String)
 {
 	// The actual UUID length is 38 or 36 depending on whether it has brackets or not
 	size_t DecodedLength;
@@ -629,7 +629,7 @@ size_t LtUuidDecodeStringUtf8(void* Uuid, size_t Length, const char* String)
 	return DecodedLength;
 }
 
-size_t LtUuidEncodeStringUtf16(const void* Uuid, WCHAR* Buffer)
+size_t FlUuidEncodeStringUtf16(const void* Uuid, WCHAR* Buffer)
 {
 	// The length is always 38, so having a length parameter is pointless
 	*Buffer++ = L'{';
@@ -650,7 +650,7 @@ size_t LtUuidEncodeStringUtf16(const void* Uuid, WCHAR* Buffer)
 	return 38;
 }
 
-size_t LtUuidDecodeStringUtf16(void* Uuid, size_t Length, const WCHAR* String)
+size_t FlUuidDecodeStringUtf16(void* Uuid, size_t Length, const WCHAR* String)
 {
 	// The actual UUID length is 38 or 36 depending on whether it has brackets or not
 	size_t DecodedLength;
