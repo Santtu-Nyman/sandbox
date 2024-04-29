@@ -42,10 +42,10 @@ extern "C" {
 
 typedef struct
 {
-	uint32_t count[2];
-	uint32_t state[5];
-	uint32_t padding;
-	uint8_t buffer[64];
+	uint64_t Size;
+	uint32_t State[5];
+	uint32_t Padding;
+	uint8_t Input[64];
 } FlSha1Context;
 
 void FlSha1CreateHash(FlSha1Context* Context);

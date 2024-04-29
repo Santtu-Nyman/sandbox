@@ -309,70 +309,79 @@ void FlSha1InternalTransform(uint32_t* state, const uint8_t* buffer)
 
 void FlSha1CreateHash(FlSha1Context* Context)
 {
-	Context->count[0] = 0;
-	Context->count[1] = 0;
-	Context->state[0] = 0x67452301;
-	Context->state[1] = 0xEFCDAB89;
-	Context->state[2] = 0x98BADCFE;
-	Context->state[3] = 0x10325476;
-	Context->state[4] = 0xC3D2E1F0;
-	Context->padding = 0;
-	memset(Context->buffer, 0, 64);
+	Context->Size = 0;
+	Context->State[0] = 0x67452301;
+	Context->State[1] = 0xEFCDAB89;
+	Context->State[2] = 0x98BADCFE;
+	Context->State[3] = 0x10325476;
+	Context->State[4] = 0xC3D2E1F0;
+	Context->Padding = 0;
+	memset(Context->Input, 0, 64);
 }
 
 void FlSha1HashData(FlSha1Context* Context, size_t InputSize, const void* InputData)
 {
-	uint32_t i;
-
-	uint32_t j;
-
-	j = Context->count[0];
-	if ((Context->count[0] += InputSize << 3) < j)
-		Context->count[1]++;
-	Context->count[1] += (InputSize >> 29);
-	j = (j >> 3) & 63;
-	if ((j + InputSize) > 63)
-	{
-		memcpy(&Context->buffer[j], InputData, (i = 64 - j));
-        FlSha1InternalTransform(Context->state, Context->buffer);
-		for (; i + 63 < InputSize; i += 64)
-		{
-            FlSha1InternalTransform(Context->state, (void*)((uintptr_t)InputData + i));
-		}
-		j = 0;
-	}
-	else
-		i = 0;
-	memcpy(&Context->buffer[j], (void*)((uintptr_t)InputData + i), InputSize - i);
+    const uint8_t* Input = (const uint8_t*)InputData;
+    int InitialStepOffset = (int)(Context->Size & 0x3F);
+    Context->Size += (uint64_t)InputSize;
+    int InitialStepInputSize = 64 - InitialStepOffset;
+    if ((size_t)InitialStepInputSize > InputSize)
+    {
+        InitialStepInputSize = (int)InputSize;
+    }
+    memcpy(Context->Input + InitialStepOffset, Input, InitialStepInputSize);
+    if (InitialStepOffset + InitialStepInputSize < 64)
+    {
+        return;
+    }
+    FlSha1InternalTransform(Context->State, (const uint32_t*)&Context->Input);
+    Input += (size_t)InitialStepInputSize;
+    InputSize -= (size_t)InitialStepInputSize;
+    while (InputSize >= 64)
+    {
+        memcpy(Context->Input, Input, 64);
+        FlSha1InternalTransform(Context->State, (const uint32_t*)&Context->Input);
+        Input += 64;
+        InputSize -= 64;
+    }
+    memcpy(Context->Input, Input, InputSize);
 }
 
 void FlSha1FinishHash(FlSha1Context* Context, void* Digest)
 {
-	unsigned char* digest = (unsigned char*)Digest;
-
-	unsigned i;
-
-	unsigned char finalcount[8];
-
-	unsigned char c;
-
-	
-	for (i = 0; i < 8; i++)
-	{
-		finalcount[i] = (unsigned char)((Context->count[(i >= 4 ? 0 : 1)] >> ((3 - (i & 3)) * 8)) & 0xFF);
-	}
-	c = 0x80;
-	FlSha1HashData(Context, 1, &c);
-	while ((Context->count[0] & 0x1F8) != 0x1C0)
-	{
-		c = 0;
-		FlSha1HashData(Context, 1, &c);
-	}
-	FlSha1HashData(Context, 8, finalcount);
-	for (i = 0; i < FL_SHA1_DIGEST_SIZE; i++)
-	{
-		digest[i] = (unsigned char)((Context->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
-	}
+    uint8_t Padding[64];
+    uint64_t BitCount = Context->Size << 3;
+    int RemainingSize = 64 - (int)(Context->Size & 0x3F);
+    Context->Input[64 - RemainingSize] = 0x80;
+    RemainingSize--;
+    if (RemainingSize < 8)
+    {
+        for (int i = 64 - RemainingSize; i < 64; i++)
+        {
+            Context->Input[i] = 0;
+        }
+        FlSha1InternalTransform(Context->State, (const uint32_t*)&Context->Input);
+        for (int i = 0; i < 56; i++)
+        {
+            Context->Input[i] = 0;
+        }
+    }
+    else
+    {
+        for (int i = 64 - RemainingSize; i < 56; i++)
+        {
+            Context->Input[i] = 0;
+        }
+    }
+    for (int i = 0; i < 8; i++)
+    {
+        Context->Input[56 + i] = (unsigned char)((BitCount >> ((7 - i) * 8)) & 0xFF);
+    }
+    FlSha1InternalTransform(Context->State, (const uint32_t*)&Context->Input);
+    for (size_t i = 0; i < FL_SHA1_DIGEST_SIZE; i++)
+    {
+        ((uint8_t*)Digest)[i] = (uint8_t)((Context->State[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
+    }
 }
 
 #ifdef __cplusplus
