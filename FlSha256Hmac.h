@@ -1,5 +1,5 @@
 /*
-	Simple CRC32 implementation by Santtu S. Nyman.
+	Santtu S. Nyman's public domain SHA-256 HMAC implementation.
 
 	License:
 
@@ -27,24 +27,42 @@
 		OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef FL_CRC32_H
-#define FL_CRC32_H
+#ifndef FL_SHA256_HMAC_H
+#define FL_SHA256_HMAC_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
 #include <stddef.h>
-#include <stdint.h>
 
-uint32_t FlCrc32Create();
+void FlSha256Hmac(size_t KeySize, const void* Key, size_t DataSize, const void* Data, void* Digest);
+/*
+	Procedure:
+		FlSha256Hmac
 
-uint32_t FlCrc32Data(uint32_t Crc32Context, size_t data_size, const void* data);
+	Description:
+		This procedure calculates SHA-256 HMAC for given key and data pair.
 
-uint32_t FlCrc32Finish(uint32_t Crc32Context);
+	Parameters:
+		KeySize:
+			Size of the key data in bytes.
+
+		Key:
+			Pointer to the location that contains the key data.
+
+		DataSize:
+			Size of the message data in bytes.
+
+		Data:
+			Pointer to the location that contains the message data.
+
+		Digest:
+			The calculated 32 byte SHA-256 HMAC is stored in the location pointed by this parameter.
+*/
 
 #ifdef __cplusplus
 }
 #endif // __cplusplus
 
-#endif // FL_CRC32_H
+#endif // FL_SHA256_HMAC_H

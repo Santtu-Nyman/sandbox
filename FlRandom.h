@@ -1,5 +1,5 @@
 /*
-	Simple CRC32 implementation by Santtu S. Nyman.
+	Santtu S. Nyman's random data generation library
 
 	License:
 
@@ -27,24 +27,36 @@
 		OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef FL_CRC32_H
-#define FL_CRC32_H
+#ifndef FL_RANDOM_H
+#define FL_RANDOM_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
 #include <stddef.h>
-#include <stdint.h>
 
-uint32_t FlCrc32Create();
+void FlGenerateRandomData(size_t Size, void* Buffer);
+/*
+	Procedure:
+		FlGenerateRandomData
 
-uint32_t FlCrc32Data(uint32_t Crc32Context, size_t data_size, const void* data);
+	Description:
+		This procedure generates randon bytes into given buffer.
+		This procedure is meant to be used as source for random seeds and not as general purpose RNG,
+		because this is a relatively slow procedure. It produces cryptographically secure high quality random bits
+		and using it as a general purpose RNG is overkill.
 
-uint32_t FlCrc32Finish(uint32_t Crc32Context);
+	Parameters:
+		Size:
+			The number of random bytes to generate.
+
+		Buffer:
+			Address of the buffer where the new genereted random bytes are written into.
+*/
 
 #ifdef __cplusplus
 }
 #endif // __cplusplus
 
-#endif // FL_CRC32_H
+#endif // FL_RANDOM_H

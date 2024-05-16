@@ -1,5 +1,5 @@
 /*
-	Simple CRC32 implementation by Santtu S. Nyman.
+	Santtu S. Nyman's public domain SHA-256 HMAC implementation.
 
 	License:
 
@@ -27,24 +27,55 @@
 		OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef FL_CRC32_H
-#define FL_CRC32_H
-
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
-#include <stddef.h>
+#include "FlSha256Hmac.h"
+#include "FlSha256.h"
 #include <stdint.h>
+#include <string.h>
 
-uint32_t FlCrc32Create();
+#define FL_SHA256_HMAC_BLOCK_SIZE 64
 
-uint32_t FlCrc32Data(uint32_t Crc32Context, size_t data_size, const void* data);
+void FlSha256Hmac(size_t KeySize, const void* Key, size_t DataSize, const void* Data, void* Digest)
+{
+	FlSha256Context Context;
 
-uint32_t FlCrc32Finish(uint32_t Crc32Context);
+	uint8_t Pad[FL_SHA256_HMAC_BLOCK_SIZE];
+	if (KeySize <= FL_SHA256_HMAC_BLOCK_SIZE)
+	{
+		memcpy(&Pad[0], Key, KeySize);
+		memset(&Pad[KeySize], 0, FL_SHA256_HMAC_BLOCK_SIZE - KeySize);
+	}
+	else
+	{
+		FlSha256CreateHash(&Context);
+		FlSha256HashData(&Context, KeySize, Key);
+		FlSha256FinishHash(&Context, &Pad[0]);
+		memset(&Pad[FL_SHA256_DIGEST_SIZE], 0, FL_SHA256_HMAC_BLOCK_SIZE - FL_SHA256_DIGEST_SIZE);
+	}
+	
+	uint8_t InnerDigest[FL_SHA256_DIGEST_SIZE];
+	FlSha256CreateHash(&Context);
+	for (size_t i = 0; i < FL_SHA256_HMAC_BLOCK_SIZE; i++)
+	{
+		Pad[i] ^= 0x36;
+	}
+	FlSha256HashData(&Context, FL_SHA256_HMAC_BLOCK_SIZE, &Pad[0]);
+	FlSha256HashData(&Context, DataSize, Data);
+	FlSha256FinishHash(&Context, &InnerDigest[0]);
+
+	FlSha256CreateHash(&Context);
+	for (size_t i = 0; i < FL_SHA256_HMAC_BLOCK_SIZE; i++)
+	{
+		Pad[i] ^= 0x6A;
+	}
+	FlSha256HashData(&Context, FL_SHA256_HMAC_BLOCK_SIZE, &Pad[0]);
+	FlSha256HashData(&Context, FL_SHA256_DIGEST_SIZE, &InnerDigest[0]);
+	FlSha256FinishHash(&Context, Digest);
+}
 
 #ifdef __cplusplus
 }
 #endif // __cplusplus
-
-#endif // FL_CRC32_H

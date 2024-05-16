@@ -37,6 +37,8 @@ extern "C" {
 #include <stddef.h>
 #include <Windows.h>
 
+#define FL_UUID_SIZE 16
+
 void FlUuidCreateRandomId(void* Uuid);
 /*
 	Procedure:

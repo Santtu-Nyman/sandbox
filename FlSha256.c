@@ -35,9 +35,15 @@ extern "C" {
 #include "FlSha256.h"
 #include <string.h>
 
+#ifdef _MSC_VER
+#define FL_SHA256_ALIGN(N) __declspec(align(N))
+#else
+#define FL_SHA256_ALIGN(N)
+#endif
+
 #define FL_SHA256_INTERNAL_ROTATE_RIGHT_32(X, N) (((X) >> (N)) | ((X) << (32 - (N))))
 
-static const uint32_t FlSha256InternalConstantTableK[64] = {
+FL_SHA256_ALIGN(256) static const uint32_t FlSha256InternalConstantTableK[64] = {
 	0x428a2f98lu, 0x71374491lu, 0xb5c0fbcflu, 0xe9b5dba5lu, 0x3956c25blu, 0x59f111f1lu, 0x923f82a4lu, 0xab1c5ed5lu,
 	0xd807aa98lu, 0x12835b01lu, 0x243185belu, 0x550c7dc3lu, 0x72be5d74lu, 0x80deb1felu, 0x9bdc06a7lu, 0xc19bf174lu,
 	0xe49b69c1lu, 0xefbe4786lu, 0x0fc19dc6lu, 0x240ca1cclu, 0x2de92c6flu, 0x4a7484aalu, 0x5cb0a9dclu, 0x76f988dalu,

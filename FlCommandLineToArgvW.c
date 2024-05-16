@@ -36,7 +36,7 @@ extern "C" {
 #define WIN32_LEAN_AND_MEAN
 #include "FlCommandLineToArgvW.h"
 
-WCHAR** LtCommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
+WCHAR** FlCommandLineToArgvW(const WCHAR* lpCmdLine, int* pNumArgs)
 {
 	const size_t max_file_name_length = UNICODE_STRING_MAX_CHARS;
 	const size_t int_max = (int)(((unsigned int)~0) >> 1);
