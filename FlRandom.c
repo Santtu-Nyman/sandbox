@@ -106,11 +106,10 @@ typedef struct
 	DWORD64 ProcessorClockCycles;
 } FlInternalGenerateRandomSeedData;
 
-#define FL_INTERNAL_EXPECTED_TOKEN_USER_SIZE (sizeof(TOKEN_USER) + (size_t)&((const SID*)0)->SubAuthority[5])
 #define FL_INTERNAL_MAX_USER_NAME_SIZE (((size_t)256 + 1) * sizeof(WCHAR))
 #define FL_INTERNAL_MAX_FILE_PATH_SIZE ((size_t)2 * (((size_t)MAX_PATH + 1) * sizeof(WCHAR)))
 #define FL_INTERNAL_HW_PROFILE_SIZE (sizeof(HW_PROFILE_INFOW))
-#define FL_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 (FL_INTERNAL_EXPECTED_TOKEN_USER_SIZE > FL_INTERNAL_MAX_USER_NAME_SIZE ? FL_INTERNAL_EXPECTED_TOKEN_USER_SIZE : FL_INTERNAL_MAX_USER_NAME_SIZE)
+#define FL_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 (TOKEN_USER_MAX_SIZE > FL_INTERNAL_MAX_USER_NAME_SIZE ? TOKEN_USER_MAX_SIZE : FL_INTERNAL_MAX_USER_NAME_SIZE)
 #define FL_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1 (FL_INTERNAL_MAX_FILE_PATH_SIZE > FL_INTERNAL_HW_PROFILE_SIZE ? FL_INTERNAL_MAX_FILE_PATH_SIZE : FL_INTERNAL_HW_PROFILE_SIZE)
 #define FL_INTERNAL_TEMPORAL_BUFFER_SIZE (FL_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 > FL_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1 ? FL_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 : FL_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1)
 
@@ -323,20 +322,11 @@ __declspec(noinline) static void FlRandomInternalGenerateRandomSeed(uint64_t* No
 					{
 						DWORD TokenUserSize = 0;
 						TOKEN_USER* TokenUserData = (TOKEN_USER*)Buffer;
-						memset(TokenUserData, 0, BufferSize);
-						if (GetTokenInformationProcedure(CurrentProcessTokenHandle, TokenUser, TokenUserData, (DWORD)BufferSize, &TokenUserSize))
+						memset(TokenUserData, 0, TOKEN_USER_MAX_SIZE);
+						if (GetTokenInformationProcedure(CurrentProcessTokenHandle, TokenUser, TokenUserData, (DWORD)TOKEN_USER_MAX_SIZE, &TokenUserSize))
 						{
 							DWORD TokenUserSIDSize = GetLengthSidProcedure(TokenUserData->User.Sid);
 							FlSha256HashData(&Sha256Context, (size_t)TokenUserSIDSize, TokenUserData->User.Sid);
-						}
-						else
-						{
-							DWORD GetTokenInformationError = GetLastError();
-							if (GetTokenInformationError == ERROR_INSUFFICIENT_BUFFER || GetTokenInformationError == ERROR_MORE_DATA || GetTokenInformationError == ERROR_BUFFER_OVERFLOW)
-							{
-								size_t RequiredTokenUserSize = (size_t)TokenUserSize;
-								RequiredBufferSize = RequiredTokenUserSize;
-							}
 						}
 						CloseHandle(CurrentProcessTokenHandle);
 					}
@@ -506,7 +496,6 @@ static void FlRandomInternalGenerateRandomBlock(void* Buffer)
 		RandomInternalRngState[2] = RandomSeed[2];
 		RandomInternalRngState[3] = RandomSeed[3];
 		RandomInternalRngNonce = Nonce;
-		MemoryBarrier();
 	}
 #ifdef _WIN64
 	uint64_t Counter = (uint64_t)InterlockedIncrement64((LONG64 volatile*)&RandomInternalRngAtomicCounter);
