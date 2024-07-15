@@ -35,30 +35,73 @@ extern "C" {
 #endif // __cplusplus
 
 #include <stddef.h>
+#include <stdint.h>
+#include "FlSha256.h"
 
-void FlSha256Hmac(size_t KeySize, const void* Key, size_t DataSize, const void* Data, void* Digest);
+#define FL_SHA256_HMAC_BLOCK_SIZE 64
+
+typedef struct
+{
+	FlSha256Context HashContext;
+	uint8_t Pad[FL_SHA256_HMAC_BLOCK_SIZE];
+} FlSha256HmacContext;
+
+void FlSha256HmacCreateHmac(FlSha256HmacContext* Context, size_t KeySize, const void* Key);
 /*
 	Procedure:
-		FlSha256Hmac
+		FlSha256HmacCreateHmac
 
 	Description:
-		This procedure calculates SHA-256 HMAC for given key and data pair.
+		This procedure initilizes a new SHA-256 HMAC calculation context.
+		The pre-initialization contents of the context are ignored and overridden on initialization.
 
 	Parameters:
+		Context:
+			Address of the HMAC calculation context.
+
 		KeySize:
 			Size of the key data in bytes.
 
 		Key:
 			Pointer to the location that contains the key data.
+*/
 
-		DataSize:
-			Size of the message data in bytes.
+void FlSha256HmacHashData(FlSha256HmacContext* Context, size_t InputSize, const void* InputData);
+/*
+	Procedure:
+		FlSha256HmacHashData
 
-		Data:
-			Pointer to the location that contains the message data.
+	Description:
+		This procedure processes a chunk of input data for SHA-256 HMAC calculation.
+		The user may combine arbitrary number of input chunks for a HMAC calculation by calling this procedure repeatedly passing input chunks in order.
+
+	Parameters:
+		Context:
+			Address of the HMAC calculation context.
+
+		InputSize:
+			Size of the next data chunk to process in bytes.
+
+		InputData:
+			pointer to the location that contains the next data chunk to process in the HMAC calculation.
+*/
+
+void FlSha256Hmac256FinishHmac(FlSha256HmacContext* Context, void* Digest);
+/*
+	Procedure:
+		FlSha256Hmac256Finish
+
+	Description:
+		This procedure finalizes calculating the SHA-256 HMAC and invalidates the calculation context.
+		The context may not be used again before it has been re-initialized.
+		Calling this procedure immediately after context initialization calculates disgust of no input.
+
+	Parameters:
+		Context:
+			Address of the HMAC calculation context.
 
 		Digest:
-			The calculated 32 byte SHA-256 HMAC is stored in the location pointed by this parameter.
+			The calculated 32 byte HMAC is stored in the location pointed by this parameter.
 */
 
 #ifdef __cplusplus

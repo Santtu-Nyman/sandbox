@@ -504,7 +504,10 @@ static void FlRandomInternalGenerateRandomBlock(void* Buffer)
 #endif // _WIN64
 
 	uint64_t NonceAndCounter[2] = { Nonce, Counter };
-	FlSha256Hmac(sizeof(RandomInternalRngState), (const void*)&RandomInternalRngState[0], sizeof(NonceAndCounter), &NonceAndCounter[0], Buffer);
+	FlSha256HmacContext HmacContext;
+	FlSha256HmacCreateHmac(&HmacContext, sizeof(RandomInternalRngState), (const void*)&RandomInternalRngState[0]);
+	FlSha256HmacHashData(&HmacContext, sizeof(NonceAndCounter), &NonceAndCounter[0]);
+	FlSha256Hmac256FinishHmac(&HmacContext, Buffer);
 }
 
 void FlGenerateRandomData(size_t Size, void* Buffer)
