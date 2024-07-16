@@ -37,30 +37,33 @@ extern "C" {
 
 void FlPbkdf2Sha256Hmac(uint64_t IterationCount, size_t PasswordSize, const void* Password, size_t SaltSize, const void* Salt, size_t DerivedKeySize, void* DerivedKey)
 {
+	if (!IterationCount)
+	{
+		memset(DerivedKey, 0, DerivedKeySize);
+		return;
+	}
+
 	uint8_t Block[FL_SHA256_DIGEST_SIZE];
 	uint8_t Digest[FL_SHA256_DIGEST_SIZE];
-	
-	size_t BlockIndex = 0;
+	FlSha256HmacContext BaseContext;
 	FlSha256HmacContext Context;
+	FlSha256HmacCreateHmac(&BaseContext, PasswordSize, Password);
 
-	for (size_t KeyBytesLeft = DerivedKeySize; KeyBytesLeft;)
+	for (size_t KeyBytesLeft = DerivedKeySize, BlockIndex = 1; KeyBytesLeft;)
 	{
-		BlockIndex++;
 		uint8_t BlockIndexData[4] = { (uint8_t)((BlockIndex >> 24) & 0xFF), (uint8_t)((BlockIndex >> 16) & 0xFF), (uint8_t)((BlockIndex >> 8) & 0xFF), (uint8_t)(BlockIndex & 0xFF) };
 
-		FlSha256HmacCreateHmac(&Context, PasswordSize, Password);
+		memcpy(&Context, &BaseContext, sizeof(FlSha256HmacContext));
 		FlSha256HmacHashData(&Context, SaltSize, Salt);
 		FlSha256HmacHashData(&Context, sizeof(uint32_t), &BlockIndexData[0]);
 		FlSha256Hmac256FinishHmac(&Context, &Digest[0]);
-
 		memcpy(Block, Digest, FL_SHA256_DIGEST_SIZE);
 
 		for (size_t i = 1; i < IterationCount; i++)
 		{
-			FlSha256HmacCreateHmac(&Context, PasswordSize, Password);
+			memcpy(&Context, &BaseContext, sizeof(FlSha256HmacContext));
 			FlSha256HmacHashData(&Context, FL_SHA256_DIGEST_SIZE, &Digest[0]);
 			FlSha256Hmac256FinishHmac(&Context, &Digest[0]);
-
 			for (size_t j = 0; j < FL_SHA256_DIGEST_SIZE; j++)
 			{
 				Block[j] ^= Digest[j];
@@ -73,6 +76,7 @@ void FlPbkdf2Sha256Hmac(uint64_t IterationCount, size_t PasswordSize, const void
 			BlockKeyBytes = KeyBytesLeft;
 		}
 		memcpy((void*)((uintptr_t)DerivedKey + (DerivedKeySize - KeyBytesLeft)), Block, BlockKeyBytes);
+		BlockIndex++;
 		KeyBytesLeft -= BlockKeyBytes;
 	}
 }

@@ -43,10 +43,29 @@ void FlPbkdf2Sha256Hmac(uint64_t IterationCount, size_t PasswordSize, const void
 		FlPbkdf2Sha256Hmac
 
 	Description:
-		This procedure calculates PBKDF2-HMAC-SHA256
+		This procedure calculates PBKDF2-HMAC-SHA256.
 
 	Parameters:
-			
+		IterationCount:
+			The iteration count for the key derivation algorithm.
+
+		PasswordSize:
+			The length of password data in bytes.
+
+		Password:
+			The address of the password data.
+
+		SaltSize:
+			The length of the salt in bytes.
+
+		Salt:
+			The address of the salt data.
+
+		DerivedKeySize:
+			The length of the derived key in bytes.
+
+		DerivedKey:
+			The address of the buffer that will receive the derived key.
 */
 
 #ifdef __cplusplus
