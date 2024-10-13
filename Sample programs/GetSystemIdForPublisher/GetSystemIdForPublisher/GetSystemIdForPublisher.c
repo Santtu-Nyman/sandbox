@@ -158,7 +158,7 @@ HRESULT GetSystemIdForPublisher(size_t IdBufferSize, size_t* IdSizeAddress, void
 		goto Cleanup;
 	}
 	RoInitializeResult = RoInitializeProcedure(RO_INIT_MULTITHREADED);
-	if (RoInitializeResult != S_OK && RoInitializeResult != RPC_E_CHANGED_MODE)
+	if (RoInitializeResult != S_OK && RoInitializeResult != S_FALSE && RoInitializeResult != RPC_E_CHANGED_MODE)
 	{
 		Result = RoInitializeResult;
 		goto Cleanup;
@@ -238,7 +238,7 @@ Cleanup:
 	{
 		SystemIdentificationStatics->lpVtbl->Release(SystemIdentificationStatics);
 	}
-	if (RoInitializeResult == S_OK)
+	if (RoInitializeProcedure && RoUninitializeProcedure && (RoInitializeResult == S_OK || RoInitializeResult == S_FALSE))
 	{
 		RoUninitializeProcedure();
 	}

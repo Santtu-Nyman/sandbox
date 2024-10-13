@@ -38,9 +38,9 @@ int main(int argc, char** argv)
 {
 	size_t SystemIdLength = 0;
 	HRESULT Result = GetSystemIdForPublisher(0, &SystemIdLength, 0);
-	if (Result == HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
+	if (Result == S_OK || Result == HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
 	{
-		uint8_t* SystemId = (uint8_t*)HeapAlloc(GetProcessHeap(), 0, SystemIdLength);
+		uint8_t* SystemId = (uint8_t*)HeapAlloc(GetProcessHeap(), 0, SystemIdLength ? SystemIdLength : 1);
 		Result = GetSystemIdForPublisher(SystemIdLength, &SystemIdLength, SystemId);
 		if (Result == S_OK)
 		{
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 		}
 		HeapFree(GetProcessHeap(), 0, SystemId);
 	}
-	else
+	if (Result != S_OK)
 	{
 		printf("GetSystemIdForPublisher failed with error 0x%08X\n", Result);
 	}
