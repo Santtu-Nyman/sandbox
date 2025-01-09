@@ -1,0 +1,10 @@
+C:\Users\Sakari-N\Documents\Visual Studio 2022\Projects\CornEmpireDemo\CornEmpireDemo\bin\Release\CornEmpireDemo.exe.config
+C:\Users\Sakari-N\Documents\Visual Studio 2022\Projects\CornEmpireDemo\CornEmpireDemo\bin\Release\CornEmpireDemo.exe
+C:\Users\Sakari-N\Documents\Visual Studio 2022\Projects\CornEmpireDemo\CornEmpireDemo\bin\Release\CornEmpireDemo.pdb
+C:\Users\Sakari-N\Documents\Visual Studio 2022\Projects\CornEmpireDemo\CornEmpireDemo\obj\Release\CornEmpireDemo.csproj.AssemblyReference.cache
+C:\Users\Sakari-N\Documents\Visual Studio 2022\Projects\CornEmpireDemo\CornEmpireDemo\obj\Release\CornEmpireDemo.csproj.SuggestedBindingRedirects.cache
+C:\Users\Sakari-N\Documents\Visual Studio 2022\Projects\CornEmpireDemo\CornEmpireDemo\obj\Release\CornEmpireDemo.Properties.Resources.resources
+C:\Users\Sakari-N\Documents\Visual Studio 2022\Projects\CornEmpireDemo\CornEmpireDemo\obj\Release\CornEmpireDemo.csproj.GenerateResource.cache
+C:\Users\Sakari-N\Documents\Visual Studio 2022\Projects\CornEmpireDemo\CornEmpireDemo\obj\Release\CornEmpireDemo.csproj.CoreCompileInputs.cache
+C:\Users\Sakari-N\Documents\Visual Studio 2022\Projects\CornEmpireDemo\CornEmpireDemo\obj\Release\CornEmpireDemo.exe
+C:\Users\Sakari-N\Documents\Visual Studio 2022\Projects\CornEmpireDemo\CornEmpireDemo\obj\Release\CornEmpireDemo.pdb
