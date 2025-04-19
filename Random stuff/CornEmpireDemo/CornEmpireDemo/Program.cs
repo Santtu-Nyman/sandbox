@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing;
+using System.Runtime.InteropServices;
 
 namespace CornEmpireDemo
 {
@@ -157,14 +158,22 @@ namespace CornEmpireDemo
     {
         public enum ResourceTypeId
         {
-            Undefined, // Must be at index zero
+            Undefined = 0, // Must be at index zero
             Dollar,
             Corn,
             OilBarrel,
             Burger,
             CornField,
             OilWell,
-            McDonalds
+            McDonalds,
+            ResourceTypeIdCount
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public unsafe struct TestT
+        {
+            public fixed float a[(int)ResourceTypeId.ResourceTypeIdCount];
+
         }
 
         public struct ResourceGeneration
@@ -289,6 +298,8 @@ namespace CornEmpireDemo
 
         public Game()
         {
+            TestT a = { };
+
             ResourceTable = new Resource[] {
                 new Resource(ResourceTypeId.Undefined, "Undefined", 0,    0,   new ResourceGeneration[]{} ), // must be at index 0 for the program logic
                 new Resource(ResourceTypeId.Dollar,    "Dollar",    1,    100, new ResourceGeneration[]{} ), // probably shoud just fix the index to 1 to simplify the code
