@@ -1,0 +1,180 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\include">
+      <UniqueIdentifier>{0ab3300d-dc8b-44ee-b20d-006c84e0af63}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ut">
+      <UniqueIdentifier>{0597d5b9-c90d-4e5a-9e52-b1d0784d935e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ut">
+      <UniqueIdentifier>{573d1306-97d5-4fda-9959-91682faf9575}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\source">
+      <UniqueIdentifier>{01fd07f9-dfd4-4d51-a638-249469807aba}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\FlCommandLineToArgvW.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FlCrc32.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FlFraction64.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\flHRESULT.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FlMd5.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FlPbkdf2Sha256Hmac.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FlRandom.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FlRandomFileName.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\flSAL.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FlSha1.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FlSha256.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FlSha256Hmac.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FlUnicodeCaseProcessing.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FlUtf8Utf16Converter.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FlUuid.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FlWin32CommandLineToUtf8Arguments.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FlWin32FilePath.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="ut\FlUt.h">
+      <Filter>Header Files\ut</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FlAes256.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="source\FlCommandLineToArgvW.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlCrc32.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlFraction64.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlMd5.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlPbkdf2Sha256Hmac.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlRandom.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlRandomFileName.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlSha1.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlSha256.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlSha256Hmac.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlUnicodeCaseProcessing.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlUtf8Utf16Converter.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlUuid.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlWin32CommandLineToUtf8Arguments.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlWin32FilePath.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlCrc32Ut.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlUtMain.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlFraction64Ut.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlMd5Ut.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlSha256HmacUt.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlSha256Ut.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlSha1Ut.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlPbkdf2Sha256HmacUt.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlRandomFileNameUt.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlRandomUt.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlUuidUt.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlUtf8Utf16ConverterUt.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlUnicodeCaseProcessingUt.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlAes256.c">
+      <Filter>Source Files\source</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlAes256Ut.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
