@@ -43,13 +43,13 @@ extern "C" {
 
 typedef struct
 {
-	uint64_t Size;
-	uint32_t State[5];
-	uint32_t Padding;
-	uint8_t Input[64];
+	uint64_t size;
+	uint32_t state[5];
+	uint32_t padding;
+	uint8_t input[64];
 } FlSha1Context;
 
-void FlSha1CreateHash(_Out_ FlSha1Context* Context);
+void FlSha1CreateHash(_Out_ FlSha1Context* context);
 /*
 	Procedure:
 		FlSha1CreateHash
@@ -59,11 +59,11 @@ void FlSha1CreateHash(_Out_ FlSha1Context* Context);
 		The pre-initialization contents of the context are ignored and overridden on initialization.
 
 	Parameters:
-		Context:
+		context:
 			Address of the Sha1 calculation context.
 */
 
-void FlSha1HashData(_Inout_ FlSha1Context* Context, _In_ size_t InputSize, _In_reads_bytes_(InputSize) const void* InputData);
+void FlSha1HashData(_Inout_ FlSha1Context* context, _In_ size_t inputSize, _In_reads_bytes_(inputSize) const void* inputData);
 /*
 	Procedure:
 		FlSha1HashData
@@ -73,17 +73,17 @@ void FlSha1HashData(_Inout_ FlSha1Context* Context, _In_ size_t InputSize, _In_r
 		The user may combine arbitrary number of input chunks for a hash calculation by calling this procedure repeatedly passing input chunks in order.
 
 	Parameters:
-		Context:
+		context:
 			Address of the initialized Sha1 calculation context.
 
-		InputSize:
+		inputSize:
 			Size of the next data chunk to process in bytes.
 
-		InputData:
+		inputData:
 			pointer to the location that contains the next data chunk to process in the hash calculation.
 */
 
-void FlSha1FinishHash(_Inout_ FlSha1Context* Context, _Out_writes_bytes_all_(FL_SHA1_DIGEST_SIZE) void* Digest);
+void FlSha1FinishHash(_Inout_ FlSha1Context* context, _Out_writes_bytes_all_(FL_SHA1_DIGEST_SIZE) void* digest);
 /*
 	Procedure:
 		FlSha1FinishHash
@@ -94,10 +94,10 @@ void FlSha1FinishHash(_Inout_ FlSha1Context* Context, _Out_writes_bytes_all_(FL_
 		Calling this procedure immediately after context initialization calculates disgust of no input.
 
 	Parameters:
-		Context:
+		context:
 			Address of the initialized Sha1 calculation context.
 
-		Digest:
+		digest:
 			The calculated 20 byte Sha1 digest is stored in the location pointed by this parameter.
 */
 

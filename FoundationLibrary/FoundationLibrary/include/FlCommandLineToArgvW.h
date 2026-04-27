@@ -52,7 +52,7 @@ extern "C" {
 #include <Windows.h>
 #include "FlSAL.h"
 
-WCHAR** FlCommandLineToArgvW(_In_ _Null_terminated_ const WCHAR* lpCmdLine, _Out_ int* pNumArgs);
+WCHAR** FlCommandLineToArgvW(_In_ _Null_terminated_ const WCHAR* cmdLine, _Out_ int* numArgs);
 
 #ifdef __cplusplus
 }

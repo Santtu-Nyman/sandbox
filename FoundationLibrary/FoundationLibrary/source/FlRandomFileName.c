@@ -57,36 +57,36 @@ uint32_t FlInternalBoundedRandom(uint32_t upper_bound, uint64_t random_bits)
 }
 */
 
-static char FlInternalGetRandomFileNameCharacter(WORD RandomBits)
+static char FlInternalGetRandomFileNameCharacter(WORD randomBits)
 {
-	BYTE R0 = (BYTE)(RandomBits & 0xFF);
-	BYTE R1 = (BYTE)(RandomBits >> 8);
-	WORD R0Bits = (WORD)R0 * (WORD)FL_INTERNAL_RANDOM_FILE_NAME_CHARACTER_COUNT;
-	WORD R1Bits = (WORD)R1 * (WORD)FL_INTERNAL_RANDOM_FILE_NAME_CHARACTER_COUNT;
-	WORD SumBits = (R0Bits & 0xFF) + (R1Bits >> 8);
-	BYTE RandomNumber = (BYTE)(R0Bits >> 8) + (BYTE)(SumBits >> 8);
-	char RandomCharacter = FlInternalRandomFileNameCharacterTable[RandomNumber];
-	return RandomCharacter;
+	BYTE r0 = (BYTE)(randomBits & 0xFF);
+	BYTE r1 = (BYTE)(randomBits >> 8);
+	WORD r0Bits = (WORD)r0 * (WORD)FL_INTERNAL_RANDOM_FILE_NAME_CHARACTER_COUNT;
+	WORD r1Bits = (WORD)r1 * (WORD)FL_INTERNAL_RANDOM_FILE_NAME_CHARACTER_COUNT;
+	WORD sumBits = (r0Bits & 0xFF) + (r1Bits >> 8);
+	BYTE randomNumber = (BYTE)(r0Bits >> 8) + (BYTE)(sumBits >> 8);
+	char randomCharacter = FlInternalRandomFileNameCharacterTable[randomNumber];
+	return randomCharacter;
 }
 
-size_t FlCreateRandomFileName(_Out_writes_to_(FL_RANDOM_FILE_NAME_LENGTH,return) WCHAR* NameBuffer)
+size_t FlCreateRandomFileName(_Out_writes_to_(FL_RANDOM_FILE_NAME_LENGTH,return) WCHAR* nameBuffer)
 {
-	WORD RandomBits[FL_RANDOM_FILE_NAME_LENGTH];
-	FlGenerateRandomData(FL_RANDOM_FILE_NAME_LENGTH * sizeof(WORD), &RandomBits);
+	WORD randomBits[FL_RANDOM_FILE_NAME_LENGTH];
+	FlGenerateRandomData(FL_RANDOM_FILE_NAME_LENGTH * sizeof(WORD), &randomBits);
 	for (size_t i = 0; i < FL_RANDOM_FILE_NAME_LENGTH; i++)
 	{
-		NameBuffer[i] = (WCHAR)FlInternalGetRandomFileNameCharacter(RandomBits[i]);
+		nameBuffer[i] = (WCHAR)FlInternalGetRandomFileNameCharacter(randomBits[i]);
 	}
 	return FL_RANDOM_FILE_NAME_LENGTH;
 }
 
-size_t FlCreateRandomFileNameUtf8(_Out_writes_to_(FL_RANDOM_FILE_NAME_LENGTH,return) char* NameBuffer)
+size_t FlCreateRandomFileNameUtf8(_Out_writes_to_(FL_RANDOM_FILE_NAME_LENGTH,return) char* nameBuffer)
 {
-	WORD RandomBits[FL_RANDOM_FILE_NAME_LENGTH];
-	FlGenerateRandomData(FL_RANDOM_FILE_NAME_LENGTH * sizeof(WORD), &RandomBits);
+	WORD randomBits[FL_RANDOM_FILE_NAME_LENGTH];
+	FlGenerateRandomData(FL_RANDOM_FILE_NAME_LENGTH * sizeof(WORD), &randomBits);
 	for (size_t i = 0; i < FL_RANDOM_FILE_NAME_LENGTH; i++)
 	{
-		NameBuffer[i] = (char)FlInternalGetRandomFileNameCharacter(RandomBits[i]);
+		nameBuffer[i] = (char)FlInternalGetRandomFileNameCharacter(randomBits[i]);
 	}
 	return FL_RANDOM_FILE_NAME_LENGTH;
 }

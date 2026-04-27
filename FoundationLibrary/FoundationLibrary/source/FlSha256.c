@@ -149,68 +149,68 @@ static void FlSha256InternalConsumeChunk(_Inout_updates_(8) uint32_t* h, _In_rea
 	}
 }
 
-void FlSha256CreateHash(_Out_ FlSha256Context* Context)
+void FlSha256CreateHash(_Out_ FlSha256Context* context)
 {
-	Context->Size = 0;
-	Context->Buffer[0] = 0x6a09e667lu;
-	Context->Buffer[1] = 0xbb67ae85lu;
-	Context->Buffer[2] = 0x3c6ef372lu;
-	Context->Buffer[3] = 0xa54ff53alu;
-	Context->Buffer[4] = 0x510e527flu;
-	Context->Buffer[5] = 0x9b05688clu;
-	Context->Buffer[6] = 0x1f83d9ablu;
-	Context->Buffer[7] = 0x5be0cd19lu;
-	memset(&Context->Input, 0, 64);
+	context->size = 0;
+	context->buffer[0] = 0x6a09e667lu;
+	context->buffer[1] = 0xbb67ae85lu;
+	context->buffer[2] = 0x3c6ef372lu;
+	context->buffer[3] = 0xa54ff53alu;
+	context->buffer[4] = 0x510e527flu;
+	context->buffer[5] = 0x9b05688clu;
+	context->buffer[6] = 0x1f83d9ablu;
+	context->buffer[7] = 0x5be0cd19lu;
+	memset(&context->input, 0, 64);
 }
 
-void FlSha256HashData(_Inout_ FlSha256Context* Context, _In_ size_t InputSize, _In_reads_bytes_(InputSize) const void* InputData)
+void FlSha256HashData(_Inout_ FlSha256Context* context, _In_ size_t inputSize, _In_reads_bytes_(inputSize) const void* inputData)
 {
-	const uint8_t* Input = (const uint8_t*)InputData;
-	int InitialStepOffset = (int)(Context->Size & 0x3F);
-	Context->Size += InputSize;
-	int InitialStepInputSize = 64 - InitialStepOffset;
-	if ((size_t)InitialStepInputSize > InputSize)
+	const uint8_t* input = (const uint8_t*)inputData;
+	int initialStepOffset = (int)(context->size & 0x3F);
+	context->size += inputSize;
+	int initialStepInputSize = 64 - initialStepOffset;
+	if ((size_t)initialStepInputSize > inputSize)
 	{
-		InitialStepInputSize = (int)InputSize;
+		initialStepInputSize = (int)inputSize;
 	}
-	memcpy(Context->Input + InitialStepOffset, InputData, InitialStepInputSize);
-	if (InitialStepOffset + InitialStepInputSize < 64)
+	memcpy(context->input + initialStepOffset, inputData, initialStepInputSize);
+	if (initialStepOffset + initialStepInputSize < 64)
 	{
 		return;
 	}
-	FlSha256InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
-	Input += (size_t)InitialStepInputSize;
-	InputSize -= (size_t)InitialStepInputSize;
-	while (InputSize >= 64)
+	FlSha256InternalConsumeChunk(context->buffer, (const uint32_t*)&context->input);
+	input += (size_t)initialStepInputSize;
+	inputSize -= (size_t)initialStepInputSize;
+	while (inputSize >= 64)
 	{
-		memcpy(Context->Input, Input, 64);
-		FlSha256InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
-		Input += 64;
-		InputSize -= 64;
+		memcpy(context->input, input, 64);
+		FlSha256InternalConsumeChunk(context->buffer, (const uint32_t*)&context->input);
+		input += 64;
+		inputSize -= 64;
 	}
-	memcpy(Context->Input, Input, InputSize);
+	memcpy(context->input, input, inputSize);
 }
 
-void FlSha256FinishHash(_Inout_ FlSha256Context* Context, _Out_writes_bytes_all_(FL_SHA256_DIGEST_SIZE) void* Digest)
+void FlSha256FinishHash(_Inout_ FlSha256Context* context, _Out_writes_bytes_all_(FL_SHA256_DIGEST_SIZE) void* digest)
 {
-	size_t ChunkIndex = Context->Size & 0x3F;
-	Context->Input[ChunkIndex] = 0x80;
-	ChunkIndex++;
-	if (ChunkIndex > 56)
+	size_t chunkIndex = context->size & 0x3F;
+	context->input[chunkIndex] = 0x80;
+	chunkIndex++;
+	if (chunkIndex > 56)
 	{
-		memset(Context->Input + ChunkIndex, 0, 64 - ChunkIndex);
-		FlSha256InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
-		ChunkIndex = 0;
+		memset(context->input + chunkIndex, 0, 64 - chunkIndex);
+		FlSha256InternalConsumeChunk(context->buffer, (const uint32_t*)&context->input);
+		chunkIndex = 0;
 	}
-	memset(Context->Input + ChunkIndex, 0, 56 - ChunkIndex);
-	uint64_t BitSize = Context->Size << 3;
-	*((uint64_t*)&Context->Input[56]) = FL_SHA256_BYTE_SWAP_64(BitSize);
-	FlSha256InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
+	memset(context->input + chunkIndex, 0, 56 - chunkIndex);
+	uint64_t bitSize = context->size << 3;
+	*((uint64_t*)&context->input[56]) = FL_SHA256_BYTE_SWAP_64(bitSize);
+	FlSha256InternalConsumeChunk(context->buffer, (const uint32_t*)&context->input);
 	for (int i = 0; i < 8; i++)
 	{
-		Context->Buffer[i] = FL_SHA256_BYTE_SWAP_32(Context->Buffer[i]);
+		context->buffer[i] = FL_SHA256_BYTE_SWAP_32(context->buffer[i]);
 	}
-	memcpy(Digest, Context->Buffer, FL_SHA256_DIGEST_SIZE);
+	memcpy(digest, context->buffer, FL_SHA256_DIGEST_SIZE);
 }
 
 #ifdef __cplusplus

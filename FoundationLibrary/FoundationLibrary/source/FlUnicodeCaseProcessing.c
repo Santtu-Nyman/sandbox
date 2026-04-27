@@ -427,13 +427,13 @@ static const uint64_t FlToLowerCaseTable[] = {
 	0x0820F80016010418, // INDEX=188 MIN=66584 MAX=66591 STRIDE=1 XOR_DELTA=88
 	0x082138001A010420 }; // INDEX=189 MIN=66592 MAX=66599 STRIDE=1 XOR_DELTA=104
 
-int FlCodepointToUpperCase(_In_ int Codepoint)
+int FlCodepointToUpperCase(_In_ int codepoint)
 {
-	if (Codepoint < 0x7B)
+	if (codepoint < 0x7B)
 	{
-		if (Codepoint > 0x60)
+		if (codepoint > 0x60)
 		{
-			Codepoint ^= 0x20;
+			codepoint ^= 0x20;
 		}
 	}
 	else
@@ -441,36 +441,36 @@ int FlCodepointToUpperCase(_In_ int Codepoint)
 		for (int l = 0, h = (int)((sizeof(FlToUpperCaseTable) / sizeof(FlToUpperCaseTable[0])) - 1); l <= h;)
 		{
 			int i = (l + h) >> 1;
-			uint64_t Data = FlToUpperCaseTable[i];
-			int MinCodepoint = (int)(Data & 0x1FFFFF);
-			int MaxCodepoint = (int)(Data >> 43);
-			if (Codepoint < MinCodepoint)
+			uint64_t data = FlToUpperCaseTable[i];
+			int minCodepoint = (int)(data & 0x1FFFFF);
+			int maxCodepoint = (int)(data >> 43);
+			if (codepoint < minCodepoint)
 			{
 				h = i - 1;
 			}
-			else if (Codepoint > MaxCodepoint)
+			else if (codepoint > maxCodepoint)
 			{
 				l = i + 1;
 			}
 			else
 			{
-				int SkipBit = (int)((Data >> 21) & 0x1);
-				int XorDelta = (int)((Data >> 22) & 0x1FFFFF);
-				Codepoint ^= (((((Codepoint - MinCodepoint) & 0x1) - 1) | (SkipBit - 1)) & XorDelta);
+				int skipBit = (int)((data >> 21) & 0x1);
+				int xorDelta = (int)((data >> 22) & 0x1FFFFF);
+				codepoint ^= (((((codepoint - minCodepoint) & 0x1) - 1) | (skipBit - 1)) & xorDelta);
 				break;
 			}
 		}
 	}
-	return Codepoint;
+	return codepoint;
 }
 
-int FlCodepointToLowerCase(_In_ int Codepoint)
+int FlCodepointToLowerCase(_In_ int codepoint)
 {
-	if (Codepoint < 0x5B)
+	if (codepoint < 0x5B)
 	{
-		if (Codepoint > 0x40)
+		if (codepoint > 0x40)
 		{
-			Codepoint ^= 0x20;
+			codepoint ^= 0x20;
 		}
 	}
 	else
@@ -478,200 +478,200 @@ int FlCodepointToLowerCase(_In_ int Codepoint)
 		for (int l = 0, h = (int)((sizeof(FlToLowerCaseTable) / sizeof(FlToLowerCaseTable[0])) - 1); l <= h;)
 		{
 			int i = (l + h) >> 1;
-			uint64_t Data = FlToLowerCaseTable[i];
-			int MinCodepoint = (int)(Data & 0x1FFFFF);
-			int MaxCodepoint = (int)(Data >> 43);
-			if (Codepoint < MinCodepoint)
+			uint64_t data = FlToLowerCaseTable[i];
+			int minCodepoint = (int)(data & 0x1FFFFF);
+			int maxCodepoint = (int)(data >> 43);
+			if (codepoint < minCodepoint)
 			{
 				h = i - 1;
 			}
-			else if (Codepoint > MaxCodepoint)
+			else if (codepoint > maxCodepoint)
 			{
 				l = i + 1;
 			}
 			else
 			{
-				int SkipBit = (int)((Data >> 21) & 0x1);
-				int XorDelta = (int)((Data >> 22) & 0x1FFFFF);
-				Codepoint ^= (((((Codepoint - MinCodepoint) & 0x1) - 1) | (SkipBit - 1)) & XorDelta);
+				int skipBit = (int)((data >> 21) & 0x1);
+				int xorDelta = (int)((data >> 22) & 0x1FFFFF);
+				codepoint ^= (((((codepoint - minCodepoint) & 0x1) - 1) | (skipBit - 1)) & xorDelta);
 				break;
 			}
 		}
 	}
-	return Codepoint;
+	return codepoint;
 }
 
-int FlCompareStringOrdinalUtf8(_In_NLS_string_(String1Length) const char* String1, _In_ size_t String1Length, _In_NLS_string_(String2Length) const char* String2, _In_ size_t String2Length, _In_ BOOL IgnoreCase)
+int FlCompareStringOrdinalUtf8(_In_NLS_string_(string1Length) const char* string1, _In_ size_t string1Length, _In_NLS_string_(string2Length) const char* string2, _In_ size_t string2Length, _In_ BOOL ignoreCase)
 {
-	const uint8_t* String1Utf8 = (const uint8_t*)String1;
-	const uint8_t* String2Utf8 = (const uint8_t*)String2;
-	if (String1Length == (size_t)-1)
+	const uint8_t* string1Utf8 = (const uint8_t*)string1;
+	const uint8_t* string2Utf8 = (const uint8_t*)string2;
+	if (string1Length == (size_t)-1)
 	{
-		String1Length = 0;
-		while (String1Utf8[String1Length])
+		string1Length = 0;
+		while (string1Utf8[string1Length])
 		{
-			String1Length++;
+			string1Length++;
 		}
 	}
-	if (String2Length == (size_t)-1)
+	if (string2Length == (size_t)-1)
 	{
-		String2Length = 0;
-		while (String2Utf8[String2Length])
+		string2Length = 0;
+		while (string2Utf8[string2Length])
 		{
-			String2Length++;
+			string2Length++;
 		}
 	}
-	if (IgnoreCase)
+	if (ignoreCase)
 	{
-		size_t String1Index = 0;
-		size_t String2Index = 0;
-		while (String1Index < String1Length && String2Index < String2Length)
+		size_t string1Index = 0;
+		size_t string2Index = 0;
+		while (string1Index < string1Length && string2Index < string2Length)
 		{
-			size_t CodeUnitData1SizeLimit = String1Length - String1Index;
-			uint32_t CodeUnitData1;
-			if (CodeUnitData1SizeLimit > 3)
+			size_t codeUnitData1SizeLimit = string1Length - string1Index;
+			uint32_t codeUnitData1;
+			if (codeUnitData1SizeLimit > 3)
 			{
-				CodeUnitData1 = ((uint32_t)String1Utf8[String1Index]) | (((uint32_t)String1Utf8[String1Index + 1]) << 8) | (((uint32_t)String1Utf8[String1Index + 2]) << 16) | (((uint32_t)String1Utf8[String1Index + 3]) << 24);
+				codeUnitData1 = ((uint32_t)string1Utf8[string1Index]) | (((uint32_t)string1Utf8[string1Index + 1]) << 8) | (((uint32_t)string1Utf8[string1Index + 2]) << 16) | (((uint32_t)string1Utf8[string1Index + 3]) << 24);
 			}
-			else if (CodeUnitData1SizeLimit == 3)
+			else if (codeUnitData1SizeLimit == 3)
 			{
-				CodeUnitData1 = ((uint32_t)String1Utf8[String1Index]) | (((uint32_t)String1Utf8[String1Index + 1]) << 8) | (((uint32_t)String1Utf8[String1Index + 2]) << 16);
+				codeUnitData1 = ((uint32_t)string1Utf8[string1Index]) | (((uint32_t)string1Utf8[string1Index + 1]) << 8) | (((uint32_t)string1Utf8[string1Index + 2]) << 16);
 			}
-			else if (CodeUnitData1SizeLimit == 2)
+			else if (codeUnitData1SizeLimit == 2)
 			{
-				CodeUnitData1 = ((uint32_t)String1Utf8[String1Index]) | (((uint32_t)String1Utf8[String1Index + 1]) << 8);
+				codeUnitData1 = ((uint32_t)string1Utf8[string1Index]) | (((uint32_t)string1Utf8[string1Index + 1]) << 8);
 			}
 			else
 			{
-				CodeUnitData1 = ((uint32_t)String1Utf8[String1Index]);
+				codeUnitData1 = ((uint32_t)string1Utf8[string1Index]);
 			}
-			int CodeUnitData1ByteCount;
-			uint32_t CodePoint1;
-			if (!(CodeUnitData1 & 0x80))
+			int codeUnitData1ByteCount;
+			uint32_t codePoint1;
+			if (!(codeUnitData1 & 0x80))
 			{
-				CodeUnitData1ByteCount = 1;
-				CodePoint1 = CodeUnitData1 & 0x7F;
+				codeUnitData1ByteCount = 1;
+				codePoint1 = codeUnitData1 & 0x7F;
 			}
-			else if ((CodeUnitData1 & (uint32_t)0xC0E0) == (uint32_t)0x80C0)
+			else if ((codeUnitData1 & (uint32_t)0xC0E0) == (uint32_t)0x80C0)
 			{
-				CodeUnitData1ByteCount = 2;
-				CodePoint1 = ((CodeUnitData1 & 0x1F) << 6) | ((CodeUnitData1 >> 8) & 0x3F);
+				codeUnitData1ByteCount = 2;
+				codePoint1 = ((codeUnitData1 & 0x1F) << 6) | ((codeUnitData1 >> 8) & 0x3F);
 			}
-			else if ((CodeUnitData1 & (uint32_t)0xC0C0F0) == (uint32_t)0x8080E0)
+			else if ((codeUnitData1 & (uint32_t)0xC0C0F0) == (uint32_t)0x8080E0)
 			{
-				CodeUnitData1ByteCount = 3;
-				CodePoint1 = ((CodeUnitData1 & 0x0F) << 12) | (((CodeUnitData1 >> 8) & 0x3F) << 6) | ((CodeUnitData1 >> 16) & 0x3F);
+				codeUnitData1ByteCount = 3;
+				codePoint1 = ((codeUnitData1 & 0x0F) << 12) | (((codeUnitData1 >> 8) & 0x3F) << 6) | ((codeUnitData1 >> 16) & 0x3F);
 			}
-			else if ((CodeUnitData1 & (uint32_t)0xC0C0C0F8) == (uint32_t)0x808080F0)
+			else if ((codeUnitData1 & (uint32_t)0xC0C0C0F8) == (uint32_t)0x808080F0)
 			{
-				CodeUnitData1ByteCount = 4;
-				CodePoint1 = ((CodeUnitData1 & 0x0F) << 18) | (((CodeUnitData1 >> 8) & 0x3F) << 12) | (((CodeUnitData1 >> 16) & 0x3F) << 6) | ((CodeUnitData1 >> 24) & 0x3F);
+				codeUnitData1ByteCount = 4;
+				codePoint1 = ((codeUnitData1 & 0x0F) << 18) | (((codeUnitData1 >> 8) & 0x3F) << 12) | (((codeUnitData1 >> 16) & 0x3F) << 6) | ((codeUnitData1 >> 24) & 0x3F);
 			}
 			else
 			{
 				// The data is too corrupted to determine what is even supposed the code point data
-				int MaxCodeUnitData1ByteCount;
-				if ((CodeUnitData1 & 0xE0) == 0xC0)
+				int maxCodeUnitData1ByteCount;
+				if ((codeUnitData1 & 0xE0) == 0xC0)
 				{
-					MaxCodeUnitData1ByteCount = 2;
+					maxCodeUnitData1ByteCount = 2;
 				}
-				else if ((CodeUnitData1 & 0xF0) == 0xE0)
+				else if ((codeUnitData1 & 0xF0) == 0xE0)
 				{
-					MaxCodeUnitData1ByteCount = 3;
+					maxCodeUnitData1ByteCount = 3;
 				}
-				else if ((CodeUnitData1 & 0xF8) == 0xF0)
+				else if ((codeUnitData1 & 0xF8) == 0xF0)
 				{
-					MaxCodeUnitData1ByteCount = 4;
+					maxCodeUnitData1ByteCount = 4;
 				}
 				else
 				{
-					MaxCodeUnitData1ByteCount = 1;
+					maxCodeUnitData1ByteCount = 1;
 				}
-				CodeUnitData1ByteCount = 1;
-				while ((CodeUnitData1ByteCount < MaxCodeUnitData1ByteCount) && (((CodeUnitData1 >> (CodeUnitData1ByteCount * 8)) & 0xC0) == 0x80))
+				codeUnitData1ByteCount = 1;
+				while ((codeUnitData1ByteCount < maxCodeUnitData1ByteCount) && (((codeUnitData1 >> (codeUnitData1ByteCount * 8)) & 0xC0) == 0x80))
 				{
-					CodeUnitData1ByteCount++;
+					codeUnitData1ByteCount++;
 				}
-				CodePoint1 = ~(uint32_t)0;
+				codePoint1 = ~(uint32_t)0;
 			}
-			size_t CodeUnitData2SizeLimit = String2Length - String2Index;
-			uint32_t CodeUnitData2;
-			if (CodeUnitData2SizeLimit > 3)
+			size_t codeUnitData2SizeLimit = string2Length - string2Index;
+			uint32_t codeUnitData2;
+			if (codeUnitData2SizeLimit > 3)
 			{
-				CodeUnitData2 = ((uint32_t)String2Utf8[String2Index]) | (((uint32_t)String2Utf8[String2Index + 1]) << 8) | (((uint32_t)String2Utf8[String2Index + 2]) << 16) | (((uint32_t)String2Utf8[String2Index + 3]) << 24);
+				codeUnitData2 = ((uint32_t)string2Utf8[string2Index]) | (((uint32_t)string2Utf8[string2Index + 1]) << 8) | (((uint32_t)string2Utf8[string2Index + 2]) << 16) | (((uint32_t)string2Utf8[string2Index + 3]) << 24);
 			}
-			else if (CodeUnitData2SizeLimit == 3)
+			else if (codeUnitData2SizeLimit == 3)
 			{
-				CodeUnitData2 = ((uint32_t)String2Utf8[String2Index]) | (((uint32_t)String2Utf8[String2Index + 1]) << 8) | (((uint32_t)String2Utf8[String2Index + 2]) << 16);
+				codeUnitData2 = ((uint32_t)string2Utf8[string2Index]) | (((uint32_t)string2Utf8[string2Index + 1]) << 8) | (((uint32_t)string2Utf8[string2Index + 2]) << 16);
 			}
-			else if (CodeUnitData2SizeLimit == 2)
+			else if (codeUnitData2SizeLimit == 2)
 			{
-				CodeUnitData2 = ((uint32_t)String2Utf8[String2Index]) | (((uint32_t)String2Utf8[String2Index + 1]) << 8);
+				codeUnitData2 = ((uint32_t)string2Utf8[string2Index]) | (((uint32_t)string2Utf8[string2Index + 1]) << 8);
 			}
 			else
 			{
-				CodeUnitData2 = ((uint32_t)String2Utf8[String2Index]);
+				codeUnitData2 = ((uint32_t)string2Utf8[string2Index]);
 			}
-			int CodeUnitData2ByteCount;
-			uint32_t CodePoint2;
-			if (!(CodeUnitData2 & 0x80))
+			int codeUnitData2ByteCount;
+			uint32_t codePoint2;
+			if (!(codeUnitData2 & 0x80))
 			{
-				CodeUnitData2ByteCount = 1;
-				CodePoint2 = CodeUnitData2 & 0x7F;
+				codeUnitData2ByteCount = 1;
+				codePoint2 = codeUnitData2 & 0x7F;
 			}
-			else if ((CodeUnitData2 & (uint32_t)0xC0E0) == (uint32_t)0x80C0)
+			else if ((codeUnitData2 & (uint32_t)0xC0E0) == (uint32_t)0x80C0)
 			{
-				CodeUnitData2ByteCount = 2;
-				CodePoint2 = ((CodeUnitData2 & 0x1F) << 6) | ((CodeUnitData2 >> 8) & 0x3F);
+				codeUnitData2ByteCount = 2;
+				codePoint2 = ((codeUnitData2 & 0x1F) << 6) | ((codeUnitData2 >> 8) & 0x3F);
 			}
-			else if ((CodeUnitData2 & (uint32_t)0xC0C0F0) == (uint32_t)0x8080E0)
+			else if ((codeUnitData2 & (uint32_t)0xC0C0F0) == (uint32_t)0x8080E0)
 			{
-				CodeUnitData2ByteCount = 3;
-				CodePoint2 = ((CodeUnitData2 & 0x0F) << 12) | (((CodeUnitData2 >> 8) & 0x3F) << 6) | ((CodeUnitData2 >> 16) & 0x3F);
+				codeUnitData2ByteCount = 3;
+				codePoint2 = ((codeUnitData2 & 0x0F) << 12) | (((codeUnitData2 >> 8) & 0x3F) << 6) | ((codeUnitData2 >> 16) & 0x3F);
 			}
-			else if ((CodeUnitData2 & (uint32_t)0xC0C0C0F8) == (uint32_t)0x808080F0)
+			else if ((codeUnitData2 & (uint32_t)0xC0C0C0F8) == (uint32_t)0x808080F0)
 			{
-				CodeUnitData2ByteCount = 4;
-				CodePoint2 = ((CodeUnitData2 & 0x0F) << 18) | (((CodeUnitData2 >> 8) & 0x3F) << 12) | (((CodeUnitData2 >> 16) & 0x3F) << 6) | ((CodeUnitData2 >> 24) & 0x3F);
+				codeUnitData2ByteCount = 4;
+				codePoint2 = ((codeUnitData2 & 0x0F) << 18) | (((codeUnitData2 >> 8) & 0x3F) << 12) | (((codeUnitData2 >> 16) & 0x3F) << 6) | ((codeUnitData2 >> 24) & 0x3F);
 			}
 			else
 			{
 				// The data is too corrupted to determine what is even supposed the code point data
-				int MaxCodeUnitData2ByteCount;
-				if ((CodeUnitData2 & 0xE0) == 0xC0)
+				int maxCodeUnitData2ByteCount;
+				if ((codeUnitData2 & 0xE0) == 0xC0)
 				{
-					MaxCodeUnitData2ByteCount = 2;
+					maxCodeUnitData2ByteCount = 2;
 				}
-				else if ((CodeUnitData2 & 0xF0) == 0xE0)
+				else if ((codeUnitData2 & 0xF0) == 0xE0)
 				{
-					MaxCodeUnitData2ByteCount = 3;
+					maxCodeUnitData2ByteCount = 3;
 				}
-				else if ((CodeUnitData2 & 0xF8) == 0xF0)
+				else if ((codeUnitData2 & 0xF8) == 0xF0)
 				{
-					MaxCodeUnitData2ByteCount = 4;
+					maxCodeUnitData2ByteCount = 4;
 				}
 				else
 				{
-					MaxCodeUnitData2ByteCount = 1;
+					maxCodeUnitData2ByteCount = 1;
 				}
-				CodeUnitData2ByteCount = 1;
-				while ((CodeUnitData2ByteCount < MaxCodeUnitData2ByteCount) && (((CodeUnitData2 >> (CodeUnitData2ByteCount * 8)) & 0xC0) == 0x80))
+				codeUnitData2ByteCount = 1;
+				while ((codeUnitData2ByteCount < maxCodeUnitData2ByteCount) && (((codeUnitData2 >> (codeUnitData2ByteCount * 8)) & 0xC0) == 0x80))
 				{
-					CodeUnitData2ByteCount++;
+					codeUnitData2ByteCount++;
 				}
-				CodePoint2 = ~(uint32_t)0;
+				codePoint2 = ~(uint32_t)0;
 			}
-			if (CodePoint1 != ~(uint32_t)0 && CodePoint2 != ~(uint32_t)0)
+			if (codePoint1 != ~(uint32_t)0 && codePoint2 != ~(uint32_t)0)
 			{
-				if (CodePoint1 != CodePoint2)
+				if (codePoint1 != codePoint2)
 				{
-					CodePoint1 = FlCodepointToUpperCase(CodePoint1);
-					CodePoint2 = FlCodepointToUpperCase(CodePoint2);
-					if (CodePoint1 < CodePoint2)
+					codePoint1 = FlCodepointToUpperCase(codePoint1);
+					codePoint2 = FlCodepointToUpperCase(codePoint2);
+					if (codePoint1 < codePoint2)
 					{
 						return CSTR_LESS_THAN;
 					}
-					else if (CodePoint1 > CodePoint2)
+					else if (codePoint1 > codePoint2)
 					{
 						return CSTR_GREATER_THAN;
 					}
@@ -679,32 +679,32 @@ int FlCompareStringOrdinalUtf8(_In_NLS_string_(String1Length) const char* String
 			}
 			else
 			{
-				if (CodePoint1 != ~(uint32_t)0)
+				if (codePoint1 != ~(uint32_t)0)
 				{
 					return CSTR_GREATER_THAN;
 				}
-				else if (CodePoint2 != ~(uint32_t)0)
+				else if (codePoint2 != ~(uint32_t)0)
 				{
 					return CSTR_LESS_THAN;
 				}
 				// Compare the invalid raw bytes to because even for invalid strings we need to somehow define the string comparison
-				if (CodeUnitData1 < CodeUnitData2)
+				if (codeUnitData1 < codeUnitData2)
 				{
 					return CSTR_LESS_THAN;
 				}
-				else if (CodeUnitData1 > CodeUnitData2)
+				else if (codeUnitData1 > codeUnitData2)
 				{
 					return CSTR_GREATER_THAN;
 				}
 			}
-			String1Index += (size_t)CodeUnitData1ByteCount;
-			String2Index += (size_t)CodeUnitData2ByteCount;
+			string1Index += (size_t)codeUnitData1ByteCount;
+			string2Index += (size_t)codeUnitData2ByteCount;
 		}
-		if (String1Index < String1Length)
+		if (string1Index < string1Length)
 		{
 			return CSTR_GREATER_THAN;
 		}
-		else if (String2Index < String2Length)
+		else if (string2Index < string2Length)
 		{
 			return CSTR_LESS_THAN;
 		}
@@ -712,25 +712,25 @@ int FlCompareStringOrdinalUtf8(_In_NLS_string_(String1Length) const char* String
 	}
 	else
 	{
-		size_t SharedLength = (String1Length > String2Length) ? String1Length : String2Length;
-		for (size_t i = 0; i < SharedLength; i++)
+		size_t sharedLength = (string1Length > string2Length) ? string1Length : string2Length;
+		for (size_t i = 0; i < sharedLength; i++)
 		{
-			uint8_t String1Utf8CodeUnit = String1Utf8[i];
-			uint8_t String2Utf8CodeUnit = String2Utf8[i];
-			if (String1Utf8CodeUnit < String2Utf8CodeUnit)
+			uint8_t string1Utf8CodeUnit = string1Utf8[i];
+			uint8_t string2Utf8CodeUnit = string2Utf8[i];
+			if (string1Utf8CodeUnit < string2Utf8CodeUnit)
 			{
 				return CSTR_LESS_THAN;
 			}
-			else if (String1Utf8CodeUnit > String2Utf8CodeUnit)
+			else if (string1Utf8CodeUnit > string2Utf8CodeUnit)
 			{
 				return CSTR_GREATER_THAN;
 			}
 		}
-		if (SharedLength < String1Length)
+		if (sharedLength < string1Length)
 		{
 			return CSTR_GREATER_THAN;
 		}
-		else if (SharedLength < String2Length)
+		else if (sharedLength < string2Length)
 		{
 			return CSTR_LESS_THAN;
 		}
@@ -738,107 +738,107 @@ int FlCompareStringOrdinalUtf8(_In_NLS_string_(String1Length) const char* String
 	}
 }
 
-int FlCompareStringOrdinalUtf16(_In_NLS_string_(String1Length) const WCHAR* String1, _In_ size_t String1Length, _In_NLS_string_(String2Length) const WCHAR* String2, _In_ size_t String2Length, _In_ BOOL IgnoreCase)
+int FlCompareStringOrdinalUtf16(_In_NLS_string_(string1Length) const WCHAR* string1, _In_ size_t string1Length, _In_NLS_string_(string2Length) const WCHAR* string2, _In_ size_t string2Length, _In_ BOOL ignoreCase)
 {
-	const uint16_t* String1Utf16 = (const uint16_t*)String1;
-	const uint16_t* String2Utf16 = (const uint16_t*)String2;
-	if (String1Length == (size_t)-1)
+	const uint16_t* string1Utf16 = (const uint16_t*)string1;
+	const uint16_t* string2Utf16 = (const uint16_t*)string2;
+	if (string1Length == (size_t)-1)
 	{
-		String1Length = 0;
-		while (String1Utf16[String1Length])
+		string1Length = 0;
+		while (string1Utf16[string1Length])
 		{
-			String1Length++;
+			string1Length++;
 		}
 	}
-	if (String2Length == (size_t)-1)
+	if (string2Length == (size_t)-1)
 	{
-		String2Length = 0;
-		while (String2Utf16[String2Length])
+		string2Length = 0;
+		while (string2Utf16[string2Length])
 		{
-			String2Length++;
+			string2Length++;
 		}
 	}
-	if (IgnoreCase)
+	if (ignoreCase)
 	{
-		size_t String1Index = 0;
-		size_t String2Index = 0;
-		while (String1Index < String1Length && String2Index < String2Length)
+		size_t string1Index = 0;
+		size_t string2Index = 0;
+		while (string1Index < string1Length && string2Index < string2Length)
 		{
-			uint16_t String1FirstUtf16CodeUnit = FL_LOAD_U16LE(String1Utf16 + String1Index);
-			String1Index++;
-			uint16_t String1SecondUtf16CodeUnit = 0;
-			if (((String1FirstUtf16CodeUnit >> 10) == 0x36) && (String1Index != String1Length))
+			uint16_t string1FirstUtf16CodeUnit = FL_LOAD_U16LE(string1Utf16 + string1Index);
+			string1Index++;
+			uint16_t string1SecondUtf16CodeUnit = 0;
+			if (((string1FirstUtf16CodeUnit >> 10) == 0x36) && (string1Index != string1Length))
 			{
-				uint16_t String1PossibleSecondUtf16CodeUnit = FL_LOAD_U16LE(String1Utf16 + String1Index);
-				if ((String1PossibleSecondUtf16CodeUnit >> 10) == 0x37)
+				uint16_t string1PossibleSecondUtf16CodeUnit = FL_LOAD_U16LE(string1Utf16 + string1Index);
+				if ((string1PossibleSecondUtf16CodeUnit >> 10) == 0x37)
 				{
-					String1SecondUtf16CodeUnit = String1PossibleSecondUtf16CodeUnit;
-					String1Index++;
+					string1SecondUtf16CodeUnit = string1PossibleSecondUtf16CodeUnit;
+					string1Index++;
 				}
 			}
-			uint32_t String1CodePoint;
-			if ((String1FirstUtf16CodeUnit >> 11) != 0x1B)
+			uint32_t string1CodePoint;
+			if ((string1FirstUtf16CodeUnit >> 11) != 0x1B)
 			{
-				String1CodePoint = (uint32_t)String1FirstUtf16CodeUnit;
+				string1CodePoint = (uint32_t)string1FirstUtf16CodeUnit;
 			}
 			else
 			{
-				if (((String1FirstUtf16CodeUnit >> 10) == 0x36) && ((String1SecondUtf16CodeUnit >> 10) == 0x37))
+				if (((string1FirstUtf16CodeUnit >> 10) == 0x36) && ((string1SecondUtf16CodeUnit >> 10) == 0x37))
 				{
-					String1CodePoint = ((((uint32_t)String1FirstUtf16CodeUnit & 0x3FF) << 10) | ((uint32_t)String1SecondUtf16CodeUnit & 0x3FF)) + (uint32_t)0x10000;
+					string1CodePoint = ((((uint32_t)string1FirstUtf16CodeUnit & 0x3FF) << 10) | ((uint32_t)string1SecondUtf16CodeUnit & 0x3FF)) + (uint32_t)0x10000;
 				}
 				else
 				{
-					String1CodePoint = 0xFFFD;// (Unknown), unrecognized, or unrepresentable character code point
+					string1CodePoint = 0xFFFD;// (Unknown), unrecognized, or unrepresentable character code point
 				}
 			}
-			uint16_t String2FirstUtf16CodeUnit = FL_LOAD_U16LE(String2Utf16 + String2Index);
-			String2Index++;
-			uint16_t String2SecondUtf16CodeUnit = 0;
-			if (((String2FirstUtf16CodeUnit >> 10) == 0x36) && (String2Index != String2Length))
+			uint16_t string2FirstUtf16CodeUnit = FL_LOAD_U16LE(string2Utf16 + string2Index);
+			string2Index++;
+			uint16_t string2SecondUtf16CodeUnit = 0;
+			if (((string2FirstUtf16CodeUnit >> 10) == 0x36) && (string2Index != string2Length))
 			{
-				uint16_t String2PossibleSecondUtf16CodeUnit = FL_LOAD_U16LE(String2Utf16 + String2Index);
-				if ((String2PossibleSecondUtf16CodeUnit >> 10) == 0x37)
+				uint16_t string2PossibleSecondUtf16CodeUnit = FL_LOAD_U16LE(string2Utf16 + string2Index);
+				if ((string2PossibleSecondUtf16CodeUnit >> 10) == 0x37)
 				{
-					String2SecondUtf16CodeUnit = String2PossibleSecondUtf16CodeUnit;
-					String2Index++;
+					string2SecondUtf16CodeUnit = string2PossibleSecondUtf16CodeUnit;
+					string2Index++;
 				}
 			}
-			uint32_t String2CodePoint;
-			if ((String2FirstUtf16CodeUnit >> 11) != 0x1B)
+			uint32_t string2CodePoint;
+			if ((string2FirstUtf16CodeUnit >> 11) != 0x1B)
 			{
-				String2CodePoint = (uint32_t)String2FirstUtf16CodeUnit;
+				string2CodePoint = (uint32_t)string2FirstUtf16CodeUnit;
 			}
 			else
 			{
-				if (((String2FirstUtf16CodeUnit >> 10) == 0x36) && ((String2SecondUtf16CodeUnit >> 10) == 0x37))
+				if (((string2FirstUtf16CodeUnit >> 10) == 0x36) && ((string2SecondUtf16CodeUnit >> 10) == 0x37))
 				{
-					String2CodePoint = ((((uint32_t)String2FirstUtf16CodeUnit & 0x3FF) << 10) | ((uint32_t)String2SecondUtf16CodeUnit & 0x3FF)) + (uint32_t)0x10000;
+					string2CodePoint = ((((uint32_t)string2FirstUtf16CodeUnit & 0x3FF) << 10) | ((uint32_t)string2SecondUtf16CodeUnit & 0x3FF)) + (uint32_t)0x10000;
 				}
 				else
 				{
-					String2CodePoint = 0xFFFD;// (Unknown), unrecognized, or unrepresentable character code point
+					string2CodePoint = 0xFFFD;// (Unknown), unrecognized, or unrepresentable character code point
 				}
 			}
-			if (String1CodePoint != String2CodePoint)
+			if (string1CodePoint != string2CodePoint)
 			{
-				String1CodePoint = FlCodepointToUpperCase(String1CodePoint);
-				String2CodePoint = FlCodepointToUpperCase(String2CodePoint);
-				if (String1CodePoint < String2CodePoint)
+				string1CodePoint = FlCodepointToUpperCase(string1CodePoint);
+				string2CodePoint = FlCodepointToUpperCase(string2CodePoint);
+				if (string1CodePoint < string2CodePoint)
 				{
 					return CSTR_LESS_THAN;
 				}
-				else if (String1CodePoint > String2CodePoint)
+				else if (string1CodePoint > string2CodePoint)
 				{
 					return CSTR_GREATER_THAN;
 				}
 			}
 		}
-		if (String1Index < String1Length)
+		if (string1Index < string1Length)
 		{
 			return CSTR_GREATER_THAN;
 		}
-		else if (String2Index < String2Length)
+		else if (string2Index < string2Length)
 		{
 			return CSTR_LESS_THAN;
 		}
@@ -846,25 +846,25 @@ int FlCompareStringOrdinalUtf16(_In_NLS_string_(String1Length) const WCHAR* Stri
 	}
 	else
 	{
-		size_t SharedLength = (String1Length > String2Length) ? String1Length : String2Length;
-		for (size_t i = 0; i < SharedLength; i++)
+		size_t sharedLength = (string1Length > string2Length) ? string1Length : string2Length;
+		for (size_t i = 0; i < sharedLength; i++)
 		{
-			uint16_t String1Utf16CodeUnit = FL_LOAD_U16LE(String1Utf16 + i);
-			uint16_t String2Utf16CodeUnit = FL_LOAD_U16LE(String2Utf16 + i);
-			if (String1Utf16CodeUnit < String2Utf16CodeUnit)
+			uint16_t string1Utf16CodeUnit = FL_LOAD_U16LE(string1Utf16 + i);
+			uint16_t string2Utf16CodeUnit = FL_LOAD_U16LE(string2Utf16 + i);
+			if (string1Utf16CodeUnit < string2Utf16CodeUnit)
 			{
 				return CSTR_LESS_THAN;
 			}
-			else if (String1Utf16CodeUnit > String2Utf16CodeUnit)
+			else if (string1Utf16CodeUnit > string2Utf16CodeUnit)
 			{
 				return CSTR_GREATER_THAN;
 			}
 		}
-		if (SharedLength < String1Length)
+		if (sharedLength < string1Length)
 		{
 			return CSTR_GREATER_THAN;
 		}
-		else if (SharedLength < String2Length)
+		else if (sharedLength < string2Length)
 		{
 			return CSTR_LESS_THAN;
 		}

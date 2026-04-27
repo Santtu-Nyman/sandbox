@@ -44,66 +44,66 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
 typedef struct
 {
-	void* BufferAddress;
-	DWORD CpuId0To1ABCD[8];
-	DWORD CpuId80000000To80000004ABCD[20];
-	HANDLE ImageFileHandle;
-	HANDLE VolumeHandle;
-	BY_HANDLE_FILE_INFORMATION ImageFileInformation;
-	DWORD ComputerNameLength;
-	WCHAR ComputerName[MAX_COMPUTERNAME_LENGTH + 1];
-	SYSTEM_INFO SystemInfo;
-	SIZE_T LargePageMinimum;
-	ULONGLONG PhysicallyInstalledSystemMemory;
-	BOOL AutomaticSystemResume;
-	WORD MaximumProcessorGroupCount;
-	DWORD FirstGroupMaximumProcessorCount;
-	ULONG HighestNumaNodeNumber;
-	DWORD RegistryQuotaAllowed;
-	DWORD RegistryQuotaUsed;
-	HMODULE ImageBase;
-	HMODULE Kernel32;
-	HMODULE Advapi32;
-	HANDLE CurrentProcess;
-	HANDLE CurrentThread;
-	HANDLE CurrentProcessToken;
-	WCHAR* CommandLine;
-	STARTUPINFOW StartupInfo;
-	DWORD ThreadErrorMode;
-	DWORD CurrentProcessId;
-	DWORD CurrentThreadId;
-	DWORD CurrentSessionId;
-	DYNAMIC_TIME_ZONE_INFORMATION DynamicTimeZoneInformation;
-	LCID ThreadLocale;
-	LANGID ThreadUILanguage;
-	HWND ConsoleWindow;
-	SYSTEM_POWER_STATUS SystemPowerStatus;
-	SIZE_T WorkingSetMinimum;
-	SIZE_T WorkingSetMaximum;
-	DWORD WorkingSetFlags;
-	HANDLE StdInput;
-	HANDLE StdOutput;
-	HANDLE StdError;
-	PROCESSOR_NUMBER CurrentProcessorNumber;
-	WORD ActiveProcessorGroupCount;
-	DWORD FirstGroupActiveProcessorGroupCount;
-	MEMORYSTATUSEX MemoryStatus;
-	int CurrentThreadPriority;
-	DWORD CurrentProcessClass;
-	DWORD CurrentProcessHandleCount;
-	SYSTEMTIME LocalTime;
-	IO_COUNTERS CurrentProcessIoCounters;
-	FILETIME CurrentProcessCreationTime;
-	FILETIME CurrentProcessExitTime;
-	FILETIME CurrentProcessKernelTime;
-	FILETIME CurrentProcessUserTime;
-	ULONG64 CurrentProcessCycleCount;
-	ULONGLONG TickCount;
-	DWORD64 SystemTime;
-	ULONGLONG UnbiasedInterruptTime;
-	LARGE_INTEGER PerformanceFrequency;
-	LARGE_INTEGER PerformanceCounter;
-	DWORD64 ProcessorClockCycles;
+	void* bufferAddress;
+	DWORD cpuId0To1ABCD[8];
+	DWORD cpuId80000000To80000004ABCD[20];
+	HANDLE imageFileHandle;
+	HANDLE volumeHandle;
+	BY_HANDLE_FILE_INFORMATION imageFileInformation;
+	DWORD computerNameLength;
+	WCHAR computerName[MAX_COMPUTERNAME_LENGTH + 1];
+	SYSTEM_INFO systemInfo;
+	SIZE_T largePageMinimum;
+	ULONGLONG physicallyInstalledSystemMemory;
+	BOOL automaticSystemResume;
+	WORD maximumProcessorGroupCount;
+	DWORD firstGroupMaximumProcessorCount;
+	ULONG highestNumaNodeNumber;
+	DWORD registryQuotaAllowed;
+	DWORD registryQuotaUsed;
+	HMODULE imageBase;
+	HMODULE kernel32;
+	HMODULE advapi32;
+	HANDLE currentProcess;
+	HANDLE currentThread;
+	HANDLE currentProcessToken;
+	WCHAR* commandLine;
+	STARTUPINFOW startupInfo;
+	DWORD threadErrorMode;
+	DWORD currentProcessId;
+	DWORD currentThreadId;
+	DWORD currentSessionId;
+	DYNAMIC_TIME_ZONE_INFORMATION dynamicTimeZoneInformation;
+	LCID threadLocale;
+	LANGID threadUILanguage;
+	HWND consoleWindow;
+	SYSTEM_POWER_STATUS systemPowerStatus;
+	SIZE_T workingSetMinimum;
+	SIZE_T workingSetMaximum;
+	DWORD workingSetFlags;
+	HANDLE stdInput;
+	HANDLE stdOutput;
+	HANDLE stdError;
+	PROCESSOR_NUMBER currentProcessorNumber;
+	WORD activeProcessorGroupCount;
+	DWORD firstGroupActiveProcessorGroupCount;
+	MEMORYSTATUSEX memoryStatus;
+	int currentThreadPriority;
+	DWORD currentProcessClass;
+	DWORD currentProcessHandleCount;
+	SYSTEMTIME localTime;
+	IO_COUNTERS currentProcessIoCounters;
+	FILETIME currentProcessCreationTime;
+	FILETIME currentProcessExitTime;
+	FILETIME currentProcessKernelTime;
+	FILETIME currentProcessUserTime;
+	ULONG64 currentProcessCycleCount;
+	ULONGLONG tickCount;
+	DWORD64 systemTime;
+	ULONGLONG unbiasedInterruptTime;
+	LARGE_INTEGER performanceFrequency;
+	LARGE_INTEGER performanceCounter;
+	DWORD64 processorClockCycles;
 } FlInternalGenerateRandomSeedData;
 
 #define FL_INTERNAL_MAX_USER_NAME_SIZE (((size_t)256 + 1) * sizeof(WCHAR))
@@ -113,271 +113,271 @@ typedef struct
 #define FL_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1 (FL_INTERNAL_MAX_FILE_PATH_SIZE > FL_INTERNAL_HW_PROFILE_SIZE ? FL_INTERNAL_MAX_FILE_PATH_SIZE : FL_INTERNAL_HW_PROFILE_SIZE)
 #define FL_INTERNAL_TEMPORAL_BUFFER_SIZE (FL_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 > FL_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1 ? FL_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_0 : FL_INTERNAL_TEMPORAL_BUFFER_SIZE_TMP_1)
 
-__declspec(noinline) static void FlRandomInternalGenerateRandomSeed(uint64_t* Nonce, void* RandomSeed)
+__declspec(noinline) static void FlRandomInternalGenerateRandomSeed(uint64_t* nonce, void* randomSeed)
 {
-	HANDLE CurrentProcess = GetCurrentProcess();
-	HANDLE CurrentProcessTokenHandle = 0;
+	HANDLE currentProcess = GetCurrentProcess();
+	HANDLE currentProcessTokenHandle = 0;
 
-	HMODULE Kernel32Module = GetModuleHandleW(L"Kernel32.dll");
-	HMODULE Advapi32Module = 0;
+	HMODULE kernel32Module = GetModuleHandleW(L"Kernel32.dll");
+	HMODULE advapi32Module = 0;
 
-	DWORD64 SystemTime = 0;
-	GetSystemTimeAsFileTime((FILETIME*)&SystemTime);
+	DWORD64 systemTime = 0;
+	GetSystemTimeAsFileTime((FILETIME*)&systemTime);
 
-	HANDLE ImageFileHandle = INVALID_HANDLE_VALUE;
-	HANDLE VolumeHandle = INVALID_HANDLE_VALUE;
-	BY_HANDLE_FILE_INFORMATION ImageFileInformation;
-	memset(&ImageFileInformation, 0, sizeof(BY_HANDLE_FILE_INFORMATION));
+	HANDLE imageFileHandle = INVALID_HANDLE_VALUE;
+	HANDLE volumeHandle = INVALID_HANDLE_VALUE;
+	BY_HANDLE_FILE_INFORMATION imageFileInformation;
+	memset(&imageFileInformation, 0, sizeof(BY_HANDLE_FILE_INFORMATION));
 
-	SYSTEM_INFO SystemInfo;
-	memset(&SystemInfo, 0, sizeof(SYSTEM_INFO));
-	GetSystemInfo(&SystemInfo);
-	if (!SystemInfo.dwPageSize)
+	SYSTEM_INFO systemInfo;
+	memset(&systemInfo, 0, sizeof(SYSTEM_INFO));
+	GetSystemInfo(&systemInfo);
+	if (!systemInfo.dwPageSize)
 	{
 #if defined(_M_IX86) || defined(_M_X64) || defined(_M_AMD64) || defined(__x86_64__) || defined(__x86_64) || defined(__i386__) || defined(__i386)
-		SystemInfo.dwPageSize = 0x1000;
+		systemInfo.dwPageSize = 0x1000;
 #else
-		SystemInfo.dwPageSize = 0x10000;
+		systemInfo.dwPageSize = 0x10000;
 #endif
 	}
 
-	FlSha256Context Sha256Context;
-	FlSha256CreateHash(&Sha256Context);
+	FlSha256Context sha256Context;
+	FlSha256CreateHash(&sha256Context);
 
-	size_t BufferSize = (FL_INTERNAL_TEMPORAL_BUFFER_SIZE + ((size_t)SystemInfo.dwPageSize - 1)) & ~((size_t)SystemInfo.dwPageSize - 1);
-	size_t SMBIOSFirmwareTableBufferSize = (size_t)GetSystemFirmwareTable(0x52534D42, 0, 0, 0);
-	SMBIOSFirmwareTableBufferSize = (SMBIOSFirmwareTableBufferSize + ((size_t)SystemInfo.dwPageSize - 1)) & ~((size_t)SystemInfo.dwPageSize - 1);
-	if (SMBIOSFirmwareTableBufferSize > BufferSize)
+	size_t bufferSize = (FL_INTERNAL_TEMPORAL_BUFFER_SIZE + ((size_t)systemInfo.dwPageSize - 1)) & ~((size_t)systemInfo.dwPageSize - 1);
+	size_t smbiosFirmwareTableBufferSize = (size_t)GetSystemFirmwareTable(0x52534D42, 0, 0, 0);
+	smbiosFirmwareTableBufferSize = (smbiosFirmwareTableBufferSize + ((size_t)systemInfo.dwPageSize - 1)) & ~((size_t)systemInfo.dwPageSize - 1);
+	if (smbiosFirmwareTableBufferSize > bufferSize)
 	{
-		BufferSize = SMBIOSFirmwareTableBufferSize;
+		bufferSize = smbiosFirmwareTableBufferSize;
 	}
-	void* Buffer = (void*)VirtualAlloc(0, BufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-	if (Buffer)
+	void* buffer = (void*)VirtualAlloc(0, bufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	if (buffer)
 	{
 		for (;;)
 		{
-			size_t BufferTextSpaceLength = (BufferSize / 2) / sizeof(WCHAR);
-			size_t RequiredBufferSize = 0;
+			size_t bufferTextSpaceLength = (bufferSize / 2) / sizeof(WCHAR);
+			size_t requiredBufferSize = 0;
 
-			memset(Buffer, 0, BufferSize);
-			size_t SMBIOSFirmwareTableSize = (size_t)GetSystemFirmwareTable(0x52534D42, 0, Buffer, (DWORD)BufferSize);
-			if (SMBIOSFirmwareTableSize && SMBIOSFirmwareTableSize <= BufferSize)
+			memset(buffer, 0, bufferSize);
+			size_t smbiosFirmwareTableSize = (size_t)GetSystemFirmwareTable(0x52534D42, 0, buffer, (DWORD)bufferSize);
+			if (smbiosFirmwareTableSize && smbiosFirmwareTableSize <= bufferSize)
 			{
-				FlSha256HashData(&Sha256Context, SMBIOSFirmwareTableSize, Buffer);
+				FlSha256HashData(&sha256Context, smbiosFirmwareTableSize, buffer);
 			}
-			else if (SMBIOSFirmwareTableSize)
+			else if (smbiosFirmwareTableSize)
 			{
-				SMBIOSFirmwareTableBufferSize = SMBIOSFirmwareTableSize;
-				RequiredBufferSize = SMBIOSFirmwareTableBufferSize;
-			}
-
-			WCHAR* SystemDirectoryPath = (WCHAR*)Buffer;
-			memset(SystemDirectoryPath, 0, BufferTextSpaceLength * sizeof(WCHAR));
-			size_t SystemDirectoryPathLength = (size_t)GetSystemDirectoryW(SystemDirectoryPath, (UINT)BufferTextSpaceLength);
-			if (SystemDirectoryPathLength && SystemDirectoryPathLength < BufferTextSpaceLength)
-			{
-				FlSha256HashData(&Sha256Context, SystemDirectoryPathLength * sizeof(WCHAR), SystemDirectoryPath);
-			}
-			else if (SystemDirectoryPathLength)
-			{
-				RequiredBufferSize = (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR));
+				smbiosFirmwareTableBufferSize = smbiosFirmwareTableSize;
+				requiredBufferSize = smbiosFirmwareTableBufferSize;
 			}
 
-			WCHAR* WindowsDirectoryPath = (WCHAR*)Buffer;
-			memset(WindowsDirectoryPath, 0, BufferTextSpaceLength * sizeof(WCHAR));
-			size_t WindowsDirectoryPathLength = (size_t)GetSystemWindowsDirectoryW(WindowsDirectoryPath, (UINT)BufferTextSpaceLength);
-			if (WindowsDirectoryPathLength && WindowsDirectoryPathLength < BufferTextSpaceLength)
+			WCHAR* systemDirectoryPath = (WCHAR*)buffer;
+			memset(systemDirectoryPath, 0, bufferTextSpaceLength * sizeof(WCHAR));
+			size_t systemDirectoryPathLength = (size_t)GetSystemDirectoryW(systemDirectoryPath, (UINT)bufferTextSpaceLength);
+			if (systemDirectoryPathLength && systemDirectoryPathLength < bufferTextSpaceLength)
 			{
-				FlSha256HashData(&Sha256Context, WindowsDirectoryPathLength * sizeof(WCHAR), WindowsDirectoryPath);
+				FlSha256HashData(&sha256Context, systemDirectoryPathLength * sizeof(WCHAR), systemDirectoryPath);
 			}
-			else if (WindowsDirectoryPathLength)
+			else if (systemDirectoryPathLength)
 			{
-				RequiredBufferSize = (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR));
+				requiredBufferSize = (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR));
 			}
 
-			WCHAR* RawImageFilePath = (WCHAR*)Buffer;
-			WCHAR* ImageFilePath = (WCHAR*)((uintptr_t)Buffer + (BufferTextSpaceLength * sizeof(WCHAR)));
-			memset(RawImageFilePath, 0, BufferTextSpaceLength * sizeof(WCHAR));
-			memset(ImageFilePath, 0, BufferTextSpaceLength * sizeof(WCHAR));
-			size_t RawImageFilePathLength = (size_t)GetModuleFileNameW(0, RawImageFilePath, (DWORD)BufferTextSpaceLength);
-			size_t ImageFilePathLength = 0;
-			if (RawImageFilePathLength && RawImageFilePathLength < BufferTextSpaceLength)
+			WCHAR* windowsDirectoryPath = (WCHAR*)buffer;
+			memset(windowsDirectoryPath, 0, bufferTextSpaceLength * sizeof(WCHAR));
+			size_t windowsDirectoryPathLength = (size_t)GetSystemWindowsDirectoryW(windowsDirectoryPath, (UINT)bufferTextSpaceLength);
+			if (windowsDirectoryPathLength && windowsDirectoryPathLength < bufferTextSpaceLength)
 			{
-				ImageFilePathLength = FlWin32GetFullyQualifiedPath(RawImageFilePathLength, RawImageFilePath, 0, 0, BufferTextSpaceLength - 1, ImageFilePath);
-				if (ImageFilePathLength && ImageFilePathLength < BufferTextSpaceLength)
+				FlSha256HashData(&sha256Context, windowsDirectoryPathLength * sizeof(WCHAR), windowsDirectoryPath);
+			}
+			else if (windowsDirectoryPathLength)
+			{
+				requiredBufferSize = (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR));
+			}
+
+			WCHAR* rawImageFilePath = (WCHAR*)buffer;
+			WCHAR* imageFilePath = (WCHAR*)((uintptr_t)buffer + (bufferTextSpaceLength * sizeof(WCHAR)));
+			memset(rawImageFilePath, 0, bufferTextSpaceLength * sizeof(WCHAR));
+			memset(imageFilePath, 0, bufferTextSpaceLength * sizeof(WCHAR));
+			size_t rawImageFilePathLength = (size_t)GetModuleFileNameW(0, rawImageFilePath, (DWORD)bufferTextSpaceLength);
+			size_t imageFilePathLength = 0;
+			if (rawImageFilePathLength && rawImageFilePathLength < bufferTextSpaceLength)
+			{
+				imageFilePathLength = FlWin32GetFullyQualifiedPath(rawImageFilePathLength, rawImageFilePath, 0, 0, bufferTextSpaceLength - 1, imageFilePath);
+				if (imageFilePathLength && imageFilePathLength < bufferTextSpaceLength)
 				{
-					ImageFilePath[ImageFilePathLength] = 0;
+					imageFilePath[imageFilePathLength] = 0;
 				}
-				else if (ImageFilePathLength)
+				else if (imageFilePathLength)
 				{
-					RawImageFilePathLength = 0;
-					ImageFilePathLength = 0;
-					RequiredBufferSize = (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR));
+					rawImageFilePathLength = 0;
+					imageFilePathLength = 0;
+					requiredBufferSize = (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR));
 				}
 				else
 				{
-					ImageFilePathLength = RawImageFilePathLength;
-					memcpy(ImageFilePath, RawImageFilePath, (RawImageFilePathLength + 1) * sizeof(WCHAR));
+					imageFilePathLength = rawImageFilePathLength;
+					memcpy(imageFilePath, rawImageFilePath, (rawImageFilePathLength + 1) * sizeof(WCHAR));
 				}
 			}
-			else if (RawImageFilePathLength)
+			else if (rawImageFilePathLength)
 			{
-				RawImageFilePathLength = 0;
-				ImageFilePathLength = 0;
-				RequiredBufferSize = (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR));
+				rawImageFilePathLength = 0;
+				imageFilePathLength = 0;
+				requiredBufferSize = (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR));
 			}
 
-			if (ImageFilePathLength)
+			if (imageFilePathLength)
 			{
-				ImageFileHandle = CreateFileW(ImageFilePath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, 0, 0);
-				if (ImageFileHandle != INVALID_HANDLE_VALUE)
+				imageFileHandle = CreateFileW(imageFilePath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, 0, 0);
+				if (imageFileHandle != INVALID_HANDLE_VALUE)
 				{
-					memset(&ImageFileInformation, 0, sizeof(BY_HANDLE_FILE_INFORMATION));
-					GetFileInformationByHandle(ImageFileHandle, &ImageFileInformation);
-					CloseHandle(ImageFileHandle);
+					memset(&imageFileInformation, 0, sizeof(BY_HANDLE_FILE_INFORMATION));
+					GetFileInformationByHandle(imageFileHandle, &imageFileInformation);
+					CloseHandle(imageFileHandle);
 				}
-				FlSha256HashData(&Sha256Context, ImageFilePathLength * sizeof(WCHAR), ImageFilePath);
+				FlSha256HashData(&sha256Context, imageFilePathLength * sizeof(WCHAR), imageFilePath);
 
-				WCHAR* VolumeMountPath = (WCHAR*)Buffer;
-				memset(VolumeMountPath, 0, BufferTextSpaceLength * sizeof(WCHAR));
-				if (GetVolumePathNameW(ImageFilePath, VolumeMountPath, (DWORD)BufferTextSpaceLength))
+				WCHAR* volumeMountPath = (WCHAR*)buffer;
+				memset(volumeMountPath, 0, bufferTextSpaceLength * sizeof(WCHAR));
+				if (GetVolumePathNameW(imageFilePath, volumeMountPath, (DWORD)bufferTextSpaceLength))
 				{
-					WCHAR* VolumeGuidPath = (WCHAR*)((uintptr_t)Buffer + (BufferTextSpaceLength * sizeof(WCHAR)));
-					memset(VolumeGuidPath, 0, BufferTextSpaceLength * sizeof(WCHAR));
-					if (GetVolumeNameForVolumeMountPointW(VolumeMountPath, VolumeGuidPath, (DWORD)BufferTextSpaceLength))
+					WCHAR* volumeGuidPath = (WCHAR*)((uintptr_t)buffer + (bufferTextSpaceLength * sizeof(WCHAR)));
+					memset(volumeGuidPath, 0, bufferTextSpaceLength * sizeof(WCHAR));
+					if (GetVolumeNameForVolumeMountPointW(volumeMountPath, volumeGuidPath, (DWORD)bufferTextSpaceLength))
 					{
-						size_t VolumeGuidPathLength = wcslen(VolumeGuidPath);
-						FlSha256HashData(&Sha256Context, (size_t)VolumeGuidPathLength * sizeof(WCHAR), VolumeGuidPath);
+						size_t volumeGuidPathLength = wcslen(volumeGuidPath);
+						FlSha256HashData(&sha256Context, (size_t)volumeGuidPathLength * sizeof(WCHAR), volumeGuidPath);
 
-						DWORD DiskFreeSpaceData[4] = { 0, 0, 0, 0 };
-						if (GetDiskFreeSpaceW(VolumeGuidPath, &DiskFreeSpaceData[0], &DiskFreeSpaceData[1], &DiskFreeSpaceData[2], &DiskFreeSpaceData[3]))
+						DWORD diskFreeSpaceData[4] = { 0, 0, 0, 0 };
+						if (GetDiskFreeSpaceW(volumeGuidPath, &diskFreeSpaceData[0], &diskFreeSpaceData[1], &diskFreeSpaceData[2], &diskFreeSpaceData[3]))
 						{
-							FlSha256HashData(&Sha256Context, (size_t)4 * sizeof(DWORD), &DiskFreeSpaceData[0]);
+							FlSha256HashData(&sha256Context, (size_t)4 * sizeof(DWORD), &diskFreeSpaceData[0]);
 						}
 
-						VolumeHandle = CreateFileW(VolumeGuidPath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
-						if (VolumeHandle != INVALID_HANDLE_VALUE)
+						volumeHandle = CreateFileW(volumeGuidPath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+						if (volumeHandle != INVALID_HANDLE_VALUE)
 						{
-							WCHAR* VolumeName = (WCHAR*)Buffer;
-							WCHAR* VolumeFileSystemName = (WCHAR*)((uintptr_t)Buffer + (BufferTextSpaceLength * sizeof(WCHAR)));
-							DWORD VolumeData[3] = { 0, 0, 0 };
-							memset(VolumeName, 0, BufferTextSpaceLength * sizeof(WCHAR));
-							memset(VolumeFileSystemName, 0, BufferTextSpaceLength * sizeof(WCHAR));
-							if (GetVolumeInformationByHandleW(VolumeHandle, VolumeName, (DWORD)BufferTextSpaceLength, &VolumeData[0], &VolumeData[1], &VolumeData[2], VolumeFileSystemName, (DWORD)BufferTextSpaceLength))
+							WCHAR* volumeName = (WCHAR*)buffer;
+							WCHAR* volumeFileSystemName = (WCHAR*)((uintptr_t)buffer + (bufferTextSpaceLength * sizeof(WCHAR)));
+							DWORD volumeData[3] = { 0, 0, 0 };
+							memset(volumeName, 0, bufferTextSpaceLength * sizeof(WCHAR));
+							memset(volumeFileSystemName, 0, bufferTextSpaceLength * sizeof(WCHAR));
+							if (GetVolumeInformationByHandleW(volumeHandle, volumeName, (DWORD)bufferTextSpaceLength, &volumeData[0], &volumeData[1], &volumeData[2], volumeFileSystemName, (DWORD)bufferTextSpaceLength))
 							{
-								size_t VolumeNameLength = wcslen(VolumeName);
-								size_t VolumeFileSystemNameLength = wcslen(VolumeFileSystemName);
-								FlSha256HashData(&Sha256Context, VolumeNameLength * sizeof(WCHAR), VolumeName);
-								FlSha256HashData(&Sha256Context, VolumeFileSystemNameLength * sizeof(WCHAR), VolumeFileSystemName);
-								FlSha256HashData(&Sha256Context, (size_t)3 * sizeof(DWORD), &VolumeData[0]);
+								size_t volumeNameLength = wcslen(volumeName);
+								size_t volumeFileSystemNameLength = wcslen(volumeFileSystemName);
+								FlSha256HashData(&sha256Context, volumeNameLength * sizeof(WCHAR), volumeName);
+								FlSha256HashData(&sha256Context, volumeFileSystemNameLength * sizeof(WCHAR), volumeFileSystemName);
+								FlSha256HashData(&sha256Context, (size_t)3 * sizeof(DWORD), &volumeData[0]);
 							}
 							else
 							{
-								DWORD GetVolumeInformationByHandleError = GetLastError();
-								if (GetVolumeInformationByHandleError == ERROR_FILENAME_EXCED_RANGE || GetVolumeInformationByHandleError == ERROR_MORE_DATA || GetVolumeInformationByHandleError == ERROR_BUFFER_OVERFLOW || GetVolumeInformationByHandleError == ERROR_INSUFFICIENT_BUFFER)
+								DWORD getVolumeInformationByHandleError = GetLastError();
+								if (getVolumeInformationByHandleError == ERROR_FILENAME_EXCED_RANGE || getVolumeInformationByHandleError == ERROR_MORE_DATA || getVolumeInformationByHandleError == ERROR_BUFFER_OVERFLOW || getVolumeInformationByHandleError == ERROR_INSUFFICIENT_BUFFER)
 								{
-									RequiredBufferSize = (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR));
+									requiredBufferSize = (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR));
 								}
 							}
-							CloseHandle(VolumeHandle);
+							CloseHandle(volumeHandle);
 						}
 					}
 					else
 					{
-						DWORD GetVolumeNameForVolumeMountPointError = GetLastError();
-						if (GetVolumeNameForVolumeMountPointError == ERROR_FILENAME_EXCED_RANGE || GetVolumeNameForVolumeMountPointError == ERROR_MORE_DATA || GetVolumeNameForVolumeMountPointError == ERROR_BUFFER_OVERFLOW || GetVolumeNameForVolumeMountPointError == ERROR_INSUFFICIENT_BUFFER)
+						DWORD getVolumeNameForVolumeMountPointError = GetLastError();
+						if (getVolumeNameForVolumeMountPointError == ERROR_FILENAME_EXCED_RANGE || getVolumeNameForVolumeMountPointError == ERROR_MORE_DATA || getVolumeNameForVolumeMountPointError == ERROR_BUFFER_OVERFLOW || getVolumeNameForVolumeMountPointError == ERROR_INSUFFICIENT_BUFFER)
 						{
-							RequiredBufferSize = (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR));
+							requiredBufferSize = (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR));
 						}
 					}
 				}
 				else
 				{
-					DWORD GetVolumePathNameError = GetLastError();
-					if (GetVolumePathNameError == ERROR_FILENAME_EXCED_RANGE || GetVolumePathNameError == ERROR_MORE_DATA || GetVolumePathNameError == ERROR_BUFFER_OVERFLOW || GetVolumePathNameError == ERROR_INSUFFICIENT_BUFFER)
+					DWORD getVolumePathNameError = GetLastError();
+					if (getVolumePathNameError == ERROR_FILENAME_EXCED_RANGE || getVolumePathNameError == ERROR_MORE_DATA || getVolumePathNameError == ERROR_BUFFER_OVERFLOW || getVolumePathNameError == ERROR_INSUFFICIENT_BUFFER)
 					{
-						RequiredBufferSize = (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR));
+						requiredBufferSize = (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR));
 					}
 				}
 			}
 
-			Advapi32Module = LoadLibraryW(L"Advapi32.dll");
-			BOOL(WINAPI * OpenProcessTokenProcedure)(HANDLE ProcessHandle, DWORD DesiredAccess, PHANDLE TokenHandle) = 0;
-			BOOL(WINAPI * GetTokenInformationProcedure)(HANDLE TokenHandle, TOKEN_INFORMATION_CLASS TokenInformationClass, LPVOID TokenInformation, DWORD TokenInformationLength, PDWORD ReturnLength) = 0;
-			DWORD(WINAPI * GetLengthSidProcedure)(PSID pSid) = 0;
-			BOOL(WINAPI * GetUserNameWProcedure)(LPWSTR lpBuffer, LPDWORD pcbBuffer) = 0;
-			BOOL(WINAPI * GetCurrentHwProfileWProcedure)(LPHW_PROFILE_INFOW lpHwProfileInfo) = 0;
-			if (Advapi32Module)
+			advapi32Module = LoadLibraryW(L"Advapi32.dll");
+			BOOL(WINAPI * openProcessTokenProcedure)(HANDLE ProcessHandle, DWORD DesiredAccess, PHANDLE TokenHandle) = 0;
+			BOOL(WINAPI * getTokenInformationProcedure)(HANDLE TokenHandle, TOKEN_INFORMATION_CLASS TokenInformationClass, LPVOID TokenInformation, DWORD TokenInformationLength, PDWORD ReturnLength) = 0;
+			DWORD(WINAPI * getLengthSidProcedure)(PSID pSid) = 0;
+			BOOL(WINAPI * getUserNameWProcedure)(LPWSTR lpBuffer, LPDWORD pcbBuffer) = 0;
+			BOOL(WINAPI * getCurrentHwProfileWProcedure)(LPHW_PROFILE_INFOW lpHwProfileInfo) = 0;
+			if (advapi32Module)
 			{
-				OpenProcessTokenProcedure = (BOOL(WINAPI*)(HANDLE, DWORD, PHANDLE))GetProcAddress(Advapi32Module, "OpenProcessToken");
-				GetTokenInformationProcedure = (BOOL(WINAPI*)(HANDLE, TOKEN_INFORMATION_CLASS, LPVOID, DWORD, PDWORD))GetProcAddress(Advapi32Module, "GetTokenInformation");
-				GetLengthSidProcedure = (DWORD(WINAPI*)(PSID))GetProcAddress(Advapi32Module, "GetLengthSid");
-				GetUserNameWProcedure = (BOOL(WINAPI*)(LPWSTR, LPDWORD))GetProcAddress(Advapi32Module, "GetUserNameW");
-				GetCurrentHwProfileWProcedure = (BOOL(WINAPI*)(LPHW_PROFILE_INFOW))GetProcAddress(Advapi32Module, "GetCurrentHwProfileW");
+				openProcessTokenProcedure = (BOOL(WINAPI*)(HANDLE, DWORD, PHANDLE))GetProcAddress(advapi32Module, "OpenProcessToken");
+				getTokenInformationProcedure = (BOOL(WINAPI*)(HANDLE, TOKEN_INFORMATION_CLASS, LPVOID, DWORD, PDWORD))GetProcAddress(advapi32Module, "GetTokenInformation");
+				getLengthSidProcedure = (DWORD(WINAPI*)(PSID))GetProcAddress(advapi32Module, "GetLengthSid");
+				getUserNameWProcedure = (BOOL(WINAPI*)(LPWSTR, LPDWORD))GetProcAddress(advapi32Module, "GetUserNameW");
+				getCurrentHwProfileWProcedure = (BOOL(WINAPI*)(LPHW_PROFILE_INFOW))GetProcAddress(advapi32Module, "GetCurrentHwProfileW");
 
-				if (OpenProcessTokenProcedure && GetTokenInformationProcedure && GetLengthSidProcedure)
+				if (openProcessTokenProcedure && getTokenInformationProcedure && getLengthSidProcedure)
 				{
-					CurrentProcessTokenHandle = 0;
-					if (OpenProcessTokenProcedure(CurrentProcess, TOKEN_QUERY, &CurrentProcessTokenHandle))
+					currentProcessTokenHandle = 0;
+					if (openProcessTokenProcedure(currentProcess, TOKEN_QUERY, &currentProcessTokenHandle))
 					{
-						DWORD TokenUserSize = 0;
-						TOKEN_USER* TokenUserData = (TOKEN_USER*)Buffer;
-						memset(TokenUserData, 0, TOKEN_USER_MAX_SIZE);
-						if (GetTokenInformationProcedure(CurrentProcessTokenHandle, TokenUser, TokenUserData, (DWORD)TOKEN_USER_MAX_SIZE, &TokenUserSize))
+						DWORD tokenUserSize = 0;
+						TOKEN_USER* tokenUserData = (TOKEN_USER*)buffer;
+						memset(tokenUserData, 0, TOKEN_USER_MAX_SIZE);
+						if (getTokenInformationProcedure(currentProcessTokenHandle, TokenUser, tokenUserData, (DWORD)TOKEN_USER_MAX_SIZE, &tokenUserSize))
 						{
-							DWORD TokenUserSIDSize = GetLengthSidProcedure(TokenUserData->User.Sid);
-							FlSha256HashData(&Sha256Context, (size_t)TokenUserSIDSize, TokenUserData->User.Sid);
+							DWORD tokenUserSIDSize = getLengthSidProcedure(tokenUserData->User.Sid);
+							FlSha256HashData(&sha256Context, (size_t)tokenUserSIDSize, tokenUserData->User.Sid);
 						}
-						CloseHandle(CurrentProcessTokenHandle);
+						CloseHandle(currentProcessTokenHandle);
 					}
 				}
 
-				if (GetUserNameWProcedure)
+				if (getUserNameWProcedure)
 				{
-					WCHAR* UserName = (WCHAR*)Buffer;
-					DWORD UserNameLength = (DWORD)(BufferSize / sizeof(WCHAR));
-					memset(UserName, 0, (size_t)UserNameLength * sizeof(WCHAR));
-					if (GetUserNameWProcedure(UserName, &UserNameLength))
+					WCHAR* userName = (WCHAR*)buffer;
+					DWORD userNameLength = (DWORD)(bufferSize / sizeof(WCHAR));
+					memset(userName, 0, (size_t)userNameLength * sizeof(WCHAR));
+					if (getUserNameWProcedure(userName, &userNameLength))
 					{
-						FlSha256HashData(&Sha256Context, (size_t)UserNameLength * sizeof(WCHAR), UserName);
+						FlSha256HashData(&sha256Context, (size_t)userNameLength * sizeof(WCHAR), userName);
 					}
 					else
 					{
-						DWORD GetUserNameError = GetLastError();
-						if (GetUserNameError == ERROR_INSUFFICIENT_BUFFER)
+						DWORD getUserNameError = GetLastError();
+						if (getUserNameError == ERROR_INSUFFICIENT_BUFFER)
 						{
-							size_t RequiredUserNameLength = (size_t)UserNameLength * sizeof(WCHAR);
-							RequiredBufferSize = RequiredUserNameLength;
+							size_t requiredUserNameLength = (size_t)userNameLength * sizeof(WCHAR);
+							requiredBufferSize = requiredUserNameLength;
 						}
 					}
 				}
 
-				if (GetCurrentHwProfileWProcedure)
+				if (getCurrentHwProfileWProcedure)
 				{
-					HW_PROFILE_INFOW* HwProfileInfo = (HW_PROFILE_INFOW*)Buffer;
-					memset(HwProfileInfo, 0, sizeof(HW_PROFILE_INFOW));
-					if (GetCurrentHwProfileWProcedure(HwProfileInfo))
+					HW_PROFILE_INFOW* hwProfileInfo = (HW_PROFILE_INFOW*)buffer;
+					memset(hwProfileInfo, 0, sizeof(HW_PROFILE_INFOW));
+					if (getCurrentHwProfileWProcedure(hwProfileInfo))
 					{
-						FlSha256HashData(&Sha256Context, sizeof(HW_PROFILE_INFOW), HwProfileInfo);
+						FlSha256HashData(&sha256Context, sizeof(HW_PROFILE_INFOW), hwProfileInfo);
 					}
 				}
 
-				FreeLibrary(Advapi32Module);
+				FreeLibrary(advapi32Module);
 			}
 
-			VirtualFree(Buffer, 0, MEM_RELEASE);
+			VirtualFree(buffer, 0, MEM_RELEASE);
 
-			if (RequiredBufferSize && BufferSize < (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR)))
+			if (requiredBufferSize && bufferSize < (size_t)2 * (((size_t)UNICODE_STRING_MAX_CHARS + 1) * sizeof(WCHAR)))
 			{
-				BufferSize = (RequiredBufferSize + ((size_t)SystemInfo.dwPageSize - 1)) & ~((size_t)SystemInfo.dwPageSize - 1);
-				Buffer = (void*)VirtualAlloc(0, BufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-				if (!Buffer)
+				bufferSize = (requiredBufferSize + ((size_t)systemInfo.dwPageSize - 1)) & ~((size_t)systemInfo.dwPageSize - 1);
+				buffer = (void*)VirtualAlloc(0, bufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+				if (!buffer)
 				{
 					break;
 				}
 				else
 				{
-					FlSha256CreateHash(&Sha256Context);
+					FlSha256CreateHash(&sha256Context);
 				}
 			}
 			else
@@ -387,147 +387,147 @@ __declspec(noinline) static void FlRandomInternalGenerateRandomSeed(uint64_t* No
 		}
 	}
 
-	WCHAR* EnvironmentBlock = GetEnvironmentStringsW();
-	if (EnvironmentBlock)
+	WCHAR* environmentBlock = GetEnvironmentStringsW();
+	if (environmentBlock)
 	{
-		size_t EnvironmentBlockSize = 0;
-		while (EnvironmentBlock[EnvironmentBlockSize] || EnvironmentBlock[EnvironmentBlockSize + 1])
+		size_t environmentBlockSize = 0;
+		while (environmentBlock[environmentBlockSize] || environmentBlock[environmentBlockSize + 1])
 		{
-			EnvironmentBlockSize++;
+			environmentBlockSize++;
 		}
-		EnvironmentBlockSize += 2;
-		EnvironmentBlockSize *= sizeof(WCHAR);
-		FlSha256HashData(&Sha256Context, EnvironmentBlockSize, EnvironmentBlock);
-		FreeEnvironmentStringsW(EnvironmentBlock);
+		environmentBlockSize += 2;
+		environmentBlockSize *= sizeof(WCHAR);
+		FlSha256HashData(&sha256Context, environmentBlockSize, environmentBlock);
+		FreeEnvironmentStringsW(environmentBlock);
 	}
 
-	HANDLE CurrentThread = GetCurrentThread();
-	FlInternalGenerateRandomSeedData Data;
-	memset(&Data, 0, sizeof(FlInternalGenerateRandomSeedData));
-	Data.BufferAddress = Buffer;
-	__cpuidex((int*)&Data.CpuId0To1ABCD[0], 0, 0);
-	if (Data.CpuId0To1ABCD[0] >= 1)
+	HANDLE currentThread = GetCurrentThread();
+	FlInternalGenerateRandomSeedData data;
+	memset(&data, 0, sizeof(FlInternalGenerateRandomSeedData));
+	data.bufferAddress = buffer;
+	__cpuidex((int*)&data.cpuId0To1ABCD[0], 0, 0);
+	if (data.cpuId0To1ABCD[0] >= 1)
 	{
-		__cpuidex((int*)&Data.CpuId0To1ABCD[4], 1, 0);
+		__cpuidex((int*)&data.cpuId0To1ABCD[4], 1, 0);
 	}
-	__cpuidex((int*)&Data.CpuId80000000To80000004ABCD[0], (int)0x80000000, 0);
-	for (DWORD n = (Data.CpuId80000000To80000004ABCD[0] < (DWORD)0x80000004) ? Data.CpuId80000000To80000004ABCD[0] : (DWORD)0x80000004, i = (DWORD)0x80000001; i <= n; i++)
+	__cpuidex((int*)&data.cpuId80000000To80000004ABCD[0], (int)0x80000000, 0);
+	for (DWORD n = (data.cpuId80000000To80000004ABCD[0] < (DWORD)0x80000004) ? data.cpuId80000000To80000004ABCD[0] : (DWORD)0x80000004, i = (DWORD)0x80000001; i <= n; i++)
 	{
-		__cpuidex((int*)&Data.CpuId80000000To80000004ABCD[i * 4], (DWORD)i, 0);
+		__cpuidex((int*)&data.cpuId80000000To80000004ABCD[i * 4], (DWORD)i, 0);
 	}
-	Data.ImageFileHandle = ImageFileHandle;
-	Data.VolumeHandle = VolumeHandle;
-	memcpy(&Data.ImageFileInformation, &ImageFileInformation, sizeof(BY_HANDLE_FILE_INFORMATION));
-	Data.ComputerNameLength = MAX_COMPUTERNAME_LENGTH + 1;
-	GetComputerNameW(&Data.ComputerName[0], &Data.ComputerNameLength);
-	memcpy(&Data.SystemInfo, &SystemInfo, sizeof(SYSTEM_INFO));
-	Data.LargePageMinimum = GetLargePageMinimum();
-	GetPhysicallyInstalledSystemMemory(&Data.PhysicallyInstalledSystemMemory);
-	Data.AutomaticSystemResume = IsSystemResumeAutomatic();
-	Data.MaximumProcessorGroupCount = GetMaximumProcessorGroupCount();
-	Data.FirstGroupMaximumProcessorCount = GetMaximumProcessorCount(0);
-	GetNumaHighestNodeNumber(&Data.HighestNumaNodeNumber);
-	GetSystemRegistryQuota(&Data.RegistryQuotaAllowed, &Data.RegistryQuotaUsed);
-	Data.ImageBase = (HMODULE)&__ImageBase;
-	Data.Kernel32 = Kernel32Module;
-	Data.Advapi32 = Advapi32Module;
-	Data.CurrentProcess = CurrentProcess;
-	Data.CurrentThread = CurrentThread;
-	Data.CurrentProcessToken = CurrentProcessTokenHandle;
-	Data.CommandLine = GetCommandLineW();
-	GetStartupInfoW(&Data.StartupInfo);
-	Data.ThreadErrorMode = GetThreadErrorMode();
-	Data.CurrentProcessId = GetCurrentProcessId();
-	Data.CurrentThreadId = GetCurrentThreadId();
-	ProcessIdToSessionId(Data.CurrentProcessId, &Data.CurrentSessionId);
-	GetDynamicTimeZoneInformation(&Data.DynamicTimeZoneInformation);
-	Data.ThreadLocale = GetThreadLocale();
-	Data.ThreadUILanguage = GetThreadUILanguage();
-	Data.ConsoleWindow = GetConsoleWindow();
-	GetSystemPowerStatus(&Data.SystemPowerStatus);
-	GetProcessWorkingSetSizeEx(CurrentProcess, &Data.WorkingSetMinimum, &Data.WorkingSetMaximum, &Data.WorkingSetFlags);
-	Data.StdInput = GetStdHandle(STD_INPUT_HANDLE);
-	Data.StdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-	Data.StdError = GetStdHandle(STD_ERROR_HANDLE);
-	GetCurrentProcessorNumberEx(&Data.CurrentProcessorNumber);
-	Data.ActiveProcessorGroupCount = GetActiveProcessorGroupCount();
-	Data.FirstGroupActiveProcessorGroupCount = GetActiveProcessorCount(0);
-	Data.MemoryStatus.dwLength = sizeof(MEMORYSTATUSEX);
-	GlobalMemoryStatusEx(&Data.MemoryStatus);
-	Data.CurrentThreadPriority = GetThreadPriority(CurrentThread);
-	Data.CurrentProcessClass = GetPriorityClass(CurrentProcess);
-	GetProcessHandleCount(CurrentProcess, &Data.CurrentProcessHandleCount);
-	GetLocalTime(&Data.LocalTime);
-	GetProcessIoCounters(CurrentProcess, &Data.CurrentProcessIoCounters);
-	GetProcessTimes(CurrentProcess, &Data.CurrentProcessCreationTime, &Data.CurrentProcessExitTime, &Data.CurrentProcessKernelTime, &Data.CurrentProcessUserTime);
-	QueryProcessCycleTime(CurrentProcess, &Data.CurrentProcessCycleCount);
-	Data.TickCount = GetTickCount64();
-	Data.SystemTime = SystemTime;
-	QueryUnbiasedInterruptTime(&Data.UnbiasedInterruptTime);
-	QueryPerformanceFrequency(&Data.PerformanceFrequency);
-	QueryPerformanceCounter(&Data.PerformanceCounter);
-	Data.ProcessorClockCycles = __rdtsc();
+	data.imageFileHandle = imageFileHandle;
+	data.volumeHandle = volumeHandle;
+	memcpy(&data.imageFileInformation, &imageFileInformation, sizeof(BY_HANDLE_FILE_INFORMATION));
+	data.computerNameLength = MAX_COMPUTERNAME_LENGTH + 1;
+	GetComputerNameW(&data.computerName[0], &data.computerNameLength);
+	memcpy(&data.systemInfo, &systemInfo, sizeof(SYSTEM_INFO));
+	data.largePageMinimum = GetLargePageMinimum();
+	GetPhysicallyInstalledSystemMemory(&data.physicallyInstalledSystemMemory);
+	data.automaticSystemResume = IsSystemResumeAutomatic();
+	data.maximumProcessorGroupCount = GetMaximumProcessorGroupCount();
+	data.firstGroupMaximumProcessorCount = GetMaximumProcessorCount(0);
+	GetNumaHighestNodeNumber(&data.highestNumaNodeNumber);
+	GetSystemRegistryQuota(&data.registryQuotaAllowed, &data.registryQuotaUsed);
+	data.imageBase = (HMODULE)&__ImageBase;
+	data.kernel32 = kernel32Module;
+	data.advapi32 = advapi32Module;
+	data.currentProcess = currentProcess;
+	data.currentThread = currentThread;
+	data.currentProcessToken = currentProcessTokenHandle;
+	data.commandLine = GetCommandLineW();
+	GetStartupInfoW(&data.startupInfo);
+	data.threadErrorMode = GetThreadErrorMode();
+	data.currentProcessId = GetCurrentProcessId();
+	data.currentThreadId = GetCurrentThreadId();
+	ProcessIdToSessionId(data.currentProcessId, &data.currentSessionId);
+	GetDynamicTimeZoneInformation(&data.dynamicTimeZoneInformation);
+	data.threadLocale = GetThreadLocale();
+	data.threadUILanguage = GetThreadUILanguage();
+	data.consoleWindow = GetConsoleWindow();
+	GetSystemPowerStatus(&data.systemPowerStatus);
+	GetProcessWorkingSetSizeEx(currentProcess, &data.workingSetMinimum, &data.workingSetMaximum, &data.workingSetFlags);
+	data.stdInput = GetStdHandle(STD_INPUT_HANDLE);
+	data.stdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+	data.stdError = GetStdHandle(STD_ERROR_HANDLE);
+	GetCurrentProcessorNumberEx(&data.currentProcessorNumber);
+	data.activeProcessorGroupCount = GetActiveProcessorGroupCount();
+	data.firstGroupActiveProcessorGroupCount = GetActiveProcessorCount(0);
+	data.memoryStatus.dwLength = sizeof(MEMORYSTATUSEX);
+	GlobalMemoryStatusEx(&data.memoryStatus);
+	data.currentThreadPriority = GetThreadPriority(currentThread);
+	data.currentProcessClass = GetPriorityClass(currentProcess);
+	GetProcessHandleCount(currentProcess, &data.currentProcessHandleCount);
+	GetLocalTime(&data.localTime);
+	GetProcessIoCounters(currentProcess, &data.currentProcessIoCounters);
+	GetProcessTimes(currentProcess, &data.currentProcessCreationTime, &data.currentProcessExitTime, &data.currentProcessKernelTime, &data.currentProcessUserTime);
+	QueryProcessCycleTime(currentProcess, &data.currentProcessCycleCount);
+	data.tickCount = GetTickCount64();
+	data.systemTime = systemTime;
+	QueryUnbiasedInterruptTime(&data.unbiasedInterruptTime);
+	QueryPerformanceFrequency(&data.performanceFrequency);
+	QueryPerformanceCounter(&data.performanceCounter);
+	data.processorClockCycles = __rdtsc();
 
-	*Nonce = (uint64_t)SystemTime;
+	*nonce = (uint64_t)systemTime;
 
-	FlSha256HashData(&Sha256Context, sizeof(FlInternalGenerateRandomSeedData), &Data);
-	FlSha256FinishHash(&Sha256Context, RandomSeed);
+	FlSha256HashData(&sha256Context, sizeof(FlInternalGenerateRandomSeedData), &data);
+	FlSha256FinishHash(&sha256Context, randomSeed);
 }
 
-volatile uint64_t RandomInternalRngNonce;
+volatile uint64_t randomInternalRngNonce;
 #ifdef _WIN64
-volatile uint64_t RandomInternalRngAtomicCounter;
+volatile uint64_t randomInternalRngAtomicCounter;
 #else
-volatile uint32_t RandomInternalRngAtomicCounter;
+volatile uint32_t randomInternalRngAtomicCounter;
 #endif // _WIN64
-volatile uint64_t RandomInternalRngState[4];
+volatile uint64_t randomInternalRngState[4];
 
-static void FlRandomInternalGenerateRandomBlock(void* Buffer)
+static void FlRandomInternalGenerateRandomBlock(void* buffer)
 {
 	// Note that there are races in this function, but all the results of these races are valid.
 
-	uint64_t Nonce = RandomInternalRngNonce;
-	if (!Nonce)
+	uint64_t nonce = randomInternalRngNonce;
+	if (!nonce)
 	{
-		uint64_t RandomSeed[4];
-		FlRandomInternalGenerateRandomSeed(&Nonce, &RandomSeed);
-		RandomInternalRngState[0] = RandomSeed[0];
-		RandomInternalRngState[1] = RandomSeed[1];
-		RandomInternalRngState[2] = RandomSeed[2];
-		RandomInternalRngState[3] = RandomSeed[3];
-		RandomInternalRngNonce = Nonce;
+		uint64_t randomSeed[4];
+		FlRandomInternalGenerateRandomSeed(&nonce, &randomSeed);
+		randomInternalRngState[0] = randomSeed[0];
+		randomInternalRngState[1] = randomSeed[1];
+		randomInternalRngState[2] = randomSeed[2];
+		randomInternalRngState[3] = randomSeed[3];
+		randomInternalRngNonce = nonce;
 	}
 #ifdef _WIN64
-	uint64_t Counter = (uint64_t)InterlockedIncrement64((LONG64 volatile*)&RandomInternalRngAtomicCounter);
+	uint64_t counter = (uint64_t)InterlockedIncrement64((LONG64 volatile*)&randomInternalRngAtomicCounter);
 #else
-	uint64_t Counter = (uint64_t)InterlockedIncrement((LONG volatile*)&RandomInternalRngAtomicCounter);
+	uint64_t counter = (uint64_t)InterlockedIncrement((LONG volatile*)&randomInternalRngAtomicCounter);
 #endif // _WIN64
 
-	uint64_t NonceAndCounter[2] = { Nonce, Counter };
-	FlSha256HmacContext HmacContext;
-	FlSha256HmacCreateHmac(&HmacContext, sizeof(RandomInternalRngState), (const void*)&RandomInternalRngState[0]);
-	FlSha256HmacHashData(&HmacContext, sizeof(NonceAndCounter), &NonceAndCounter[0]);
-	FlSha256Hmac256FinishHmac(&HmacContext, Buffer);
+	uint64_t nonceAndCounter[2] = { nonce, counter };
+	FlSha256HmacContext hmacContext;
+	FlSha256HmacCreateHmac(&hmacContext, sizeof(randomInternalRngState), (const void*)&randomInternalRngState[0]);
+	FlSha256HmacHashData(&hmacContext, sizeof(nonceAndCounter), &nonceAndCounter[0]);
+	FlSha256Hmac256FinishHmac(&hmacContext, buffer);
 }
 
-void FlGenerateRandomData(_In_ size_t Size, _Out_writes_bytes_all_(Size) void* Buffer)
+void FlGenerateRandomData(_In_ size_t size, _Out_writes_bytes_all_(size) void* buffer)
 {
-	size_t SizeRemainder = Size & ((size_t)FL_RANDOM_INTERNAL_BLOCK_SIZE - 1);
-	Size &= ~((size_t)FL_RANDOM_INTERNAL_BLOCK_SIZE - 1);
+	size_t sizeRemainder = size & ((size_t)FL_RANDOM_INTERNAL_BLOCK_SIZE - 1);
+	size &= ~((size_t)FL_RANDOM_INTERNAL_BLOCK_SIZE - 1);
 	size_t i = 0;
-	while (i < Size)
+	while (i < size)
 	{
-		FlRandomInternalGenerateRandomBlock((void*)((uintptr_t)Buffer + i));
+		FlRandomInternalGenerateRandomBlock((void*)((uintptr_t)buffer + i));
 		i += FL_RANDOM_INTERNAL_BLOCK_SIZE;
 	}
-	if (SizeRemainder)
+	if (sizeRemainder)
 	{
-		uint8_t RemainderBlock[FL_RANDOM_INTERNAL_BLOCK_SIZE];
-		FlRandomInternalGenerateRandomBlock(&RemainderBlock);
-		memcpy((void*)((uintptr_t)Buffer + i), &RemainderBlock, SizeRemainder);
+		uint8_t remainderBlock[FL_RANDOM_INTERNAL_BLOCK_SIZE];
+		FlRandomInternalGenerateRandomBlock(&remainderBlock);
+		memcpy((void*)((uintptr_t)buffer + i), &remainderBlock, sizeRemainder);
 	}
 }
-	
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

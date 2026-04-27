@@ -43,12 +43,12 @@ extern "C" {
 
 typedef struct
 {
-	uint64_t Size;
-	uint32_t Buffer[4];
-	uint8_t Input[64];
+	uint64_t size;
+	uint32_t buffer[4];
+	uint8_t input[64];
 } FlMd5Context;
 
-void FlMd5CreateHash(_Out_ FlMd5Context* Context);
+void FlMd5CreateHash(_Out_ FlMd5Context* context);
 /*
 	Procedure:
 		FlMd5CreateHash
@@ -58,11 +58,11 @@ void FlMd5CreateHash(_Out_ FlMd5Context* Context);
 		The pre-initialization contents of the context are ignored and overridden on initialization.
 
 	Parameters:
-		Context:
+		context:
 			Address of the MD5 calculation context.
 */
 
-void FlMd5HashData(_Inout_ FlMd5Context* Context, _In_ size_t InputSize, _In_reads_bytes_(InputSize) const void* InputData);
+void FlMd5HashData(_Inout_ FlMd5Context* context, _In_ size_t inputSize, _In_reads_bytes_(inputSize) const void* inputData);
 /*
 	Procedure:
 		FlMd5HashData
@@ -72,17 +72,17 @@ void FlMd5HashData(_Inout_ FlMd5Context* Context, _In_ size_t InputSize, _In_rea
 		The user may combine arbitrary number of input chunks for a hash calculation by calling this procedure repeatedly passing input chunks in order.
 
 	Parameters:
-		Context:
+		context:
 			Address of the initialized MD5 calculation context.
 
-		InputSize:
+		inputSize:
 			Size of the next data chunk to process in bytes.
 
-		InputData:
+		inputData:
 			pointer to the location that contains the next data chunk to process in the hash calculation.
 */
 
-void FlMd5FinishHash(_Inout_ FlMd5Context* Context, _Out_writes_bytes_all_(FL_MD5_DIGEST_SIZE) void* Digest);
+void FlMd5FinishHash(_Inout_ FlMd5Context* context, _Out_writes_bytes_all_(FL_MD5_DIGEST_SIZE) void* digest);
 /*
 	Procedure:
 		FlMd5FinishHash
@@ -93,10 +93,10 @@ void FlMd5FinishHash(_Inout_ FlMd5Context* Context, _Out_writes_bytes_all_(FL_MD
 		Calling this procedure immediately after context initialization calculates disgust of no input.
 
 	Parameters:
-		Context:
+		context:
 			Address of the initialized MD5 calculation context.
 
-		Digest:
+		digest:
 			The calculated 16 byte MD5 digest is stored in the location pointed by this parameter.
 */
 

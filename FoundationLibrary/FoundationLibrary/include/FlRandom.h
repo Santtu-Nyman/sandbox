@@ -37,7 +37,7 @@ extern "C" {
 #include <stddef.h>
 #include "FlSAL.h"
 
-void FlGenerateRandomData(_In_ size_t Size, _Out_writes_bytes_all_(Size) void* Buffer);
+void FlGenerateRandomData(_In_ size_t size, _Out_writes_bytes_all_(size) void* buffer);
 /*
 	Procedure:
 		FlGenerateRandomData
@@ -49,10 +49,10 @@ void FlGenerateRandomData(_In_ size_t Size, _Out_writes_bytes_all_(Size) void* B
 		and using it as a general purpose RNG is overkill.
 
 	Parameters:
-		Size:
+		size:
 			The number of random bytes to generate.
 
-		Buffer:
+		buffer:
 			Address of the buffer where the new genereted random bytes are written into.
 */
 

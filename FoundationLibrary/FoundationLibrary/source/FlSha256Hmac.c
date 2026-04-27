@@ -34,45 +34,45 @@ extern "C" {
 #include "FlSha256Hmac.h"
 #include <string.h>
 
-void FlSha256HmacCreateHmac(_Out_ FlSha256HmacContext* Context, _In_ size_t KeySize, _In_reads_bytes_(KeySize) const void* Key)
+void FlSha256HmacCreateHmac(_Out_ FlSha256HmacContext* context, _In_ size_t keySize, _In_reads_bytes_(keySize) const void* key)
 {
-	if (KeySize <= FL_SHA256_HMAC_BLOCK_SIZE)
+	if (keySize <= FL_SHA256_HMAC_BLOCK_SIZE)
 	{
-		memcpy(&Context->Pad[0], Key, KeySize);
-		memset(&Context->Pad[KeySize], 0, FL_SHA256_HMAC_BLOCK_SIZE - KeySize);
+		memcpy(&context->pad[0], key, keySize);
+		memset(&context->pad[keySize], 0, FL_SHA256_HMAC_BLOCK_SIZE - keySize);
 	}
 	else
 	{
-		FlSha256CreateHash(&Context->HashContext);
-		FlSha256HashData(&Context->HashContext, KeySize, Key);
-		FlSha256FinishHash(&Context->HashContext, &Context->Pad[0]);
-		memset(&Context->Pad[FL_SHA256_DIGEST_SIZE], 0, FL_SHA256_HMAC_BLOCK_SIZE - FL_SHA256_DIGEST_SIZE);
+		FlSha256CreateHash(&context->hashContext);
+		FlSha256HashData(&context->hashContext, keySize, key);
+		FlSha256FinishHash(&context->hashContext, &context->pad[0]);
+		memset(&context->pad[FL_SHA256_DIGEST_SIZE], 0, FL_SHA256_HMAC_BLOCK_SIZE - FL_SHA256_DIGEST_SIZE);
 	}
 	for (size_t i = 0; i < FL_SHA256_HMAC_BLOCK_SIZE; i++)
 	{
-		Context->Pad[i] ^= 0x36;
+		context->pad[i] ^= 0x36;
 	}
-	FlSha256CreateHash(&Context->HashContext);
-	FlSha256HashData(&Context->HashContext, FL_SHA256_HMAC_BLOCK_SIZE, &Context->Pad[0]);
+	FlSha256CreateHash(&context->hashContext);
+	FlSha256HashData(&context->hashContext, FL_SHA256_HMAC_BLOCK_SIZE, &context->pad[0]);
 	for (size_t i = 0; i < FL_SHA256_HMAC_BLOCK_SIZE; i++)
 	{
-		Context->Pad[i] ^= 0x6A;
+		context->pad[i] ^= 0x6A;
 	}
 }
 
-void FlSha256HmacHashData(_Inout_ FlSha256HmacContext* Context, _In_ size_t InputSize, _In_reads_bytes_(InputSize) const void* InputData)
+void FlSha256HmacHashData(_Inout_ FlSha256HmacContext* context, _In_ size_t inputSize, _In_reads_bytes_(inputSize) const void* inputData)
 {
-	FlSha256HashData(&Context->HashContext, InputSize, InputData);
+	FlSha256HashData(&context->hashContext, inputSize, inputData);
 }
 
-void FlSha256Hmac256FinishHmac(_Inout_ FlSha256HmacContext* Context, _Out_writes_bytes_all_(FL_SHA256_DIGEST_SIZE) void* Digest)
+void FlSha256Hmac256FinishHmac(_Inout_ FlSha256HmacContext* context, _Out_writes_bytes_all_(FL_SHA256_DIGEST_SIZE) void* digest)
 {
-	uint8_t InnerDigest[FL_SHA256_DIGEST_SIZE];
-	FlSha256FinishHash(&Context->HashContext, &InnerDigest[0]);
-	FlSha256CreateHash(&Context->HashContext);
-	FlSha256HashData(&Context->HashContext, FL_SHA256_HMAC_BLOCK_SIZE, &Context->Pad[0]);
-	FlSha256HashData(&Context->HashContext, FL_SHA256_DIGEST_SIZE, &InnerDigest[0]);
-	FlSha256FinishHash(&Context->HashContext, Digest);
+	uint8_t innerDigest[FL_SHA256_DIGEST_SIZE];
+	FlSha256FinishHash(&context->hashContext, &innerDigest[0]);
+	FlSha256CreateHash(&context->hashContext);
+	FlSha256HashData(&context->hashContext, FL_SHA256_HMAC_BLOCK_SIZE, &context->pad[0]);
+	FlSha256HashData(&context->hashContext, FL_SHA256_DIGEST_SIZE, &innerDigest[0]);
+	FlSha256FinishHash(&context->hashContext, digest);
 }
 
 #ifdef __cplusplus

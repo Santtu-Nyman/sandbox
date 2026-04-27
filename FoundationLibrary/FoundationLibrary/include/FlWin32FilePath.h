@@ -49,17 +49,257 @@ extern "C" {
 #include <Windows.h>
 #include "FlSAL.h"
 
-BOOL FlWin32IsPathFullyQualified(_In_ SIZE_T PathLength, _In_reads_(PathLength) const WCHAR* Path);
+BOOL FlWin32IsPathFullyQualified(_In_ SIZE_T pathLength, _In_reads_(pathLength) const WCHAR* path);
+/*
+	Function:
+		FlWin32IsPathFullyQualified
 
-SIZE_T FlWin32GetFullyQualifiedPath(_In_ SIZE_T PathLength, _In_reads_(PathLength) const WCHAR* Path, _In_ SIZE_T BasePathLength, _In_reads_(BasePathLength) const WCHAR* BasePath, _In_ SIZE_T PathBufferSize, _Out_writes_to_(PathBufferSize,return) WCHAR* PathBuffer);
+	Description:
+		This function tests whether a UTF-16 path is fully qualified.
+		A fully qualified path has a valid volume root (a drive-letter root such as "C:\",
+		a UNC share root such as "\\server\share\", or an extended-prefix variant using
+		"\\?\" or "\??\" including volume GUID paths), contains no "." or ".." components,
+		contains no empty path components, and does not exceed MAX_PATH - 1 characters
+		unless the path already carries an extended prefix ("\\?\" or "\??\").
+		Both "\" and "/" are accepted as path separator characters.
+		The path does not need to be null-terminated.
 
-SIZE_T FlWin32GetVolumeDirectoryPath(_In_ SIZE_T PathLength, _In_reads_(PathLength) const WCHAR* Path, _In_ SIZE_T BasePathLength, _In_reads_(BasePathLength) const WCHAR* BasePath, _In_ SIZE_T PathBufferSize, _Out_writes_to_(PathBufferSize,return) WCHAR* PathBuffer);
+	Parameters:
+		pathLength:
+			Number of WCHAR characters in path.
 
-BOOL FlWin32IsPathFullyQualifiedUtf8(_In_ SIZE_T PathLength, _In_reads_(PathLength) const char* Path);
+		path:
+			The UTF-16 path to test.
 
-SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T PathLength, _In_reads_(PathLength) const char* Path, _In_ SIZE_T BasePathLength, _In_reads_(BasePathLength) const char* BasePath, _In_ SIZE_T PathBufferSize, _Out_writes_to_(PathBufferSize,return) char* PathBuffer);
+	Return value:
+		Returns TRUE if the path is fully qualified, FALSE otherwise.
+*/
 
-SIZE_T FlWin32GetVolumeDirectoryPathUtf8(_In_ SIZE_T PathLength, _In_reads_(PathLength) const char* Path, _In_ SIZE_T BasePathLength, _In_reads_(BasePathLength) const char* BasePath, _In_ SIZE_T PathBufferSize, _Out_writes_to_(PathBufferSize,return) char* PathBuffer);
+SIZE_T FlWin32GetFullyQualifiedPath(_In_ SIZE_T pathLength, _In_reads_(pathLength) const WCHAR* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const WCHAR* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) WCHAR* pathBuffer);
+/*
+	Function:
+		FlWin32GetFullyQualifiedPath
+
+	Description:
+		This function resolves a UTF-16 path to a fully qualified path.
+		If path is absolute (contains a volume root) it is normalized in place: "." components
+		are removed, ".." components are resolved, trailing separators are stripped, and all
+		separator characters are normalized to "\".
+		If path is relative it is resolved against basePath, which must be absolute. Leading ".."
+		components in path consume trailing components of basePath.
+		The "\\?\" extended prefix is added automatically when the result would exceed
+		MAX_PATH - 1 characters, and removed when the result fits within MAX_PATH - 1 characters.
+		For UNC paths the extended form is "\\?\UNC\server\share\...".
+		basePath is ignored when path is already absolute.
+		Both "\" and "/" are accepted as separator characters in both path and basePath.
+		Neither path nor basePath need to be null-terminated.
+
+	Parameters:
+		pathLength:
+			Number of WCHAR characters in path.
+
+		path:
+			The UTF-16 path to resolve. May be relative or absolute.
+
+		basePathLength:
+			Number of WCHAR characters in basePath.
+
+		basePath:
+			The absolute base directory path used when path is relative.
+			Ignored when path is already absolute.
+
+		pathBufferSize:
+			Capacity of pathBuffer in WCHAR characters.
+
+		pathBuffer:
+			Buffer that receives the fully qualified path.
+			The result is not null-terminated.
+
+	Return value:
+		Returns the number of WCHAR characters written to pathBuffer.
+		If pathBufferSize is smaller than the required length, no data is written and
+		the required length is returned so the caller can allocate a sufficient buffer
+		and retry.
+		Returns 0 on error: when ".." components navigate above the volume root, or when
+		both path and basePath are empty or unusable.
+*/
+
+SIZE_T FlWin32GetVolumeDirectoryPath(_In_ SIZE_T pathLength, _In_reads_(pathLength) const WCHAR* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const WCHAR* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) WCHAR* pathBuffer);
+/*
+	Function:
+		FlWin32GetVolumeDirectoryPath
+
+	Description:
+		This function extracts the volume root directory from a UTF-16 path.
+		The volume root is the shortest prefix that identifies the volume: a drive-letter root
+		such as "C:\", a UNC share root such as "\\server\share\", or an extended-prefix
+		variant such as "\\?\C:\" or "\\?\UNC\server\share\".
+		If path is relative and therefore has no volume root, basePath is used instead to
+		determine the volume.
+		The "\\?\" extended prefix is added automatically when the result would exceed
+		MAX_PATH - 1 characters, and removed when the result fits within MAX_PATH - 1 characters.
+		Separator characters in the result are normalized to "\".
+		Neither path nor basePath need to be null-terminated.
+
+	Parameters:
+		pathLength:
+			Number of WCHAR characters in path.
+
+		path:
+			The UTF-16 path from which to extract the volume root.
+			May be relative or absolute.
+
+		basePathLength:
+			Number of WCHAR characters in basePath.
+
+		basePath:
+			Fallback absolute path used to determine the volume when path is relative.
+
+		pathBufferSize:
+			Capacity of pathBuffer in WCHAR characters.
+
+		pathBuffer:
+			Buffer that receives the volume root path.
+			The result is not null-terminated.
+
+	Return value:
+		Returns the number of WCHAR characters written to pathBuffer.
+		If pathBufferSize is smaller than the required length, no data is written and
+		the required length is returned so the caller can allocate a sufficient buffer
+		and retry.
+		Returns 0 on error: when both path and basePath are empty, or when neither
+		contains a recognizable volume root.
+*/
+
+BOOL FlWin32IsPathFullyQualifiedUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLength) const char* path);
+/*
+	Function:
+		FlWin32IsPathFullyQualifiedUtf8
+
+	Description:
+		UTF-8 version of FlWin32IsPathFullyQualified.
+		This function tests whether a UTF-8 path is fully qualified.
+		A fully qualified path has a valid volume root (a drive-letter root such as "C:\",
+		a UNC share root such as "\\server\share\", or an extended-prefix variant using
+		"\\?\" or "\??\" including volume GUID paths), contains no "." or ".." components,
+		contains no empty path components, and does not exceed MAX_PATH - 1 characters
+		when measured in UTF-16 code units unless the path already carries an extended
+		prefix ("\\?\" or "\??\").
+		Both "\" and "/" are accepted as path separator characters.
+		The path does not need to be null-terminated.
+
+	Parameters:
+		pathLength:
+			Number of bytes in path.
+
+		path:
+			The UTF-8 path to test.
+
+	Return value:
+		Returns TRUE if the path is fully qualified, FALSE otherwise.
+*/
+
+SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLength) const char* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const char* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) char* pathBuffer);
+/*
+	Function:
+		FlWin32GetFullyQualifiedPathUtf8
+
+	Description:
+		UTF-8 version of FlWin32GetFullyQualifiedPath.
+		This function resolves a UTF-8 path to a fully qualified path.
+		If path is absolute (contains a volume root) it is normalized in place: "." components
+		are removed, ".." components are resolved, trailing separators are stripped, and all
+		separator characters are normalized to "\".
+		If path is relative it is resolved against basePath, which must be absolute. Leading ".."
+		components in path consume trailing components of basePath.
+		The "\\?\" extended prefix is added automatically when the result would exceed
+		MAX_PATH - 1 UTF-16 code units, and removed when the result fits within MAX_PATH - 1
+		UTF-16 code units. The MAX_PATH decision uses the UTF-16 encoded length, not the
+		UTF-8 byte length.
+		For UNC paths the extended form is "\\?\UNC\server\share\...".
+		basePath is ignored when path is already absolute.
+		Both "\" and "/" are accepted as separator characters in both path and basePath.
+		Neither path nor basePath need to be null-terminated.
+
+	Parameters:
+		pathLength:
+			Number of bytes in path.
+
+		path:
+			The UTF-8 path to resolve. May be relative or absolute.
+
+		basePathLength:
+			Number of bytes in basePath.
+
+		basePath:
+			The absolute base directory path used when path is relative.
+			Ignored when path is already absolute.
+
+		pathBufferSize:
+			Capacity of pathBuffer in bytes.
+
+		pathBuffer:
+			Buffer that receives the fully qualified path.
+			The result is not null-terminated.
+
+	Return value:
+		Returns the number of bytes written to pathBuffer.
+		If pathBufferSize is smaller than the required length, no data is written and
+		the required length is returned so the caller can allocate a sufficient buffer
+		and retry.
+		Returns 0 on error: when ".." components navigate above the volume root, or when
+		both path and basePath are empty or unusable.
+*/
+
+SIZE_T FlWin32GetVolumeDirectoryPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLength) const char* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const char* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) char* pathBuffer);
+/*
+	Function:
+		FlWin32GetVolumeDirectoryPathUtf8
+
+	Description:
+		UTF-8 version of FlWin32GetVolumeDirectoryPath.
+		This function extracts the volume root directory from a UTF-8 path.
+		The volume root is the shortest prefix that identifies the volume: a drive-letter root
+		such as "C:\", a UNC share root such as "\\server\share\", or an extended-prefix
+		variant such as "\\?\C:\" or "\\?\UNC\server\share\".
+		If path is relative and therefore has no volume root, basePath is used instead to
+		determine the volume.
+		The "\\?\" extended prefix is added automatically when the result would exceed
+		MAX_PATH - 1 UTF-16 code units, and removed when the result fits within MAX_PATH - 1
+		UTF-16 code units. The MAX_PATH decision uses the UTF-16 encoded length, not the
+		UTF-8 byte length.
+		Separator characters in the result are normalized to "\".
+		Neither path nor basePath need to be null-terminated.
+
+	Parameters:
+		pathLength:
+			Number of bytes in path.
+
+		path:
+			The UTF-8 path from which to extract the volume root.
+			May be relative or absolute.
+
+		basePathLength:
+			Number of bytes in basePath.
+
+		basePath:
+			Fallback absolute path used to determine the volume when path is relative.
+
+		pathBufferSize:
+			Capacity of pathBuffer in bytes.
+
+		pathBuffer:
+			Buffer that receives the volume root path.
+			The result is not null-terminated.
+
+	Return value:
+		Returns the number of bytes written to pathBuffer.
+		If pathBufferSize is smaller than the required length, no data is written and
+		the required length is returned so the caller can allocate a sufficient buffer
+		and retry.
+		Returns 0 on error: when both path and basePath are empty, or when neither
+		contains a recognizable volume root.
+*/
 
 #ifdef __cplusplus
 }

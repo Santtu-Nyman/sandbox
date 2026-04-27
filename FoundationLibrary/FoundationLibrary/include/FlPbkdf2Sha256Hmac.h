@@ -38,7 +38,7 @@ extern "C" {
 #include <stdint.h>
 #include "FlSAL.h"
 
-void FlPbkdf2Sha256Hmac(_In_ uint64_t IterationCount, _In_ size_t PasswordSize, _In_reads_bytes_(PasswordSize) const void* Password, _In_ size_t SaltSize, _In_reads_bytes_(SaltSize) const void* Salt, _In_ size_t DerivedKeySize, _Out_writes_bytes_all_(DerivedKeySize) void* DerivedKey);
+void FlPbkdf2Sha256Hmac(_In_ uint64_t iterationCount, _In_ size_t passwordSize, _In_reads_bytes_(passwordSize) const void* password, _In_ size_t saltSize, _In_reads_bytes_(saltSize) const void* salt, _In_ size_t derivedKeySize, _Out_writes_bytes_all_(derivedKeySize) void* derivedKey);
 /*
 	Procedure:
 		FlPbkdf2Sha256Hmac
@@ -47,25 +47,25 @@ void FlPbkdf2Sha256Hmac(_In_ uint64_t IterationCount, _In_ size_t PasswordSize, 
 		This procedure calculates PBKDF2-HMAC-SHA256.
 
 	Parameters:
-		IterationCount:
+		iterationCount:
 			The iteration count for the key derivation algorithm.
 
-		PasswordSize:
+		passwordSize:
 			The length of password data in bytes.
 
-		Password:
+		password:
 			The address of the password data.
 
-		SaltSize:
+		saltSize:
 			The length of the salt in bytes.
 
-		Salt:
+		salt:
 			The address of the salt data.
 
-		DerivedKeySize:
+		derivedKeySize:
 			The length of the derived key in bytes.
 
-		DerivedKey:
+		derivedKey:
 			The address of the buffer that will receive the derived key.
 */
 

@@ -74,100 +74,100 @@ FL_MD5_ALIGN(64) static uint8_t FlMd5InternalConstantTableS[64] = {
 	0x04, 0x0b, 0x10, 0x17, 0x04, 0x0b, 0x10, 0x17, 0x04, 0x0b, 0x10, 0x17, 0x04, 0x0b, 0x10, 0x17,
 	0x06, 0x0a, 0x0f, 0x15, 0x06, 0x0a, 0x0f, 0x15, 0x06, 0x0a, 0x0f, 0x15, 0x06, 0x0a, 0x0f, 0x15 };
 
-static void FlMd5InternalConsumeChunk(uint32_t* Buffer, const uint32_t* Input)
+static void FlMd5InternalConsumeChunk(uint32_t* buffer, const uint32_t* input)
 {
-	uint32_t AA = Buffer[0];
-	uint32_t BB = Buffer[1];
-	uint32_t CC = Buffer[2];
-	uint32_t DD = Buffer[3];
+	uint32_t aa = buffer[0];
+	uint32_t bb = buffer[1];
+	uint32_t cc = buffer[2];
+	uint32_t dd = buffer[3];
 	for (int i = 0; i < 64; i++)
 	{
-		uint32_t E;
+		uint32_t e;
 		int j;
 		switch (i >> 4)
 		{
 			case 0:
-				E = FL_MD5_INTERNAL_STEP_F(BB, CC, DD);
+				e = FL_MD5_INTERNAL_STEP_F(bb, cc, dd);
 				j = i;
 				break;
 			case 1:
-				E = FL_MD5_INTERNAL_STEP_G(BB, CC, DD);
+				e = FL_MD5_INTERNAL_STEP_G(bb, cc, dd);
 				j = ((i * 5) + 1) & 0xF;
 				break;
 			case 2:
-				E = FL_MD5_INTERNAL_STEP_H(BB, CC, DD);
+				e = FL_MD5_INTERNAL_STEP_H(bb, cc, dd);
 				j = ((i * 3) + 5) & 0xF;
 				break;
 			default:
-				E = FL_MD5_INTERNAL_STEP_I(BB, CC, DD);
+				e = FL_MD5_INTERNAL_STEP_I(bb, cc, dd);
 				j = (i * 7) & 0xF;
 				break;
 		}
-		uint32_t T0 = DD;
-		uint32_t T1 = AA + E + FlMd5InternalConstantTableK[i] + Input[j];
-		int Shift = (int)FlMd5InternalConstantTableS[i];
-		DD = CC;
-		CC = BB;
-		BB = BB + FL_MD5_INTERNAL_ROTATE_LEFT_32(T1, Shift);
-		AA = T0;
+		uint32_t t0 = dd;
+		uint32_t t1 = aa + e + FlMd5InternalConstantTableK[i] + input[j];
+		int shift = (int)FlMd5InternalConstantTableS[i];
+		dd = cc;
+		cc = bb;
+		bb = bb + FL_MD5_INTERNAL_ROTATE_LEFT_32(t1, shift);
+		aa = t0;
 	}
-	Buffer[0] += AA;
-	Buffer[1] += BB;
-	Buffer[2] += CC;
-	Buffer[3] += DD;
+	buffer[0] += aa;
+	buffer[1] += bb;
+	buffer[2] += cc;
+	buffer[3] += dd;
 }
 
-void FlMd5CreateHash(_Out_ FlMd5Context* Context)
+void FlMd5CreateHash(_Out_ FlMd5Context* context)
 {
-	Context->Size = 0;
-	Context->Buffer[0] = 0x67452301lu;
-	Context->Buffer[1] = 0xefcdab89lu;
-	Context->Buffer[2] = 0x98badcfelu;
-	Context->Buffer[3] = 0x10325476lu;
-	memset(Context->Input, 0, 64);
+	context->size = 0;
+	context->buffer[0] = 0x67452301lu;
+	context->buffer[1] = 0xefcdab89lu;
+	context->buffer[2] = 0x98badcfelu;
+	context->buffer[3] = 0x10325476lu;
+	memset(context->input, 0, 64);
 }
 
-void FlMd5HashData(_Inout_ FlMd5Context* Context, _In_ size_t InputSize, _In_reads_bytes_(InputSize) const void* InputData)
+void FlMd5HashData(_Inout_ FlMd5Context* context, _In_ size_t inputSize, _In_reads_bytes_(inputSize) const void* inputData)
 {
-	const uint8_t* Input = (const uint8_t*)InputData;
-	int InitialStepOffset = (int)(Context->Size & 0x3F);
-	Context->Size += (uint64_t)InputSize;
-	int InitialStepInputSize = 64 - InitialStepOffset;
-	if ((size_t)InitialStepInputSize > InputSize)
+	const uint8_t* input = (const uint8_t*)inputData;
+	int initialStepOffset = (int)(context->size & 0x3F);
+	context->size += (uint64_t)inputSize;
+	int initialStepInputSize = 64 - initialStepOffset;
+	if ((size_t)initialStepInputSize > inputSize)
 	{
-		InitialStepInputSize = (int)InputSize;
+		initialStepInputSize = (int)inputSize;
 	}
-	memcpy(Context->Input + InitialStepOffset, Input, InitialStepInputSize);
-	if (InitialStepOffset + InitialStepInputSize < 64)
+	memcpy(context->input + initialStepOffset, input, initialStepInputSize);
+	if (initialStepOffset + initialStepInputSize < 64)
 	{
 		return;
 	}
-	FlMd5InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
-	Input += (size_t)InitialStepInputSize;
-	InputSize -= (size_t)InitialStepInputSize;
-	while (InputSize >= 64)
+	FlMd5InternalConsumeChunk(context->buffer, (const uint32_t*)&context->input);
+	input += (size_t)initialStepInputSize;
+	inputSize -= (size_t)initialStepInputSize;
+	while (inputSize >= 64)
 	{
-		memcpy(Context->Input, Input, 64);
-		FlMd5InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
-		Input += 64;
-		InputSize -= 64;
+		memcpy(context->input, input, 64);
+		FlMd5InternalConsumeChunk(context->buffer, (const uint32_t*)&context->input);
+		input += 64;
+		inputSize -= 64;
 	}
-	memcpy(Context->Input, Input, InputSize);
+	memcpy(context->input, input, inputSize);
 }
 
-void FlMd5FinishHash(_Inout_ FlMd5Context* Context, _Out_writes_bytes_all_(FL_MD5_DIGEST_SIZE) void* Digest)
+void FlMd5FinishHash(_Inout_ FlMd5Context* context, _Out_writes_bytes_all_(FL_MD5_DIGEST_SIZE) void* digest)
 {
-	uint8_t Padding[64];
-	Padding[0] = 0x80;
-	memset(&Padding[1], 0, 63);
-	int Offset = (int)(Context->Size & 0x3F);
-	int PaddingLength = (Offset < 56) ? (56 - Offset) : ((56 + 64) - Offset);
-	FlMd5HashData(Context, (size_t)PaddingLength, Padding);
-	Context->Size -= (uint64_t)PaddingLength;
-	uint64_t SizeInBits = Context->Size << 3;
-	*(uint64_t*)&Context->Input[56] = SizeInBits;
-	FlMd5InternalConsumeChunk(Context->Buffer, (const uint32_t*)&Context->Input);
-	memcpy(Digest, Context->Buffer, FL_MD5_DIGEST_SIZE);
+	uint8_t padding[64];
+	padding[0] = 0x80;
+	memset(&padding[1], 0, 63);
+	int offset = (int)(context->size & 0x3F);
+	int paddingLength = (offset < 56) ? (56 - offset) : ((56 + 64) - offset);
+	FlMd5HashData(context, (size_t)paddingLength, padding);
+	context->size -= (uint64_t)paddingLength;
+	uint64_t sizeInBits = context->size << 3;
+	*(uint64_t*)&context->input[56] = sizeInBits;
+	FlMd5InternalConsumeChunk(context->buffer, (const uint32_t*)&context->input);
+	memcpy(digest, context->buffer, FL_MD5_DIGEST_SIZE);
 }
 
 #ifdef __cplusplus

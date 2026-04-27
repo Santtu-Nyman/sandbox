@@ -153,175 +153,175 @@ FL_AES256_ALIGN(256) static const uint8_t FlAes256IBoxTable[256] = {
 
 FL_AES256_ALIGN(8) static const uint8_t FlAes256RTable[8] = { 0x8D, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40 };
 
-void FlAes256KeyExpansion(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _Out_writes_bytes_all_(FL_AES256_ROUND_KEY_SIZE) void* RoundKey)
+void FlAes256KeyExpansion(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _Out_writes_bytes_all_(FL_AES256_ROUND_KEY_SIZE) void* roundKey)
 {
-	uint8_t* KeyBuffer = (uint8_t*)Key;
-	uint8_t* RoundKeyBuffer = (uint8_t*)RoundKey;
+	uint8_t* keyBuffer = (uint8_t*)key;
+	uint8_t* roundKeyBuffer = (uint8_t*)roundKey;
 	for (int i = 0; i < 32; i++)
 	{
-		RoundKeyBuffer[i] = KeyBuffer[i];
+		roundKeyBuffer[i] = keyBuffer[i];
 	}
 	for (int i = 32; i < FL_AES256_ROUND_KEY_SIZE; i += 4)
 	{
-		uint8_t Temporal[4] = {
-			RoundKeyBuffer[i - 4],
-			RoundKeyBuffer[i - 3],
-			RoundKeyBuffer[i - 2],
-			RoundKeyBuffer[i - 1] };
+		uint8_t temporal[4] = {
+			roundKeyBuffer[i - 4],
+			roundKeyBuffer[i - 3],
+			roundKeyBuffer[i - 2],
+			roundKeyBuffer[i - 1] };
 		if (!(i & 0x1F))
 		{
-			uint8_t TemporalMove = Temporal[0];
-			Temporal[0] = Temporal[1];
-			Temporal[1] = Temporal[2];
-			Temporal[2] = Temporal[3];
-			Temporal[3] = TemporalMove;
-			Temporal[0] = FlAes256SBoxTable[Temporal[0]];
-			Temporal[1] = FlAes256SBoxTable[Temporal[1]];
-			Temporal[2] = FlAes256SBoxTable[Temporal[2]];
-			Temporal[3] = FlAes256SBoxTable[Temporal[3]];
-			Temporal[0] = Temporal[0] ^ FlAes256RTable[i >> 5];
+			uint8_t temporalMove = temporal[0];
+			temporal[0] = temporal[1];
+			temporal[1] = temporal[2];
+			temporal[2] = temporal[3];
+			temporal[3] = temporalMove;
+			temporal[0] = FlAes256SBoxTable[temporal[0]];
+			temporal[1] = FlAes256SBoxTable[temporal[1]];
+			temporal[2] = FlAes256SBoxTable[temporal[2]];
+			temporal[3] = FlAes256SBoxTable[temporal[3]];
+			temporal[0] = temporal[0] ^ FlAes256RTable[i >> 5];
 		}
 		if ((i & 0x1F) == 0x10)
 		{
-			Temporal[0] = FlAes256SBoxTable[Temporal[0]];
-			Temporal[1] = FlAes256SBoxTable[Temporal[1]];
-			Temporal[2] = FlAes256SBoxTable[Temporal[2]];
-			Temporal[3] = FlAes256SBoxTable[Temporal[3]];
+			temporal[0] = FlAes256SBoxTable[temporal[0]];
+			temporal[1] = FlAes256SBoxTable[temporal[1]];
+			temporal[2] = FlAes256SBoxTable[temporal[2]];
+			temporal[3] = FlAes256SBoxTable[temporal[3]];
 		}
-		int SeekBackIndex = i - 32;
-		RoundKeyBuffer[i + 0] = RoundKeyBuffer[SeekBackIndex + 0] ^ Temporal[0];
-		RoundKeyBuffer[i + 1] = RoundKeyBuffer[SeekBackIndex + 1] ^ Temporal[1];
-		RoundKeyBuffer[i + 2] = RoundKeyBuffer[SeekBackIndex + 2] ^ Temporal[2];
-		RoundKeyBuffer[i + 3] = RoundKeyBuffer[SeekBackIndex + 3] ^ Temporal[3];
+		int seekBackIndex = i - 32;
+		roundKeyBuffer[i + 0] = roundKeyBuffer[seekBackIndex + 0] ^ temporal[0];
+		roundKeyBuffer[i + 1] = roundKeyBuffer[seekBackIndex + 1] ^ temporal[1];
+		roundKeyBuffer[i + 2] = roundKeyBuffer[seekBackIndex + 2] ^ temporal[2];
+		roundKeyBuffer[i + 3] = roundKeyBuffer[seekBackIndex + 3] ^ temporal[3];
 	}
 }
 
-static void FlAesAddRoundKey(const uint8_t* RoundKey, int Round, uint8_t* State)
+static void FlAesAddRoundKey(const uint8_t* roundKey, int round, uint8_t* state)
 {
 #if defined(_MSC_VER)
-	__assume(Round >= 0 && Round <= 14);
+	__assume(round >= 0 && round <= 14);
 #elif defined(__GNUC__) || defined(__clang__)
-	if (Round < 0 || Round > 14)
+	if (round < 0 || round > 14)
 	{
 		__builtin_unreachable();
 	}
 #else
-	assert(Round >= 0 && Round <= 14);
+	assert(round >= 0 && round <= 14);
 #endif
-	RoundKey += (Round << 4);
+	roundKey += (round << 4);
 	for (int i = 0; i < 16; i++)
 	{
-		State[i] ^= RoundKey[i];
+		state[i] ^= roundKey[i];
 	}
 }
 
-static void FlAesSubstituteBytes(uint8_t* State)
+static void FlAesSubstituteBytes(uint8_t* state)
 {
 	for (int i = 0; i < 16; i++)
 	{
-		State[i] = FlAes256SBoxTable[State[i]];
+		state[i] = FlAes256SBoxTable[state[i]];
 	}
 }
 
-static void FlAesShiftRows(uint8_t* State)
+static void FlAesShiftRows(uint8_t* state)
 {
-	uint8_t State1 = State[1];
-	State[1] = State[5];
-	State[5] = State[9];
-	State[9] = State[13];
-	State[13] = State1;
-	uint8_t State2 = State[2];
-	State[2] = State[10];
-	State[10] = State2;
-	uint8_t State6 = State[6];
-	State[6] = State[14];
-	State[14] = State6;
-	uint8_t State3 = State[3];
-	State[3] = State[15];
-	State[15] = State[11];
-	State[11] = State[7];
-	State[7] = State3;
+	uint8_t state1 = state[1];
+	state[1] = state[5];
+	state[5] = state[9];
+	state[9] = state[13];
+	state[13] = state1;
+	uint8_t state2 = state[2];
+	state[2] = state[10];
+	state[10] = state2;
+	uint8_t state6 = state[6];
+	state[6] = state[14];
+	state[14] = state6;
+	uint8_t state3 = state[3];
+	state[3] = state[15];
+	state[15] = state[11];
+	state[11] = state[7];
+	state[7] = state3;
 }
 
-static void FlAesMixColumns(uint8_t* State)
+static void FlAesMixColumns(uint8_t* state)
 {
 	for (int i = 0; i < 16; i += 4)
 	{
-		uint8_t State0 = State[i];
-		uint8_t Temporal1 = State0 ^ State[i + 1];
-		uint8_t Temporal0 = Temporal1 ^ State[i + 2] ^ State[i + 3];
-		State[i + 0] ^= (Temporal1 << 1) ^ ((0 - (Temporal1 >> 7)) & 0x1B) ^ Temporal0;
-		uint8_t Temporal2 = State[i + 1] ^ State[i + 2];
-		State[i + 1] ^= (Temporal2 << 1) ^ ((0 - (Temporal2 >> 7)) & 0x1B) ^ Temporal0;
-		uint8_t Temporal3 = State[i + 2] ^ State[i + 3];
-		State[i + 2] ^= (Temporal3 << 1) ^ ((0 - (Temporal3 >> 7)) & 0x1B) ^ Temporal0;
-		uint8_t Temporal4 = State[i + 3] ^ State0;
-		State[i + 3] ^= (Temporal4 << 1) ^ ((0 - (Temporal4 >> 7)) & 0x1B) ^ Temporal0;
+		uint8_t state0 = state[i];
+		uint8_t temporal1 = state0 ^ state[i + 1];
+		uint8_t temporal0 = temporal1 ^ state[i + 2] ^ state[i + 3];
+		state[i + 0] ^= (temporal1 << 1) ^ ((0 - (temporal1 >> 7)) & 0x1B) ^ temporal0;
+		uint8_t temporal2 = state[i + 1] ^ state[i + 2];
+		state[i + 1] ^= (temporal2 << 1) ^ ((0 - (temporal2 >> 7)) & 0x1B) ^ temporal0;
+		uint8_t temporal3 = state[i + 2] ^ state[i + 3];
+		state[i + 2] ^= (temporal3 << 1) ^ ((0 - (temporal3 >> 7)) & 0x1B) ^ temporal0;
+		uint8_t temporal4 = state[i + 3] ^ state0;
+		state[i + 3] ^= (temporal4 << 1) ^ ((0 - (temporal4 >> 7)) & 0x1B) ^ temporal0;
 	}
 }
 
-void FlAes256Encrypt(_In_reads_bytes_(FL_AES256_ROUND_KEY_SIZE) const void* RoundKey, _In_reads_bytes_(FL_AES256_BLOCK_SIZE) const void* PlainText, _Out_writes_bytes_all_(FL_AES256_BLOCK_SIZE) void* CipherText)
+void FlAes256Encrypt(_In_reads_bytes_(FL_AES256_ROUND_KEY_SIZE) const void* roundKey, _In_reads_bytes_(FL_AES256_BLOCK_SIZE) const void* plainText, _Out_writes_bytes_all_(FL_AES256_BLOCK_SIZE) void* cipherText)
 {
-	FL_AES256_ALIGN(16) uint8_t State[FL_AES256_BLOCK_SIZE];
+	FL_AES256_ALIGN(16) uint8_t state[FL_AES256_BLOCK_SIZE];
 	for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 	{
-		State[i] = ((const uint8_t*)PlainText)[i];
+		state[i] = ((const uint8_t*)plainText)[i];
 	}
 
-	FlAesAddRoundKey((const uint8_t*)RoundKey, 0, (uint8_t*)(&State[0]));
-	for (int Round = 1; Round < 14; Round++)
+	FlAesAddRoundKey((const uint8_t*)roundKey, 0, (uint8_t*)(&state[0]));
+	for (int round = 1; round < 14; round++)
 	{
-		FlAesSubstituteBytes((uint8_t*)(&State[0]));
-		FlAesShiftRows((uint8_t*)(&State[0]));
-		FlAesMixColumns((uint8_t*)(&State[0]));
-		FlAesAddRoundKey((const uint8_t*)RoundKey, Round, (uint8_t*)(&State[0]));
+		FlAesSubstituteBytes((uint8_t*)(&state[0]));
+		FlAesShiftRows((uint8_t*)(&state[0]));
+		FlAesMixColumns((uint8_t*)(&state[0]));
+		FlAesAddRoundKey((const uint8_t*)roundKey, round, (uint8_t*)(&state[0]));
 	}
-	FlAesSubstituteBytes((uint8_t*)(&State[0]));
-	FlAesShiftRows((uint8_t*)(&State[0]));
-	FlAesAddRoundKey((const uint8_t*)RoundKey, 14, (uint8_t*)(&State[0]));
+	FlAesSubstituteBytes((uint8_t*)(&state[0]));
+	FlAesShiftRows((uint8_t*)(&state[0]));
+	FlAesAddRoundKey((const uint8_t*)roundKey, 14, (uint8_t*)(&state[0]));
 
 	for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 	{
-		((uint8_t*)CipherText)[i] = State[i];
+		((uint8_t*)cipherText)[i] = state[i];
 	}
 }
 
-static void FlAesInverseShiftRows(uint8_t* State)
+static void FlAesInverseShiftRows(uint8_t* state)
 {
-	uint8_t State13 = State[13];
-	State[13] = State[9];
-	State[9] = State[5];
-	State[5] = State[1];
-	State[1] = State13;
-	uint8_t State2 = State[2];
-	State[2] = State[10];
-	State[10] = State2;
-	uint8_t State6 = State[6];
-	State[6] = State[14];
-	State[14] = State6;
-	uint8_t State3 = State[3];
-	State[3] = State[7];
-	State[7] = State[11];
-	State[11] = State[15];
-	State[15] = State3;
+	uint8_t state13 = state[13];
+	state[13] = state[9];
+	state[9] = state[5];
+	state[5] = state[1];
+	state[1] = state13;
+	uint8_t state2 = state[2];
+	state[2] = state[10];
+	state[10] = state2;
+	uint8_t state6 = state[6];
+	state[6] = state[14];
+	state[14] = state6;
+	uint8_t state3 = state[3];
+	state[3] = state[7];
+	state[7] = state[11];
+	state[11] = state[15];
+	state[15] = state3;
 }
 
-static void FlAesInverseSubstituteBytes(uint8_t* State)
+static void FlAesInverseSubstituteBytes(uint8_t* state)
 {
 	for (int i = 0; i < 16; i++)
 	{
-		State[i] = FlAes256IBoxTable[State[i]];
+		state[i] = FlAes256IBoxTable[state[i]];
 	}
 }
 
-static void FlAesInverseMixColumns(uint8_t* State)
+static void FlAesInverseMixColumns(uint8_t* state)
 {
 	for (int i = 0; i < 16; i += 4)
 	{
-		uint8_t x = State[i + 0];
-		uint8_t y = State[i + 1];
-		uint8_t z = State[i + 2];
-		uint8_t w = State[i + 3];
+		uint8_t x = state[i + 0];
+		uint8_t y = state[i + 1];
+		uint8_t z = state[i + 2];
+		uint8_t w = state[i + 3];
 		uint8_t x2 = ((x << 1) ^ (((uint8_t)(0) - (x >> 7)) & (uint8_t)(0x1B)));
 		uint8_t x3 = ((x2 << 1) ^ (((uint8_t)(0) - (x2 >> 7)) & (uint8_t)(0x1B)));
 		uint8_t x4 = ((x3 << 1) ^ (((uint8_t)(0) - (x3 >> 7)) & (uint8_t)(0x1B)));
@@ -334,278 +334,278 @@ static void FlAesInverseMixColumns(uint8_t* State)
 		uint8_t w2 = ((w << 1) ^ (((uint8_t)(0) - (w >> 7)) & (uint8_t)(0x1B)));
 		uint8_t w3 = ((w2 << 1) ^ (((uint8_t)(0) - (w2 >> 7)) & (uint8_t)(0x1B)));
 		uint8_t w4 = ((w3 << 1) ^ (((uint8_t)(0) - (w3 >> 7)) & (uint8_t)(0x1B)));
-		State[i + 0] = x2 ^ x3 ^ x4 ^ y ^ y2 ^ y4 ^ z ^ z3 ^ z4 ^ w ^ w4;
-		State[i + 1] = x ^ x4 ^ y2 ^ y3 ^ y4 ^ z ^ z2 ^ z4 ^ w ^ w3 ^ w4;
-		State[i + 2] = x ^ x3 ^ x4 ^ y ^ y4 ^ z2 ^ z3 ^ z4 ^ w ^ w2 ^ w4;
-		State[i + 3] = x ^ x2 ^ x4 ^ y ^ y3 ^ y4 ^ z ^ z4 ^ w2 ^ w3 ^ w4;
+		state[i + 0] = x2 ^ x3 ^ x4 ^ y ^ y2 ^ y4 ^ z ^ z3 ^ z4 ^ w ^ w4;
+		state[i + 1] = x ^ x4 ^ y2 ^ y3 ^ y4 ^ z ^ z2 ^ z4 ^ w ^ w3 ^ w4;
+		state[i + 2] = x ^ x3 ^ x4 ^ y ^ y4 ^ z2 ^ z3 ^ z4 ^ w ^ w2 ^ w4;
+		state[i + 3] = x ^ x2 ^ x4 ^ y ^ y3 ^ y4 ^ z ^ z4 ^ w2 ^ w3 ^ w4;
 	}
 }
 
-void FlAes256Decrypt(_In_reads_bytes_(FL_AES256_ROUND_KEY_SIZE) const void* RoundKey, _In_reads_bytes_(FL_AES256_BLOCK_SIZE) const void* CipherText, _Out_writes_bytes_all_(FL_AES256_BLOCK_SIZE) void* PlainText)
+void FlAes256Decrypt(_In_reads_bytes_(FL_AES256_ROUND_KEY_SIZE) const void* roundKey, _In_reads_bytes_(FL_AES256_BLOCK_SIZE) const void* cipherText, _Out_writes_bytes_all_(FL_AES256_BLOCK_SIZE) void* plainText)
 {
-	FL_AES256_ALIGN(16) uint8_t State[FL_AES256_BLOCK_SIZE];
+	FL_AES256_ALIGN(16) uint8_t state[FL_AES256_BLOCK_SIZE];
 	for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 	{
-		State[i] = ((const uint8_t*)CipherText)[i];
+		state[i] = ((const uint8_t*)cipherText)[i];
 	}
 
-	FlAesAddRoundKey((const uint8_t*)RoundKey, 14, (uint8_t*)(&State[0]));
-	for (int Round = 13; Round > 0; Round--)
+	FlAesAddRoundKey((const uint8_t*)roundKey, 14, (uint8_t*)(&state[0]));
+	for (int round = 13; round > 0; round--)
 	{
-		FlAesInverseShiftRows((uint8_t*)(&State[0]));
-		FlAesInverseSubstituteBytes((uint8_t*)(&State[0]));
-		FlAesAddRoundKey((const uint8_t*)RoundKey, Round, (uint8_t*)(&State[0]));
-		FlAesInverseMixColumns((&State[0]));
+		FlAesInverseShiftRows((uint8_t*)(&state[0]));
+		FlAesInverseSubstituteBytes((uint8_t*)(&state[0]));
+		FlAesAddRoundKey((const uint8_t*)roundKey, round, (uint8_t*)(&state[0]));
+		FlAesInverseMixColumns((&state[0]));
 	}
-	FlAesInverseShiftRows((uint8_t*)(&State[0]));
-	FlAesInverseSubstituteBytes((uint8_t*)(&State[0]));
-	FlAesAddRoundKey((const uint8_t*)RoundKey, 0, (uint8_t*)(&State[0]));
+	FlAesInverseShiftRows((uint8_t*)(&state[0]));
+	FlAesInverseSubstituteBytes((uint8_t*)(&state[0]));
+	FlAesAddRoundKey((const uint8_t*)roundKey, 0, (uint8_t*)(&state[0]));
 
 	for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 	{
-		((uint8_t*)PlainText)[i] = State[i];
+		((uint8_t*)plainText)[i] = state[i];
 	}
 }
 
-void FlAes256EcbEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _In_ size_t TextSize, _In_reads_bytes_(TextSize) const void* PlainText, _Out_writes_bytes_all_(TextSize) void* CipherText)
+void FlAes256EcbEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _In_ size_t textSize, _In_reads_bytes_(textSize) const void* plainText, _Out_writes_bytes_all_(textSize) void* cipherText)
 {
-	const uint8_t* PlainTextBuffer = (const uint8_t*)PlainText;
-	uint8_t* CipherTextBuffer = (uint8_t*)CipherText;
-	uint8_t RoundKey[FL_AES256_ROUND_KEY_SIZE];
-	FlAes256KeyExpansion(Key, &RoundKey[0]);
+	const uint8_t* plainTextBuffer = (const uint8_t*)plainText;
+	uint8_t* cipherTextBuffer = (uint8_t*)cipherText;
+	uint8_t roundKey[FL_AES256_ROUND_KEY_SIZE];
+	FlAes256KeyExpansion(key, &roundKey[0]);
 	size_t offset = 0;
-	for (size_t end = TextSize & ~((size_t)0xF); offset < end; offset += FL_AES256_BLOCK_SIZE)
+	for (size_t end = textSize & ~((size_t)0xF); offset < end; offset += FL_AES256_BLOCK_SIZE)
 	{
-		FlAes256Encrypt(&RoundKey[0], PlainTextBuffer + offset, CipherTextBuffer + offset);
+		FlAes256Encrypt(&roundKey[0], plainTextBuffer + offset, cipherTextBuffer + offset);
 	}
-	int remaining = (int)(TextSize & 0xF);
+	int remaining = (int)(textSize & 0xF);
 	if (remaining)
 	{
-		uint8_t Block[FL_AES256_BLOCK_SIZE];
+		uint8_t block[FL_AES256_BLOCK_SIZE];
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			Block[i] = 0;
+			block[i] = 0;
 		}
 		for (int i = 0; i < remaining; i++)
 		{
-			Block[i] = PlainTextBuffer[offset + i];
+			block[i] = plainTextBuffer[offset + i];
 		}
-		FlAes256Encrypt(&RoundKey[0], &Block[0], &Block[0]);
+		FlAes256Encrypt(&roundKey[0], &block[0], &block[0]);
 		for (int i = 0; i < remaining; i++)
 		{
-			CipherTextBuffer[offset + i] = Block[i];
+			cipherTextBuffer[offset + i] = block[i];
 		}
 	}
 }
 
-void FlAes256EcbDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _In_ size_t TextSize, _In_reads_bytes_(TextSize) const void* CipherText, _Out_writes_bytes_all_(TextSize) void* PlainText)
+void FlAes256EcbDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _In_ size_t textSize, _In_reads_bytes_(textSize) const void* cipherText, _Out_writes_bytes_all_(textSize) void* plainText)
 {
-	const uint8_t* CipherTextBuffer = (uint8_t*)CipherText;
-	uint8_t* PlainTextBuffer = (uint8_t*)PlainText;
-	uint8_t RoundKey[FL_AES256_ROUND_KEY_SIZE];
-	FlAes256KeyExpansion(Key, &RoundKey[0]);
+	const uint8_t* cipherTextBuffer = (uint8_t*)cipherText;
+	uint8_t* plainTextBuffer = (uint8_t*)plainText;
+	uint8_t roundKey[FL_AES256_ROUND_KEY_SIZE];
+	FlAes256KeyExpansion(key, &roundKey[0]);
 	size_t offset = 0;
-	for (size_t end = TextSize & ~((size_t)0xF); offset < end; offset += FL_AES256_BLOCK_SIZE)
+	for (size_t end = textSize & ~((size_t)0xF); offset < end; offset += FL_AES256_BLOCK_SIZE)
 	{
-		FlAes256Decrypt(&RoundKey[0], CipherTextBuffer + offset, PlainTextBuffer + offset);
+		FlAes256Decrypt(&roundKey[0], cipherTextBuffer + offset, plainTextBuffer + offset);
 	}
-	int remaining = (int)(TextSize & 0xF);
+	int remaining = (int)(textSize & 0xF);
 	if (remaining)
 	{
-		uint8_t Block[FL_AES256_BLOCK_SIZE];
+		uint8_t block[FL_AES256_BLOCK_SIZE];
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			Block[i] = 0;
+			block[i] = 0;
 		}
 		for (int i = 0; i < remaining; i++)
 		{
-			Block[i] = CipherTextBuffer[offset + i];
+			block[i] = cipherTextBuffer[offset + i];
 		}
-		FlAes256Decrypt(&RoundKey[0], &Block[0], &Block[0]);
+		FlAes256Decrypt(&roundKey[0], &block[0], &block[0]);
 		for (int i = 0; i < remaining; i++)
 		{
-			PlainTextBuffer[offset + i] = Block[i];
+			plainTextBuffer[offset + i] = block[i];
 		}
 	}
 }
 
-void FlAes256CtrEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _In_reads_bytes_(FL_AES256_BLOCK_SIZE) const void* Iv, _In_ size_t TextSize, _In_reads_bytes_(TextSize) const void* PlainText, _Out_writes_bytes_all_(TextSize) void* CipherText)
+void FlAes256CtrEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _In_reads_bytes_(FL_AES256_BLOCK_SIZE) const void* iv, _In_ size_t textSize, _In_reads_bytes_(textSize) const void* plainText, _Out_writes_bytes_all_(textSize) void* cipherText)
 {
-	uint8_t* CipherTextBuffer = (uint8_t*)CipherText;
-	const uint8_t* PlainTextBuffer = (const uint8_t*)PlainText;
-	uint8_t RoundKey[FL_AES256_ROUND_KEY_SIZE];
-	uint64_t CounterBlock[2];
+	uint8_t* cipherTextBuffer = (uint8_t*)cipherText;
+	const uint8_t* plainTextBuffer = (const uint8_t*)plainText;
+	uint8_t roundKey[FL_AES256_ROUND_KEY_SIZE];
+	uint64_t counterBlock[2];
 	uint8_t keystreamBlock[FL_AES256_BLOCK_SIZE];
-	uint8_t Block[FL_AES256_BLOCK_SIZE];
-	CounterBlock[0] = 
-		((uint64_t)((const uint8_t*)Iv)[0]) |
-		((uint64_t)((const uint8_t*)Iv)[1] << 8) |
-		((uint64_t)((const uint8_t*)Iv)[2] << 16) |
-		((uint64_t)((const uint8_t*)Iv)[3] << 24) |
-		((uint64_t)((const uint8_t*)Iv)[4] << 32) |
-		((uint64_t)((const uint8_t*)Iv)[5] << 40) |
-		((uint64_t)((const uint8_t*)Iv)[6] << 48) |
-		((uint64_t)((const uint8_t*)Iv)[7] << 56);
-	CounterBlock[1] =
-		((uint64_t)((const uint8_t*)Iv)[8]) |
-		((uint64_t)((const uint8_t*)Iv)[9] << 8) |
-		((uint64_t)((const uint8_t*)Iv)[10] << 16) |
-		((uint64_t)((const uint8_t*)Iv)[11] << 24) |
-		((uint64_t)((const uint8_t*)Iv)[12] << 32) |
-		((uint64_t)((const uint8_t*)Iv)[13] << 40) |
-		((uint64_t)((const uint8_t*)Iv)[14] << 48) |
-		((uint64_t)((const uint8_t*)Iv)[15] << 56);
-	FlAes256KeyExpansion(Key, &RoundKey[0]);
+	uint8_t block[FL_AES256_BLOCK_SIZE];
+	counterBlock[0] =
+		((uint64_t)((const uint8_t*)iv)[0]) |
+		((uint64_t)((const uint8_t*)iv)[1] << 8) |
+		((uint64_t)((const uint8_t*)iv)[2] << 16) |
+		((uint64_t)((const uint8_t*)iv)[3] << 24) |
+		((uint64_t)((const uint8_t*)iv)[4] << 32) |
+		((uint64_t)((const uint8_t*)iv)[5] << 40) |
+		((uint64_t)((const uint8_t*)iv)[6] << 48) |
+		((uint64_t)((const uint8_t*)iv)[7] << 56);
+	counterBlock[1] =
+		((uint64_t)((const uint8_t*)iv)[8]) |
+		((uint64_t)((const uint8_t*)iv)[9] << 8) |
+		((uint64_t)((const uint8_t*)iv)[10] << 16) |
+		((uint64_t)((const uint8_t*)iv)[11] << 24) |
+		((uint64_t)((const uint8_t*)iv)[12] << 32) |
+		((uint64_t)((const uint8_t*)iv)[13] << 40) |
+		((uint64_t)((const uint8_t*)iv)[14] << 48) |
+		((uint64_t)((const uint8_t*)iv)[15] << 56);
+	FlAes256KeyExpansion(key, &roundKey[0]);
 	size_t offset = 0;
-	for (size_t end = TextSize & ~((size_t)0xF); offset < end; offset += FL_AES256_BLOCK_SIZE)
+	for (size_t end = textSize & ~((size_t)0xF); offset < end; offset += FL_AES256_BLOCK_SIZE)
 	{
-		FlAes256Encrypt(&RoundKey[0], &CounterBlock[0], &keystreamBlock[0]);
+		FlAes256Encrypt(&roundKey[0], &counterBlock[0], &keystreamBlock[0]);
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			Block[i] = PlainTextBuffer[offset + i];
+			block[i] = plainTextBuffer[offset + i];
 		}
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			Block[i] ^= keystreamBlock[i];
+			block[i] ^= keystreamBlock[i];
 		}
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			CipherTextBuffer[offset + i] = Block[i];
+			cipherTextBuffer[offset + i] = block[i];
 		}
 		uint64_t counterBlockLow;
-		unsigned char counterCarry = FL_AES256_ADD_CARRY_64(0, FL_AES256_BYTE_SWAP_64(CounterBlock[1]), 1, &counterBlockLow);
-		uint64_t counterBlockHigh = FL_AES256_BYTE_SWAP_64(CounterBlock[0]) + counterCarry;
-		CounterBlock[0] = FL_AES256_BYTE_SWAP_64(counterBlockHigh);
-		CounterBlock[1] = FL_AES256_BYTE_SWAP_64(counterBlockLow);
+		unsigned char counterCarry = FL_AES256_ADD_CARRY_64(0, FL_AES256_BYTE_SWAP_64(counterBlock[1]), 1, &counterBlockLow);
+		uint64_t counterBlockHigh = FL_AES256_BYTE_SWAP_64(counterBlock[0]) + counterCarry;
+		counterBlock[0] = FL_AES256_BYTE_SWAP_64(counterBlockHigh);
+		counterBlock[1] = FL_AES256_BYTE_SWAP_64(counterBlockLow);
 	}
-	int remaining = (int)(TextSize & 0xF);
+	int remaining = (int)(textSize & 0xF);
 	if (remaining)
 	{
-		FlAes256Encrypt(&RoundKey[0], &CounterBlock[0], &keystreamBlock[0]);
+		FlAes256Encrypt(&roundKey[0], &counterBlock[0], &keystreamBlock[0]);
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			Block[i] = 0;
+			block[i] = 0;
 		}
 		for (int i = 0; i < remaining; i++)
 		{
-			Block[i] = PlainTextBuffer[offset + i];
+			block[i] = plainTextBuffer[offset + i];
 		}
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			Block[i] ^= keystreamBlock[i];
+			block[i] ^= keystreamBlock[i];
 		}
 		for (int i = 0; i < remaining; i++)
 		{
-			CipherTextBuffer[offset + i] = Block[i];
+			cipherTextBuffer[offset + i] = block[i];
 		}
 	}
 }
 
-void FlAes256CbcEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _In_reads_bytes_(FL_AES256_BLOCK_SIZE) const void* Iv, _In_ size_t TextSize, _In_reads_bytes_(TextSize) const void* PlainText, _Out_writes_bytes_all_(TextSize) void* CipherText)
+void FlAes256CbcEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _In_reads_bytes_(FL_AES256_BLOCK_SIZE) const void* iv, _In_ size_t textSize, _In_reads_bytes_(textSize) const void* plainText, _Out_writes_bytes_all_(textSize) void* cipherText)
 {
-	const uint8_t* PlainTextBuffer = (const uint8_t*)PlainText;
-	uint8_t* CipherTextBuffer = (uint8_t*)CipherText;
-	uint8_t RoundKey[FL_AES256_ROUND_KEY_SIZE];
-	uint8_t PlainTextBlock[FL_AES256_BLOCK_SIZE];
-	uint8_t Block[FL_AES256_BLOCK_SIZE];
+	const uint8_t* plainTextBuffer = (const uint8_t*)plainText;
+	uint8_t* cipherTextBuffer = (uint8_t*)cipherText;
+	uint8_t roundKey[FL_AES256_ROUND_KEY_SIZE];
+	uint8_t plainTextBlock[FL_AES256_BLOCK_SIZE];
+	uint8_t block[FL_AES256_BLOCK_SIZE];
 	for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 	{
-		Block[i] = ((const uint8_t*)Iv)[i];
+		block[i] = ((const uint8_t*)iv)[i];
 	}
-	FlAes256KeyExpansion(Key, &RoundKey[0]);
+	FlAes256KeyExpansion(key, &roundKey[0]);
 	size_t offset = 0;
-	for (size_t end = TextSize & ~((size_t)0xF); offset < end; offset += FL_AES256_BLOCK_SIZE)
+	for (size_t end = textSize & ~((size_t)0xF); offset < end; offset += FL_AES256_BLOCK_SIZE)
 	{
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			PlainTextBlock[i] = PlainTextBuffer[offset + i];
+			plainTextBlock[i] = plainTextBuffer[offset + i];
 		}
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			Block[i] ^= PlainTextBlock[i];
+			block[i] ^= plainTextBlock[i];
 		}
-		FlAes256Encrypt(&RoundKey[0], &Block[0], &Block[0]);
+		FlAes256Encrypt(&roundKey[0], &block[0], &block[0]);
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			CipherTextBuffer[offset + i] = Block[i];
+			cipherTextBuffer[offset + i] = block[i];
 		}
 	}
-	int remaining = (int)(TextSize & 0xF);
+	int remaining = (int)(textSize & 0xF);
 	if (remaining)
 	{
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			PlainTextBlock[i] = 0;
+			plainTextBlock[i] = 0;
 		}
 		for (int i = 0; i < remaining; i++)
 		{
-			PlainTextBlock[i] = PlainTextBuffer[offset + i];
+			plainTextBlock[i] = plainTextBuffer[offset + i];
 		}
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			Block[i] ^= PlainTextBlock[i];
+			block[i] ^= plainTextBlock[i];
 		}
-		FlAes256Encrypt(&RoundKey[0], &Block[0], &Block[0]);
+		FlAes256Encrypt(&roundKey[0], &block[0], &block[0]);
 		for (int i = 0; i < remaining; i++)
 		{
-			CipherTextBuffer[offset + i] = Block[i];
+			cipherTextBuffer[offset + i] = block[i];
 		}
 	}
 }
 
-void FlAes256CbcDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _In_reads_bytes_(FL_AES256_BLOCK_SIZE) const void* Iv, _In_ size_t TextSize, _In_reads_bytes_(TextSize) const void* CipherText, _Out_writes_bytes_all_(TextSize) void* PlainText)
+void FlAes256CbcDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _In_reads_bytes_(FL_AES256_BLOCK_SIZE) const void* iv, _In_ size_t textSize, _In_reads_bytes_(textSize) const void* cipherText, _Out_writes_bytes_all_(textSize) void* plainText)
 {
-	const uint8_t* CipherTextBuffer = (const uint8_t*)CipherText;
-	uint8_t* PlainTextBuffer = (uint8_t*)PlainText;
-	uint8_t RoundKey[FL_AES256_ROUND_KEY_SIZE];
-	uint8_t CipherTextBlock[FL_AES256_BLOCK_SIZE];
-	uint8_t PreviousBlock[FL_AES256_BLOCK_SIZE];
-	uint8_t Block[FL_AES256_BLOCK_SIZE];
+	const uint8_t* cipherTextBuffer = (const uint8_t*)cipherText;
+	uint8_t* plainTextBuffer = (uint8_t*)plainText;
+	uint8_t roundKey[FL_AES256_ROUND_KEY_SIZE];
+	uint8_t cipherTextBlock[FL_AES256_BLOCK_SIZE];
+	uint8_t previousBlock[FL_AES256_BLOCK_SIZE];
+	uint8_t block[FL_AES256_BLOCK_SIZE];
 	for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 	{
-		PreviousBlock[i] = ((const uint8_t*)Iv)[i];
+		previousBlock[i] = ((const uint8_t*)iv)[i];
 	}
-	FlAes256KeyExpansion(Key, &RoundKey[0]);
+	FlAes256KeyExpansion(key, &roundKey[0]);
 	size_t offset = 0;
-	for (size_t end = TextSize & ~((size_t)0xF); offset < end; offset += FL_AES256_BLOCK_SIZE)
+	for (size_t end = textSize & ~((size_t)0xF); offset < end; offset += FL_AES256_BLOCK_SIZE)
 	{
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			CipherTextBlock[i] = CipherTextBuffer[offset + i];
+			cipherTextBlock[i] = cipherTextBuffer[offset + i];
 		}
-		FlAes256Decrypt(&RoundKey[0], &CipherTextBlock[0], &Block[0]);
+		FlAes256Decrypt(&roundKey[0], &cipherTextBlock[0], &block[0]);
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			Block[i] ^= PreviousBlock[i];
-		}
-		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
-		{
-			PlainTextBuffer[offset + i] = Block[i];
+			block[i] ^= previousBlock[i];
 		}
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			PreviousBlock[i] = CipherTextBlock[i];
+			plainTextBuffer[offset + i] = block[i];
+		}
+		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
+		{
+			previousBlock[i] = cipherTextBlock[i];
 		}
 	}
-	int remaining = (int)(TextSize & 0xF);
+	int remaining = (int)(textSize & 0xF);
 	if (remaining)
 	{
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			CipherTextBlock[i] = 0;
+			cipherTextBlock[i] = 0;
 		}
 		for (int i = 0; i < remaining; i++)
 		{
-			CipherTextBlock[i] = CipherTextBuffer[offset + i];
+			cipherTextBlock[i] = cipherTextBuffer[offset + i];
 		}
-		FlAes256Decrypt(&RoundKey[0], &CipherTextBlock[0], &Block[0]);
+		FlAes256Decrypt(&roundKey[0], &cipherTextBlock[0], &block[0]);
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			Block[i] ^= PreviousBlock[i];
+			block[i] ^= previousBlock[i];
 		}
 		for (int i = 0; i < remaining; i++)
 		{
-			PlainTextBuffer[offset + i] = Block[i];
+			plainTextBuffer[offset + i] = block[i];
 		}
 	}
 }
@@ -734,61 +734,61 @@ static void FlAes256GcmGHASH(_In_reads_(32) const uint64_t* hashKeyLookupTable, 
 	hash[15] = (uint8_t)(z[1]);
 }
 
-static void FlAes256GcmComputeInitialCounter(_In_reads_(32) const uint64_t* hashKeyLookupTable, _In_ size_t NonceSize, _In_reads_bytes_(NonceSize) const void* Nonce, _Out_writes_bytes_all_(FL_AES256_BLOCK_SIZE) uint8_t* InitialCounter)
+static void FlAes256GcmComputeInitialCounter(_In_reads_(32) const uint64_t* hashKeyLookupTable, _In_ size_t nonceSize, _In_reads_bytes_(nonceSize) const void* nonce, _Out_writes_bytes_all_(FL_AES256_BLOCK_SIZE) uint8_t* initialCounter)
 {
-	const uint8_t* nonceBuffer = (const uint8_t*)Nonce;
-	if (NonceSize == FL_AES256_GCM_NONCE_SIZE)
+	const uint8_t* nonceBuffer = (const uint8_t*)nonce;
+	if (nonceSize == FL_AES256_GCM_NONCE_SIZE)
 	{
 		for (int i = 0; i < FL_AES256_GCM_NONCE_SIZE; i++)
 		{
-			InitialCounter[i] = nonceBuffer[i];
+			initialCounter[i] = nonceBuffer[i];
 		}
-		InitialCounter[12] = 0;
-		InitialCounter[13] = 0;
-		InitialCounter[14] = 0;
-		InitialCounter[15] = 1;
+		initialCounter[12] = 0;
+		initialCounter[13] = 0;
+		initialCounter[14] = 0;
+		initialCounter[15] = 1;
 	}
 	else
 	{
-		uint64_t nonceBitSize = (uint64_t)NonceSize << 3;
+		uint64_t nonceBitSize = (uint64_t)nonceSize << 3;
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			InitialCounter[i] = 0;
+			initialCounter[i] = 0;
 		}
-		while (NonceSize >= FL_AES256_BLOCK_SIZE)
+		while (nonceSize >= FL_AES256_BLOCK_SIZE)
 		{
 			for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 			{
-				InitialCounter[i] ^= nonceBuffer[i];
+				initialCounter[i] ^= nonceBuffer[i];
 			}
-			FlAes256GcmGHASH(hashKeyLookupTable, &InitialCounter[0]);
+			FlAes256GcmGHASH(hashKeyLookupTable, &initialCounter[0]);
 			nonceBuffer += FL_AES256_BLOCK_SIZE;
-			NonceSize -= FL_AES256_BLOCK_SIZE;
+			nonceSize -= FL_AES256_BLOCK_SIZE;
 		}
-		if (NonceSize > 0)
+		if (nonceSize > 0)
 		{
-			for (size_t i = 0; i < NonceSize; i++)
+			for (size_t i = 0; i < nonceSize; i++)
 			{
-				InitialCounter[i] ^= nonceBuffer[i];
+				initialCounter[i] ^= nonceBuffer[i];
 			}
-			FlAes256GcmGHASH(hashKeyLookupTable, &InitialCounter[0]);
+			FlAes256GcmGHASH(hashKeyLookupTable, &initialCounter[0]);
 		}
-		InitialCounter[8]  ^= (uint8_t)(nonceBitSize >> 56);
-		InitialCounter[9]  ^= (uint8_t)(nonceBitSize >> 48);
-		InitialCounter[10] ^= (uint8_t)(nonceBitSize >> 40);
-		InitialCounter[11] ^= (uint8_t)(nonceBitSize >> 32);
-		InitialCounter[12] ^= (uint8_t)(nonceBitSize >> 24);
-		InitialCounter[13] ^= (uint8_t)(nonceBitSize >> 16);
-		InitialCounter[14] ^= (uint8_t)(nonceBitSize >> 8);
-		InitialCounter[15] ^= (uint8_t)(nonceBitSize);
-		FlAes256GcmGHASH(hashKeyLookupTable, &InitialCounter[0]);
+		initialCounter[8]  ^= (uint8_t)(nonceBitSize >> 56);
+		initialCounter[9]  ^= (uint8_t)(nonceBitSize >> 48);
+		initialCounter[10] ^= (uint8_t)(nonceBitSize >> 40);
+		initialCounter[11] ^= (uint8_t)(nonceBitSize >> 32);
+		initialCounter[12] ^= (uint8_t)(nonceBitSize >> 24);
+		initialCounter[13] ^= (uint8_t)(nonceBitSize >> 16);
+		initialCounter[14] ^= (uint8_t)(nonceBitSize >> 8);
+		initialCounter[15] ^= (uint8_t)(nonceBitSize);
+		FlAes256GcmGHASH(hashKeyLookupTable, &initialCounter[0]);
 	}
 }
 
-void FlAes256GcmEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _In_ size_t NonceSize, _In_reads_bytes_(NonceSize) const void* Nonce, _In_ size_t AadSize, _In_reads_bytes_(AadSize) const void* Aad, _In_ size_t TextSize, _In_reads_bytes_(TextSize) const void* PlainText, _Out_writes_bytes_all_(TextSize) void* CipherText, _Out_writes_bytes_all_(FL_AES256_GCM_TAG_SIZE) void* Tag)
+void FlAes256GcmEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _In_ size_t nonceSize, _In_reads_bytes_(nonceSize) const void* nonce, _In_ size_t aadSize, _In_reads_bytes_(aadSize) const void* aad, _In_ size_t textSize, _In_reads_bytes_(textSize) const void* plainText, _Out_writes_bytes_all_(textSize) void* cipherText, _Out_writes_bytes_all_(FL_AES256_GCM_TAG_SIZE) void* tag)
 {
 	uint8_t roundKey[FL_AES256_ROUND_KEY_SIZE];
-	FlAes256KeyExpansion(Key, &roundKey[0]);
+	FlAes256KeyExpansion(key, &roundKey[0]);
 
 	uint8_t hashKey[FL_AES256_BLOCK_SIZE];
 	for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
@@ -801,7 +801,7 @@ void FlAes256GcmEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _I
 	FlAes256GcmPrecomputeGHASHLookupTable(&hashKey[0], &hashKeyLookupTable[0]);
 
 	uint8_t initialCounter[FL_AES256_BLOCK_SIZE];
-	FlAes256GcmComputeInitialCounter(&hashKeyLookupTable[0], NonceSize, Nonce, &initialCounter[0]);
+	FlAes256GcmComputeInitialCounter(&hashKeyLookupTable[0], nonceSize, nonce, &initialCounter[0]);
 
 	uint8_t encryptedInitialCounter[FL_AES256_BLOCK_SIZE];
 	FlAes256Encrypt(&roundKey[0], &initialCounter[0], &encryptedInitialCounter[0]);
@@ -815,9 +815,9 @@ void FlAes256GcmEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _I
 	uint8_t keystreamBlock[FL_AES256_BLOCK_SIZE];
 	uint8_t block[FL_AES256_BLOCK_SIZE];
 
-	const uint8_t* aadBuffer = (const uint8_t*)Aad;
+	const uint8_t* aadBuffer = (const uint8_t*)aad;
 	size_t aadOffset = 0;
-	for (size_t end = AadSize & ~((size_t)0xF); aadOffset < end; aadOffset += FL_AES256_BLOCK_SIZE)
+	for (size_t end = aadSize & ~((size_t)0xF); aadOffset < end; aadOffset += FL_AES256_BLOCK_SIZE)
 	{
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
@@ -829,7 +829,7 @@ void FlAes256GcmEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _I
 		}
 		FlAes256GcmGHASH(&hashKeyLookupTable[0], &tagBlock[0]);
 	}
-	int aadRemaining = (int)(AadSize & 0xF);
+	int aadRemaining = (int)(aadSize & 0xF);
 	if (aadRemaining)
 	{
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
@@ -865,16 +865,16 @@ void FlAes256GcmEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _I
 		((uint32_t)initialCounter[14] << 16) |
 		((uint32_t)initialCounter[15] << 24) };
 
-	const uint8_t* PlainTextBuffer = (const uint8_t*)PlainText;
-	uint8_t* CipherTextBuffer = (uint8_t*)CipherText;
+	const uint8_t* plainTextBuffer = (const uint8_t*)plainText;
+	uint8_t* cipherTextBuffer = (uint8_t*)cipherText;
 	size_t offset = 0;
-	for (size_t end = TextSize & ~((size_t)0xF); offset < end; offset += FL_AES256_BLOCK_SIZE)
+	for (size_t end = textSize & ~((size_t)0xF); offset < end; offset += FL_AES256_BLOCK_SIZE)
 	{
 		counter[3] = FL_AES256_BYTE_SWAP_32(FL_AES256_BYTE_SWAP_32(counter[3]) + 1);
 		FlAes256Encrypt(&roundKey[0], &counter[0], &keystreamBlock[0]);
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			block[i] = PlainTextBuffer[offset + i];
+			block[i] = plainTextBuffer[offset + i];
 		}
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
@@ -882,7 +882,7 @@ void FlAes256GcmEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _I
 		}
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			CipherTextBuffer[offset + i] = block[i];
+			cipherTextBuffer[offset + i] = block[i];
 		}
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
@@ -890,7 +890,7 @@ void FlAes256GcmEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _I
 		}
 		FlAes256GcmGHASH(&hashKeyLookupTable[0], &tagBlock[0]);
 	}
-	int remaining = (int)(TextSize & 0xF);
+	int remaining = (int)(textSize & 0xF);
 	if (remaining)
 	{
 		counter[3] = FL_AES256_BYTE_SWAP_32(FL_AES256_BYTE_SWAP_32(counter[3]) + 1);
@@ -901,7 +901,7 @@ void FlAes256GcmEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _I
 		}
 		for (int i = 0; i < remaining; i++)
 		{
-			block[i] = PlainTextBuffer[offset +i];
+			block[i] = plainTextBuffer[offset +i];
 		}
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
@@ -909,7 +909,7 @@ void FlAes256GcmEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _I
 		}
 		for (int i = 0; i < remaining; i++)
 		{
-			CipherTextBuffer[offset + i] = block[i];
+			cipherTextBuffer[offset + i] = block[i];
 		}
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
@@ -918,8 +918,8 @@ void FlAes256GcmEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _I
 		FlAes256GcmGHASH(&hashKeyLookupTable[0], &tagBlock[0]);
 	}
 
-	uint64_t aadBits = (uint64_t)AadSize << 3;
-	uint64_t textBits = (uint64_t)TextSize << 3;
+	uint64_t aadBits = (uint64_t)aadSize << 3;
+	uint64_t textBits = (uint64_t)textSize << 3;
 	uint8_t lengthBlock[FL_AES256_BLOCK_SIZE];
 	lengthBlock[0]  = (uint8_t)(aadBits >> 56);
 	lengthBlock[1]  = (uint8_t)(aadBits >> 48);
@@ -947,17 +947,17 @@ void FlAes256GcmEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _I
 	{
 		tagBlock[i] ^= encryptedInitialCounter[i];
 	}
-	uint8_t* TagBuffer = (uint8_t*)Tag;
+	uint8_t* tagBuffer = (uint8_t*)tag;
 	for (int i = 0; i < FL_AES256_GCM_TAG_SIZE; i++)
 	{
-		TagBuffer[i] = tagBlock[i];
+		tagBuffer[i] = tagBlock[i];
 	}
 }
 
-int FlAes256GcmDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _In_ size_t NonceSize, _In_reads_bytes_(NonceSize) const void* Nonce, _In_ size_t AadSize, _In_reads_bytes_(AadSize) const void* Aad, _In_ size_t TextSize, _In_reads_bytes_(TextSize) const void* CipherText, _Out_writes_bytes_all_(TextSize) void* PlainText, _In_reads_bytes_(FL_AES256_GCM_TAG_SIZE) const void* Tag)
+int FlAes256GcmDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _In_ size_t nonceSize, _In_reads_bytes_(nonceSize) const void* nonce, _In_ size_t aadSize, _In_reads_bytes_(aadSize) const void* aad, _In_ size_t textSize, _In_reads_bytes_(textSize) const void* cipherText, _Out_writes_bytes_all_(textSize) void* plainText, _In_reads_bytes_(FL_AES256_GCM_TAG_SIZE) const void* tag)
 {
 	uint8_t roundKey[FL_AES256_ROUND_KEY_SIZE];
-	FlAes256KeyExpansion(Key, &roundKey[0]);
+	FlAes256KeyExpansion(key, &roundKey[0]);
 
 	uint8_t hashKey[FL_AES256_BLOCK_SIZE];
 	for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
@@ -970,7 +970,7 @@ int FlAes256GcmDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _In
 	FlAes256GcmPrecomputeGHASHLookupTable(&hashKey[0], &hashKeyLookupTable[0]);
 
 	uint8_t initialCounter[FL_AES256_BLOCK_SIZE];
-	FlAes256GcmComputeInitialCounter(&hashKeyLookupTable[0], NonceSize, Nonce, &initialCounter[0]);
+	FlAes256GcmComputeInitialCounter(&hashKeyLookupTable[0], nonceSize, nonce, &initialCounter[0]);
 
 	uint8_t encryptedInitialCounter[FL_AES256_BLOCK_SIZE];
 	FlAes256Encrypt(&roundKey[0], &initialCounter[0], &encryptedInitialCounter[0]);
@@ -984,9 +984,9 @@ int FlAes256GcmDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _In
 		tagBlock[i] = 0;
 	}
 
-	const uint8_t* aadBuffer = (const uint8_t*)Aad;
+	const uint8_t* aadBuffer = (const uint8_t*)aad;
 	size_t aadOffset = 0;
-	for (size_t end = AadSize & ~((size_t)0xF); aadOffset < end; aadOffset += FL_AES256_BLOCK_SIZE)
+	for (size_t end = aadSize & ~((size_t)0xF); aadOffset < end; aadOffset += FL_AES256_BLOCK_SIZE)
 	{
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
@@ -998,7 +998,7 @@ int FlAes256GcmDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _In
 		}
 		FlAes256GcmGHASH(&hashKeyLookupTable[0], &tagBlock[0]);
 	}
-	int aadRemaining = (int)(AadSize & 0xF);
+	int aadRemaining = (int)(aadSize & 0xF);
 	if (aadRemaining)
 	{
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
@@ -1034,14 +1034,14 @@ int FlAes256GcmDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _In
 		((uint32_t)initialCounter[14] << 16) |
 		((uint32_t)initialCounter[15] << 24) };
 
-	const uint8_t* CipherTextBuffer = (const uint8_t*)CipherText;
-	uint8_t* PlainTextBuffer = (uint8_t*)PlainText;
+	const uint8_t* cipherTextBuffer = (const uint8_t*)cipherText;
+	uint8_t* plainTextBuffer = (uint8_t*)plainText;
 	size_t offset = 0;
-	for (size_t end = TextSize & ~((size_t)0xF); offset < end; offset += FL_AES256_BLOCK_SIZE)
+	for (size_t end = textSize & ~((size_t)0xF); offset < end; offset += FL_AES256_BLOCK_SIZE)
 	{
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			block[i] = CipherTextBuffer[offset + i];
+			block[i] = cipherTextBuffer[offset + i];
 		}
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
@@ -1056,10 +1056,10 @@ int FlAes256GcmDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _In
 		}
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
-			PlainTextBuffer[offset + i] = block[i];
+			plainTextBuffer[offset + i] = block[i];
 		}
 	}
-	int remaining = (int)(TextSize & 0xF);
+	int remaining = (int)(textSize & 0xF);
 	if (remaining)
 	{
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
@@ -1068,7 +1068,7 @@ int FlAes256GcmDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _In
 		}
 		for (int i = 0; i < remaining; i++)
 		{
-			block[i] = CipherTextBuffer[offset + i];
+			block[i] = cipherTextBuffer[offset + i];
 		}
 		for (int i = 0; i < FL_AES256_BLOCK_SIZE; i++)
 		{
@@ -1083,12 +1083,12 @@ int FlAes256GcmDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _In
 		}
 		for (int i = 0; i < remaining; i++)
 		{
-			PlainTextBuffer[offset + i] = block[i];
+			plainTextBuffer[offset + i] = block[i];
 		}
 	}
 
-	uint64_t aadBits = (uint64_t)AadSize << 3;
-	uint64_t textBits = (uint64_t)TextSize << 3;
+	uint64_t aadBits = (uint64_t)aadSize << 3;
+	uint64_t textBits = (uint64_t)textSize << 3;
 	uint8_t lengthBlock[FL_AES256_BLOCK_SIZE];
 	lengthBlock[0] = (uint8_t)(aadBits >> 56);
 	lengthBlock[1] = (uint8_t)(aadBits >> 48);
@@ -1119,7 +1119,7 @@ int FlAes256GcmDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* Key, _In
 	uint8_t tagDifference = 0;
 	for (int i = 0; i < FL_AES256_GCM_TAG_SIZE; i++)
 	{
-		block[i] = ((const uint8_t*)Tag)[i];
+		block[i] = ((const uint8_t*)tag)[i];
 	}
 	for (int i = 0; i < FL_AES256_GCM_TAG_SIZE; i++)
 	{

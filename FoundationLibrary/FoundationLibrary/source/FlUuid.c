@@ -36,48 +36,48 @@ extern "C" {
 #include "FlRandom.h"
 #include <stdint.h>
 
-void FlUuidCreateRandomId(_Out_writes_bytes_all_(FL_UUID_SIZE) void* Uuid)
+void FlUuidCreateRandomId(_Out_writes_bytes_all_(FL_UUID_SIZE) void* uuid)
 {
-	uint8_t* RandomIdBytes = (uint8_t*)Uuid;
-	FlGenerateRandomData(16, RandomIdBytes);
-	RandomIdBytes[7] = (RandomIdBytes[7] & 0x0F) | 0x40;
-	RandomIdBytes[8] = (RandomIdBytes[8] & 0x3F) | 0x80;
+	uint8_t* randomIdBytes = (uint8_t*)uuid;
+	FlGenerateRandomData(16, randomIdBytes);
+	randomIdBytes[7] = (randomIdBytes[7] & 0x0F) | 0x40;
+	randomIdBytes[8] = (randomIdBytes[8] & 0x3F) | 0x80;
 }
 
-size_t FlUuidEncodeStringUtf8(_In_reads_bytes_(FL_UUID_SIZE) const void* Uuid, _Out_writes_to_(38,return) char* Buffer)
+size_t FlUuidEncodeStringUtf8(_In_reads_bytes_(FL_UUID_SIZE) const void* uuid, _Out_writes_to_(38,return) char* buffer)
 {
 	// The length is always 38, so having a length parameter is pointless
-	*Buffer++ = '{';
+	*buffer++ = '{';
 	for (int i = 0; i < 16; i++)
 	{
 		if (i > 3 && i < 11 && !(i & 1))
 		{
-			*Buffer++ = '-';
+			*buffer++ = '-';
 		}
-		int ByteIndex = (i < 8) ? (int)((0x67450123lu >> (i << 2)) & 0x7) : i;
-		uint8_t Byte = *(((const uint8_t*)Uuid) + ByteIndex);
-		uint8_t HighNibble = Byte >> 4;
-		uint8_t LowNibble = Byte & 0xF;
-		*Buffer++ = (char)((HighNibble < 0xA) ? (HighNibble | 0x30) : (HighNibble + 0x37));
-		*Buffer++ = (char)((LowNibble < 0xA) ? (LowNibble | 0x30) : (LowNibble + 0x37));
+		int byteIndex = (i < 8) ? (int)((0x67450123lu >> (i << 2)) & 0x7) : i;
+		uint8_t byte = *(((const uint8_t*)uuid) + byteIndex);
+		uint8_t highNibble = byte >> 4;
+		uint8_t lowNibble = byte & 0xF;
+		*buffer++ = (char)((highNibble < 0xA) ? (highNibble | 0x30) : (highNibble + 0x37));
+		*buffer++ = (char)((lowNibble < 0xA) ? (lowNibble | 0x30) : (lowNibble + 0x37));
 	}
-	*Buffer++ = '}';
+	*buffer++ = '}';
 	return 38;
 }
 
-size_t FlUuidDecodeStringUtf8(_Out_writes_bytes_all_(FL_UUID_SIZE) void* Uuid, _In_ size_t Length, _In_reads_(Length) const char* String)
+size_t FlUuidDecodeStringUtf8(_Out_writes_bytes_all_(FL_UUID_SIZE) void* uuid, _In_ size_t length, _In_reads_(length) const char* string)
 {
 	// The actual UUID length is 38 or 36 depending on whether it has brackets or not
-	size_t DecodedLength;
-	if (Length >= 38 && String[0] == '{' && String[37] == '}')
+	size_t decodedLength;
+	if (length >= 38 && string[0] == '{' && string[37] == '}')
 	{
-		DecodedLength = 38;
-		Length--;
-		String++;
+		decodedLength = 38;
+		length--;
+		string++;
 	}
-	else if (Length >= 36)
+	else if (length >= 36)
 	{
-		DecodedLength = 36;
+		decodedLength = 36;
 	}
 	else
 	{
@@ -85,91 +85,91 @@ size_t FlUuidDecodeStringUtf8(_Out_writes_bytes_all_(FL_UUID_SIZE) void* Uuid, _
 	}
 	for (int i = 0; i < 16; i++)
 	{
-		char Character = *String++;
+		char character = *string++;
 		if (i > 3 && i < 11 && !(i & 1))
 		{
-			if (Character != '-')
+			if (character != '-')
 			{
 				return 0;
 			}
-			Character = *String++;
+			character = *string++;
 		}
-		uint8_t HighNibble;
-		if (Character >= '0' && Character <= '9')
+		uint8_t highNibble;
+		if (character >= '0' && character <= '9')
 		{
-			HighNibble = (uint8_t)Character & 0xF;
+			highNibble = (uint8_t)character & 0xF;
 		}
-		else if (Character >= 'A' && Character <= 'F')
+		else if (character >= 'A' && character <= 'F')
 		{
-			HighNibble = (uint8_t)Character - 0x37;
+			highNibble = (uint8_t)character - 0x37;
 		}
-		else if (Character >= 'a' && Character <= 'f')
+		else if (character >= 'a' && character <= 'f')
 		{
-			HighNibble = (uint8_t)Character - 0x57;
+			highNibble = (uint8_t)character - 0x57;
 		}
 		else
 		{
 			return 0;
 		}
-		Character = *String++;
-		uint8_t LowNibble;
-		if (Character >= '0' && Character <= '9')
+		character = *string++;
+		uint8_t lowNibble;
+		if (character >= '0' && character <= '9')
 		{
-			LowNibble = (uint8_t)Character & 0xF;
+			lowNibble = (uint8_t)character & 0xF;
 		}
-		else if (Character >= 'A' && Character <= 'F')
+		else if (character >= 'A' && character <= 'F')
 		{
-			LowNibble = (uint8_t)Character - 0x37;
+			lowNibble = (uint8_t)character - 0x37;
 		}
-		else if (Character >= 'a' && Character <= 'f')
+		else if (character >= 'a' && character <= 'f')
 		{
-			LowNibble = (uint8_t)Character - 0x57;
+			lowNibble = (uint8_t)character - 0x57;
 		}
 		else
 		{
 			return 0;
 		}
-		uint8_t Byte = (HighNibble << 4) | LowNibble;
-		int ByteIndex = (i < 8) ? (int)((0x67450123lu >> (i << 2)) & 0x7) : i;
-		*(((uint8_t*)Uuid) + ByteIndex) = Byte;
+		uint8_t byte = (highNibble << 4) | lowNibble;
+		int byteIndex = (i < 8) ? (int)((0x67450123lu >> (i << 2)) & 0x7) : i;
+		*(((uint8_t*)uuid) + byteIndex) = byte;
 	}
-	return DecodedLength;
+	return decodedLength;
 }
 
-size_t FlUuidEncodeStringUtf16(_In_reads_bytes_(FL_UUID_SIZE) const void* Uuid, _Out_writes_to_(38,return) WCHAR* Buffer)
+size_t FlUuidEncodeStringUtf16(_In_reads_bytes_(FL_UUID_SIZE) const void* uuid, _Out_writes_to_(38,return) WCHAR* buffer)
 {
 	// The length is always 38, so having a length parameter is pointless
-	*Buffer++ = L'{';
+	*buffer++ = L'{';
 	for (int i = 0; i < 16; i++)
 	{
 		if (i > 3 && i < 11 && !(i & 1))
 		{
-			*Buffer++ = L'-';
+			*buffer++ = L'-';
 		}
-		int ByteIndex = (i < 8) ? (int)((0x67450123lu >> (i << 2)) & 0x7) : i;
-		uint8_t Byte = *(((const uint8_t*)Uuid) + ByteIndex);
-		uint8_t HighNibble = Byte >> 4;
-		uint8_t LowNibble = Byte & 0xF;
-		*Buffer++ = (WCHAR)((HighNibble < 0xA) ? (HighNibble | 0x30) : (HighNibble + 0x37));
-		*Buffer++ = (WCHAR)((LowNibble < 0xA) ? (LowNibble | 0x30) : (LowNibble + 0x37));
+		int byteIndex = (i < 8) ? (int)((0x67450123lu >> (i << 2)) & 0x7) : i;
+		uint8_t byte = *(((const uint8_t*)uuid) + byteIndex);
+		uint8_t highNibble = byte >> 4;
+		uint8_t lowNibble = byte & 0xF;
+		*buffer++ = (WCHAR)((highNibble < 0xA) ? (highNibble | 0x30) : (highNibble + 0x37));
+		*buffer++ = (WCHAR)((lowNibble < 0xA) ? (lowNibble | 0x30) : (lowNibble + 0x37));
 	}
-	*Buffer++ = L'}';
+	*buffer++ = L'}';
 	return 38;
 }
 
-size_t FlUuidDecodeStringUtf16(_Out_writes_bytes_all_(FL_UUID_SIZE) void* Uuid, _In_ size_t Length, _In_reads_(Length) const WCHAR* String)
+size_t FlUuidDecodeStringUtf16(_Out_writes_bytes_all_(FL_UUID_SIZE) void* uuid, _In_ size_t length, _In_reads_(length) const WCHAR* string)
 {
 	// The actual UUID length is 38 or 36 depending on whether it has brackets or not
-	size_t DecodedLength;
-	if (Length >= 38 && String[0] == L'{' && String[37] == L'}')
+	size_t decodedLength;
+	if (length >= 38 && string[0] == L'{' && string[37] == L'}')
 	{
-		DecodedLength = 38;
-		Length--;
-		String++;
+		decodedLength = 38;
+		length--;
+		string++;
 	}
-	else if (Length >= 36)
+	else if (length >= 36)
 	{
-		DecodedLength = 36;
+		decodedLength = 36;
 	}
 	else
 	{
@@ -177,55 +177,55 @@ size_t FlUuidDecodeStringUtf16(_Out_writes_bytes_all_(FL_UUID_SIZE) void* Uuid, 
 	}
 	for (int i = 0; i < 16; i++)
 	{
-		WCHAR Character = *String++;
+		WCHAR character = *string++;
 		if (i > 3 && i < 11 && !(i & 1))
 		{
-			if (Character != L'-')
+			if (character != L'-')
 			{
 				return 0;
 			}
-			Character = *String++;
+			character = *string++;
 		}
-		uint8_t HighNibble;
-		if (Character >= L'0' && Character <= L'9')
+		uint8_t highNibble;
+		if (character >= L'0' && character <= L'9')
 		{
-			HighNibble = (uint8_t)Character & 0xF;
+			highNibble = (uint8_t)character & 0xF;
 		}
-		else if (Character >= L'A' && Character <= L'F')
+		else if (character >= L'A' && character <= L'F')
 		{
-			HighNibble = (uint8_t)Character - 0x37;
+			highNibble = (uint8_t)character - 0x37;
 		}
-		else if (Character >= L'a' && Character <= L'f')
+		else if (character >= L'a' && character <= L'f')
 		{
-			HighNibble = (uint8_t)Character - 0x57;
+			highNibble = (uint8_t)character - 0x57;
 		}
 		else
 		{
 			return 0;
 		}
-		Character = *String++;
-		uint8_t LowNibble;
-		if (Character >= L'0' && Character <= L'9')
+		character = *string++;
+		uint8_t lowNibble;
+		if (character >= L'0' && character <= L'9')
 		{
-			LowNibble = (uint8_t)Character & 0xF;
+			lowNibble = (uint8_t)character & 0xF;
 		}
-		else if (Character >= L'A' && Character <= L'F')
+		else if (character >= L'A' && character <= L'F')
 		{
-			LowNibble = (uint8_t)Character - 0x37;
+			lowNibble = (uint8_t)character - 0x37;
 		}
-		else if (Character >= L'a' && Character <= L'f')
+		else if (character >= L'a' && character <= L'f')
 		{
-			LowNibble = (uint8_t)Character - 0x57;
+			lowNibble = (uint8_t)character - 0x57;
 		}
 		else
 		{
 			return 0;
 		}
-		uint8_t Byte = (HighNibble << 4) | LowNibble;
-		int ByteIndex = (i < 8) ? (int)((0x67450123lu >> (i << 2)) & 0x7) : i;
-		*(((uint8_t*)Uuid) + ByteIndex) = Byte;
+		uint8_t byte = (highNibble << 4) | lowNibble;
+		int byteIndex = (i < 8) ? (int)((0x67450123lu >> (i << 2)) & 0x7) : i;
+		*(((uint8_t*)uuid) + byteIndex) = byte;
 	}
-	return DecodedLength;
+	return decodedLength;
 }
 
 #ifdef __cplusplus

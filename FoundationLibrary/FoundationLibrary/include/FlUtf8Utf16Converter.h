@@ -47,13 +47,13 @@ extern "C" {
 #include <Windows.h>
 #include "FlSAL.h"
 
-size_t FlConvertUtf8ToUtf16Le(_In_ size_t Utf8Length, _In_reads_(Utf8Length) const char* Utf8Data, _In_ size_t Utf16BufferLength, _Out_writes_to_(Utf16BufferLength,return) WCHAR* Utf16Buffer);
+size_t FlConvertUtf8ToUtf16Le(_In_ size_t utf8Length, _In_reads_(utf8Length) const char* utf8Data, _In_ size_t utf16BufferLength, _Out_writes_to_(utf16BufferLength,return) WCHAR* utf16Buffer);
 
-size_t FlConvertUtf16LeToUtf8(_In_ size_t Utf16Length, _In_reads_(Utf16Length) const WCHAR* Utf16Data, _In_ size_t Utf8BufferLength, _Out_writes_to_(Utf8BufferLength,return) char* Utf8Buffer);
+size_t FlConvertUtf16LeToUtf8(_In_ size_t utf16Length, _In_reads_(utf16Length) const WCHAR* utf16Data, _In_ size_t utf8BufferLength, _Out_writes_to_(utf8BufferLength,return) char* utf8Buffer);
 
-size_t FlConvertUtf8ToUtf16Be(_In_ size_t Utf8Length, _In_reads_(Utf8Length) const char* Utf8Data, _In_ size_t Utf16BufferLength, _Out_writes_to_(Utf16BufferLength,return) WCHAR* Utf16Buffer);
+size_t FlConvertUtf8ToUtf16Be(_In_ size_t utf8Length, _In_reads_(utf8Length) const char* utf8Data, _In_ size_t utf16BufferLength, _Out_writes_to_(utf16BufferLength,return) WCHAR* utf16Buffer);
 
-size_t FlConvertUtf16BeToUtf8(_In_ size_t Utf16Length, _In_reads_(Utf16Length) const WCHAR* Utf16Data, _In_ size_t Utf8BufferLength, _Out_writes_to_(Utf8BufferLength,return) char* Utf8Buffer);
+size_t FlConvertUtf16BeToUtf8(_In_ size_t utf16Length, _In_reads_(utf16Length) const WCHAR* utf16Data, _In_ size_t utf8BufferLength, _Out_writes_to_(utf8BufferLength,return) char* utf8Buffer);
 
 #ifdef __cplusplus
 }

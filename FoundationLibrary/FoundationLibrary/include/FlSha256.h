@@ -43,12 +43,12 @@ extern "C" {
 
 typedef struct
 {
-	uint64_t Size;
-	uint32_t Buffer[8];
-	uint8_t Input[64];
+	uint64_t size;
+	uint32_t buffer[8];
+	uint8_t input[64];
 } FlSha256Context;
 
-void FlSha256CreateHash(_Out_ FlSha256Context* Context);
+void FlSha256CreateHash(_Out_ FlSha256Context* context);
 /*
 	Procedure:
 		FlSha256CreateHash
@@ -58,11 +58,11 @@ void FlSha256CreateHash(_Out_ FlSha256Context* Context);
 		The pre-initialization contents of the context are ignored and overridden on initialization.
 
 	Parameters:
-		Context:
+		context:
 			Address of the SHA-256 calculation context.
 */
 
-void FlSha256HashData(_Inout_ FlSha256Context* Context, _In_ size_t InputSize, _In_reads_bytes_(InputSize) const void* InputData);
+void FlSha256HashData(_Inout_ FlSha256Context* context, _In_ size_t inputSize, _In_reads_bytes_(inputSize) const void* inputData);
 /*
 	Procedure:
 		FlSha256HashData
@@ -72,17 +72,17 @@ void FlSha256HashData(_Inout_ FlSha256Context* Context, _In_ size_t InputSize, _
 		The user may combine arbitrary number of input chunks for a hash calculation by calling this procedure repeatedly passing input chunks in order.
 
 	Parameters:
-		Context:
+		context:
 			Address of the SHA-256 calculation context.
 
-		InputSize:
+		inputSize:
 			Size of the next data chunk to process in bytes.
 
-		InputData:
+		inputData:
 			pointer to the location that contains the next data chunk to process in the hash calculation.
 */
 
-void FlSha256FinishHash(_Inout_ FlSha256Context* Context, _Out_writes_bytes_all_(FL_SHA256_DIGEST_SIZE) void* Digest);
+void FlSha256FinishHash(_Inout_ FlSha256Context* context, _Out_writes_bytes_all_(FL_SHA256_DIGEST_SIZE) void* digest);
 /*
 	Procedure:
 		FlSha256FinishHash
@@ -91,12 +91,12 @@ void FlSha256FinishHash(_Inout_ FlSha256Context* Context, _Out_writes_bytes_all_
 		This procedure finalizes calculating the SHA-256 and invalidates the calculation context.
 		The context may not be used again before it has been re-initialized.
 		Calling this procedure immediately after context initialization calculates disgust of no input.
-		
+
 	Parameters:
-		Context:
+		context:
 			Address of the SHA-256 calculation context.
 
-		Digest:
+		digest:
 			The calculated 32 byte SHA-256 digest is stored in the location pointed by this parameter.
 */
 

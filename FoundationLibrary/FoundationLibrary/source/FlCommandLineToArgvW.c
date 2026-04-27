@@ -36,286 +36,286 @@ extern "C" {
 #define WIN32_LEAN_AND_MEAN
 #include "FlCommandLineToArgvW.h"
 
-WCHAR** FlCommandLineToArgvW(_In_ _Null_terminated_ const WCHAR* lpCmdLine, _Out_ int* pNumArgs)
+WCHAR** FlCommandLineToArgvW(_In_ _Null_terminated_ const WCHAR* cmdLine, _Out_ int* numArgs)
 {
-	const size_t max_file_name_length = UNICODE_STRING_MAX_CHARS;
-	const size_t int_max = (int)(((unsigned int)~0) >> 1);
+	const size_t maxFileNameLength = UNICODE_STRING_MAX_CHARS;
+	const size_t intMax = (int)(((unsigned int)~0) >> 1);
 
-	size_t command_length = 0;
-	if (lpCmdLine)
+	size_t commandLength = 0;
+	if (cmdLine)
 	{
-		while (lpCmdLine[command_length])
+		while (cmdLine[commandLength])
 		{
-			command_length++;
+			commandLength++;
 		}
 	}
 
-	if (!command_length)
+	if (!commandLength)
 	{
-		WCHAR** executable_name_buffer = (WCHAR**)LocalAlloc(LMEM_FIXED, (2 * sizeof(WCHAR*)) + ((MAX_PATH + 1) * sizeof(WCHAR)));
-		if (!executable_name_buffer)
+		WCHAR** executableNameBuffer = (WCHAR**)LocalAlloc(LMEM_FIXED, (2 * sizeof(WCHAR*)) + ((MAX_PATH + 1) * sizeof(WCHAR)));
+		if (!executableNameBuffer)
 		{
 			return 0;
 		}
-		size_t executable_name_buffer_size = LocalSize(executable_name_buffer);
-		if (!executable_name_buffer_size)
+		size_t executableNameBufferSize = LocalSize(executableNameBuffer);
+		if (!executableNameBufferSize)
 		{
-			DWORD size_error = GetLastError();
-			LocalFree(executable_name_buffer);
-			SetLastError(size_error);
+			DWORD sizeError = GetLastError();
+			LocalFree(executableNameBuffer);
+			SetLastError(sizeError);
 			return 0;
 		}
 
-		size_t executable_name_length = (size_t)GetModuleFileNameW(0, (WCHAR*)((uintptr_t)executable_name_buffer + (2 * sizeof(WCHAR*))), (DWORD)((executable_name_buffer_size - (2 * sizeof(WCHAR*))) / sizeof(WCHAR)));
-		if (!executable_name_length || executable_name_length > (executable_name_buffer_size / sizeof(WCHAR)))
+		size_t executableNameLength = (size_t)GetModuleFileNameW(0, (WCHAR*)((uintptr_t)executableNameBuffer + (2 * sizeof(WCHAR*))), (DWORD)((executableNameBufferSize - (2 * sizeof(WCHAR*))) / sizeof(WCHAR)));
+		if (!executableNameLength || executableNameLength > (executableNameBufferSize / sizeof(WCHAR)))
 		{
-			WCHAR** new_executable_name_buffer = (WCHAR**)LocalReAlloc(executable_name_buffer, (2 * sizeof(WCHAR*)) + ((max_file_name_length + 1) * sizeof(WCHAR)), 0);
-			if (!new_executable_name_buffer)
+			WCHAR** newExecutableNameBuffer = (WCHAR**)LocalReAlloc(executableNameBuffer, (2 * sizeof(WCHAR*)) + ((maxFileNameLength + 1) * sizeof(WCHAR)), 0);
+			if (!newExecutableNameBuffer)
 			{
-				DWORD realloc_error = GetLastError();
-				LocalFree(executable_name_buffer);
-				SetLastError(realloc_error);
+				DWORD reallocError = GetLastError();
+				LocalFree(executableNameBuffer);
+				SetLastError(reallocError);
 				return 0;
 			}
-			executable_name_buffer = new_executable_name_buffer;
-			executable_name_buffer_size = LocalSize(executable_name_buffer);
-			if (!executable_name_buffer_size)
+			executableNameBuffer = newExecutableNameBuffer;
+			executableNameBufferSize = LocalSize(executableNameBuffer);
+			if (!executableNameBufferSize)
 			{
-				DWORD size_error = GetLastError();
-				LocalFree(executable_name_buffer);
-				SetLastError(size_error);
+				DWORD sizeError = GetLastError();
+				LocalFree(executableNameBuffer);
+				SetLastError(sizeError);
 				return 0;
 			}
 
-			executable_name_length = (size_t)GetModuleFileNameW(0, (WCHAR*)((uintptr_t)executable_name_buffer + (2 * sizeof(WCHAR*))), (DWORD)((executable_name_buffer_size - (2 * sizeof(WCHAR*))) / sizeof(WCHAR)));
-			if (!executable_name_length || executable_name_length > (executable_name_buffer_size / sizeof(WCHAR)))
+			executableNameLength = (size_t)GetModuleFileNameW(0, (WCHAR*)((uintptr_t)executableNameBuffer + (2 * sizeof(WCHAR*))), (DWORD)((executableNameBufferSize - (2 * sizeof(WCHAR*))) / sizeof(WCHAR)));
+			if (!executableNameLength || executableNameLength > (executableNameBufferSize / sizeof(WCHAR)))
 			{
-				DWORD realloc_error = GetLastError();
-				LocalFree(executable_name_buffer);
-				SetLastError(realloc_error);
+				DWORD reallocError = GetLastError();
+				LocalFree(executableNameBuffer);
+				SetLastError(reallocError);
 				return 0;
 			}
 		}
 
-		WCHAR** truncated_executable_name_buffer = (WCHAR**)LocalReAlloc(executable_name_buffer, (2 * sizeof(WCHAR*)) + ((executable_name_length + 1) * sizeof(WCHAR)), 0);
-		if (!truncated_executable_name_buffer)
+		WCHAR** truncatedExecutableNameBuffer = (WCHAR**)LocalReAlloc(executableNameBuffer, (2 * sizeof(WCHAR*)) + ((executableNameLength + 1) * sizeof(WCHAR)), 0);
+		if (!truncatedExecutableNameBuffer)
 		{
-			DWORD truncate_error = GetLastError();
-			LocalFree(executable_name_buffer);
-			SetLastError(truncate_error);
+			DWORD truncateError = GetLastError();
+			LocalFree(executableNameBuffer);
+			SetLastError(truncateError);
 			return 0;
 		}
-		executable_name_buffer = truncated_executable_name_buffer;
+		executableNameBuffer = truncatedExecutableNameBuffer;
 
-		executable_name_buffer[0] = (WCHAR*)((uintptr_t)executable_name_buffer + (2 * sizeof(WCHAR*)));
-		executable_name_buffer[1] = 0;
-		*pNumArgs = 1;
+		executableNameBuffer[0] = (WCHAR*)((uintptr_t)executableNameBuffer + (2 * sizeof(WCHAR*)));
+		executableNameBuffer[1] = 0;
+		*numArgs = 1;
 		SetLastError(ERROR_SUCCESS);
-		return executable_name_buffer;
+		return executableNameBuffer;
 	}
 
-	size_t argument_count = 0;
-	size_t argument_character_count = 0;
-	int in_argument = 1;
-	int in_quotes = 0;
-	size_t backslash_count = 0;
-	for (size_t i = 0; i != command_length; ++i)
+	size_t argumentCount = 0;
+	size_t argumentCharacterCount = 0;
+	int inArgument = 1;
+	int inQuotes = 0;
+	size_t backslashCount = 0;
+	for (size_t i = 0; i != commandLength; ++i)
 	{
-		if (lpCmdLine[i] == L'\\')
+		if (cmdLine[i] == L'\\')
 		{
-			in_argument = 1;
-			++backslash_count;
+			inArgument = 1;
+			++backslashCount;
 		}
-		else if (lpCmdLine[i] == L'"')
+		else if (cmdLine[i] == L'"')
 		{
-			in_argument = 1;
-			int quoted_double_quote = in_quotes && i + 1 != command_length && lpCmdLine[i + 1] == L'"';
-			if (backslash_count && !(backslash_count & 1))
+			inArgument = 1;
+			int quotedDoubleQuote = inQuotes && i + 1 != commandLength && cmdLine[i + 1] == L'"';
+			if (backslashCount && !(backslashCount & 1))
 			{
-				argument_character_count += (backslash_count / 2);
-				in_quotes = !in_quotes;
+				argumentCharacterCount += (backslashCount / 2);
+				inQuotes = !inQuotes;
 			}
-			else if (backslash_count && (backslash_count & 1))
+			else if (backslashCount && (backslashCount & 1))
 			{
-				argument_character_count += (backslash_count / 2) + 1;
+				argumentCharacterCount += (backslashCount / 2) + 1;
 			}
 			else
 			{
-				in_quotes = !in_quotes;
+				inQuotes = !inQuotes;
 			}
-			if (quoted_double_quote)
+			if (quotedDoubleQuote)
 			{
-				++argument_character_count;
+				++argumentCharacterCount;
 				++i;
 			}
-			backslash_count = 0;
+			backslashCount = 0;
 		}
-		else if (lpCmdLine[i] == L' ' || lpCmdLine[i] == L'\t')
+		else if (cmdLine[i] == L' ' || cmdLine[i] == L'\t')
 		{
-			if (in_argument)
+			if (inArgument)
 			{
-				if (backslash_count)
+				if (backslashCount)
 				{
-					argument_character_count += backslash_count;
-					backslash_count = 0;
+					argumentCharacterCount += backslashCount;
+					backslashCount = 0;
 				}
-				if (in_quotes)
+				if (inQuotes)
 				{
-					++argument_character_count;
+					++argumentCharacterCount;
 				}
 				else
 				{
-					in_argument = 0;
-					++argument_count;
+					inArgument = 0;
+					++argumentCount;
 				}
 			}
 		}
 		else
 		{
-			in_argument = 1;
-			if (backslash_count)
+			inArgument = 1;
+			if (backslashCount)
 			{
-				argument_character_count += backslash_count;
-				backslash_count = 0;
+				argumentCharacterCount += backslashCount;
+				backslashCount = 0;
 			}
-			++argument_character_count;
+			++argumentCharacterCount;
 		}
 	}
-	if (in_argument)
+	if (inArgument)
 	{
-		if (backslash_count)
+		if (backslashCount)
 		{
-			argument_character_count += backslash_count;
-			backslash_count = 0;
+			argumentCharacterCount += backslashCount;
+			backslashCount = 0;
 		}
-		++argument_count;
+		++argumentCount;
 	}
 
-	WCHAR** argument_table = (WCHAR**)LocalAlloc(LMEM_FIXED, (((size_t)argument_count + 1) * sizeof(WCHAR*)) + (((size_t)argument_character_count + (size_t)argument_count) * sizeof(WCHAR)));
-	if (!argument_table)
+	WCHAR** argumentTable = (WCHAR**)LocalAlloc(LMEM_FIXED, (((size_t)argumentCount + 1) * sizeof(WCHAR*)) + (((size_t)argumentCharacterCount + (size_t)argumentCount) * sizeof(WCHAR)));
+	if (!argumentTable)
 	{
 		return 0;
 	}
 
-	WCHAR* argument_write = (WCHAR*)((uintptr_t)argument_table + (((size_t)argument_count + 1) * sizeof(WCHAR*)));
-	in_argument = 1;
-	in_quotes = 0;
-	backslash_count = 0;
-	size_t argument_index = 0;
-	argument_table[0] = argument_write;
-	for (size_t i = 0; i != command_length; ++i)
+	WCHAR* argumentWrite = (WCHAR*)((uintptr_t)argumentTable + (((size_t)argumentCount + 1) * sizeof(WCHAR*)));
+	inArgument = 1;
+	inQuotes = 0;
+	backslashCount = 0;
+	size_t argumentIndex = 0;
+	argumentTable[0] = argumentWrite;
+	for (size_t i = 0; i != commandLength; ++i)
 	{
-		if (lpCmdLine[i] == L'\\')
+		if (cmdLine[i] == L'\\')
 		{
-			if (!in_argument)
+			if (!inArgument)
 			{
-				in_argument = 1;
-				argument_table[argument_index] = argument_write;
+				inArgument = 1;
+				argumentTable[argumentIndex] = argumentWrite;
 			}
-			++backslash_count;
+			++backslashCount;
 		}
-		else if (lpCmdLine[i] == L'"')
+		else if (cmdLine[i] == L'"')
 		{
-			if (!in_argument)
+			if (!inArgument)
 			{
-				in_argument = 1;
-				argument_table[argument_index] = argument_write;
+				inArgument = 1;
+				argumentTable[argumentIndex] = argumentWrite;
 			}
-			int quoted_double_quote = in_quotes && i + 1 != command_length && lpCmdLine[i + 1] == L'"';
-			if (backslash_count && !(backslash_count & 1))
+			int quotedDoubleQuote = inQuotes && i + 1 != commandLength && cmdLine[i + 1] == L'"';
+			if (backslashCount && !(backslashCount & 1))
 			{
-				for (WCHAR* fill_end = argument_write + (backslash_count / 2); argument_write != fill_end;)
+				for (WCHAR* fillEnd = argumentWrite + (backslashCount / 2); argumentWrite != fillEnd;)
 				{
-					*argument_write++ = L'\\';
+					*argumentWrite++ = L'\\';
 				}
-				in_quotes = !in_quotes;
+				inQuotes = !inQuotes;
 			}
-			else if (backslash_count && (backslash_count & 1))
+			else if (backslashCount && (backslashCount & 1))
 			{
-				for (WCHAR* fill_end = argument_write + (backslash_count / 2); argument_write != fill_end;)
+				for (WCHAR* fillEnd = argumentWrite + (backslashCount / 2); argumentWrite != fillEnd;)
 				{
-					*argument_write++ = L'\\';
+					*argumentWrite++ = L'\\';
 				}
-				*argument_write++ = L'\"';
+				*argumentWrite++ = L'\"';
 			}
 			else
 			{
-				in_quotes = !in_quotes;
+				inQuotes = !inQuotes;
 			}
-			if (quoted_double_quote)
+			if (quotedDoubleQuote)
 			{
-				*argument_write++ = L'\"';
+				*argumentWrite++ = L'\"';
 				++i;
 			}
-			backslash_count = 0;
+			backslashCount = 0;
 		}
-		else if (lpCmdLine[i] == L' ' || lpCmdLine[i] == L'\t')
+		else if (cmdLine[i] == L' ' || cmdLine[i] == L'\t')
 		{
-			if (in_argument)
+			if (inArgument)
 			{
-				if (backslash_count)
+				if (backslashCount)
 				{
-					for (WCHAR* fill_end = argument_write + backslash_count; argument_write != fill_end;)
+					for (WCHAR* fillEnd = argumentWrite + backslashCount; argumentWrite != fillEnd;)
 					{
-						*argument_write++ = L'\\';
+						*argumentWrite++ = L'\\';
 					}
-					backslash_count = 0;
+					backslashCount = 0;
 				}
-				if (in_quotes)
+				if (inQuotes)
 				{
-					*argument_write++ = lpCmdLine[i];
+					*argumentWrite++ = cmdLine[i];
 				}
 				else
 				{
-					in_argument = 0;
-					*argument_write++ = 0;
-					++argument_index;
+					inArgument = 0;
+					*argumentWrite++ = 0;
+					++argumentIndex;
 				}
 			}
 		}
 		else
 		{
-			if (!in_argument)
+			if (!inArgument)
 			{
-				in_argument = 1;
-				argument_table[argument_index] = argument_write;
+				inArgument = 1;
+				argumentTable[argumentIndex] = argumentWrite;
 			}
-			if (backslash_count)
+			if (backslashCount)
 			{
-				for (WCHAR* fill_end = argument_write + backslash_count; argument_write != fill_end;)
+				for (WCHAR* fillEnd = argumentWrite + backslashCount; argumentWrite != fillEnd;)
 				{
-					*argument_write++ = L'\\';
+					*argumentWrite++ = L'\\';
 				}
-				backslash_count = 0;
+				backslashCount = 0;
 			}
-			*argument_write++ = lpCmdLine[i];
+			*argumentWrite++ = cmdLine[i];
 		}
 	}
-	if (in_argument)
+	if (inArgument)
 	{
-		if (backslash_count)
+		if (backslashCount)
 		{
-			for (WCHAR* fill_end = argument_write + backslash_count; argument_write != fill_end;)
+			for (WCHAR* fillEnd = argumentWrite + backslashCount; argumentWrite != fillEnd;)
 			{
-				*argument_write++ = L'\\';
+				*argumentWrite++ = L'\\';
 			}
-			backslash_count = 0;
+			backslashCount = 0;
 		}
-		*argument_write++ = 0;
-		++argument_index;
+		*argumentWrite++ = 0;
+		++argumentIndex;
 	}
-	argument_table[argument_count] = 0;
+	argumentTable[argumentCount] = 0;
 
-	if (argument_count > int_max)
+	if (argumentCount > intMax)
 	{
-		LocalFree(argument_table);
+		LocalFree(argumentTable);
 		SetLastError(ERROR_INVALID_PARAMETER);
 		return 0;
 	}
 
-	*pNumArgs = (int)argument_count;
+	*numArgs = (int)argumentCount;
 	SetLastError(ERROR_SUCCESS);
-	return argument_table;
+	return argumentTable;
 }
 
 #ifdef __cplusplus

@@ -37,294 +37,294 @@ extern "C" {
 #include "FlWin32CommandLineToUtf8Arguments.h"
 #include "FlUtf8Utf16Converter.h"
 
-DWORD FlWin32CommandLineToUtf8Arguments(_In_ _Null_terminated_ const WCHAR* native_command, _Out_ size_t* argument_count_address, _Out_ char*** argument_table_address)
+DWORD FlWin32CommandLineToUtf8Arguments(_In_ _Null_terminated_ const WCHAR* nativeCommand, _Out_ size_t* argumentCountAddress, _Out_ char*** argumentTableAddress)
 {
-	const size_t max_file_name_length = UNICODE_STRING_MAX_CHARS;
+	const size_t maxFileNameLength = UNICODE_STRING_MAX_CHARS;
 
-	SYSTEM_INFO system_info;
-	memset(&system_info, 0, sizeof(SYSTEM_INFO));
-	GetSystemInfo(&system_info);
-	size_t page_size = (size_t)system_info.dwPageSize;
-	if (!page_size)
+	SYSTEM_INFO systemInfo;
+	memset(&systemInfo, 0, sizeof(SYSTEM_INFO));
+	GetSystemInfo(&systemInfo);
+	size_t pageSize = (size_t)systemInfo.dwPageSize;
+	if (!pageSize)
 	{
 #if defined(_M_IX86) || defined(_M_X64) || defined(_M_AMD64) || defined(__x86_64__) || defined(__x86_64) || defined(__i386__) || defined(__i386)
-		page_size = 0x1000;
+		pageSize = 0x1000;
 #else
-		page_size = 0x10000;
+		pageSize = 0x10000;
 #endif
 	}
 
-	size_t native_command_length = 0;
-	if (native_command)
+	size_t nativeCommandLength = 0;
+	if (nativeCommand)
 	{
-		while (native_command[native_command_length])
+		while (nativeCommand[nativeCommandLength])
 		{
-			native_command_length++;
+			nativeCommandLength++;
 		}
 	}
 
-	if (!native_command_length)
+	if (!nativeCommandLength)
 	{
-		size_t utf16_executable_name_size = (((MAX_PATH + 1) * sizeof(WCHAR)) + (page_size - 1)) & ~(page_size - 1);
-		WCHAR* utf16_executable_name = (WCHAR*)VirtualAlloc(0, utf16_executable_name_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-		if (!utf16_executable_name)
+		size_t utf16ExecutableNameSize = (((MAX_PATH + 1) * sizeof(WCHAR)) + (pageSize - 1)) & ~(pageSize - 1);
+		WCHAR* utf16ExecutableName = (WCHAR*)VirtualAlloc(0, utf16ExecutableNameSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+		if (!utf16ExecutableName)
 		{
 			return ERROR_OUTOFMEMORY;
 		}
 
-		size_t utf16_executable_name_length = (size_t)GetModuleFileNameW(0, utf16_executable_name, (DWORD)(utf16_executable_name_size / sizeof(WCHAR)));
-		if (!utf16_executable_name_length || utf16_executable_name_length > (utf16_executable_name_size / sizeof(WCHAR)))
+		size_t utf16ExecutableNameLength = (size_t)GetModuleFileNameW(0, utf16ExecutableName, (DWORD)(utf16ExecutableNameSize / sizeof(WCHAR)));
+		if (!utf16ExecutableNameLength || utf16ExecutableNameLength > (utf16ExecutableNameSize / sizeof(WCHAR)))
 		{
-			VirtualFree(utf16_executable_name, 0, MEM_RELEASE);
-			utf16_executable_name_size = (((max_file_name_length + 1) * sizeof(WCHAR)) + (page_size - 1)) & ~(page_size - 1);
-			utf16_executable_name = (WCHAR*)VirtualAlloc(0, utf16_executable_name_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-			if (!utf16_executable_name)
+			VirtualFree(utf16ExecutableName, 0, MEM_RELEASE);
+			utf16ExecutableNameSize = (((maxFileNameLength + 1) * sizeof(WCHAR)) + (pageSize - 1)) & ~(pageSize - 1);
+			utf16ExecutableName = (WCHAR*)VirtualAlloc(0, utf16ExecutableNameSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+			if (!utf16ExecutableName)
 			{
 				return ERROR_OUTOFMEMORY;
 			}
 
-			utf16_executable_name_length = (size_t)GetModuleFileNameW(0, utf16_executable_name, (DWORD)(utf16_executable_name_size / sizeof(WCHAR)));
-			if (!utf16_executable_name_length || utf16_executable_name_length > (utf16_executable_name_size / sizeof(WCHAR)))
+			utf16ExecutableNameLength = (size_t)GetModuleFileNameW(0, utf16ExecutableName, (DWORD)(utf16ExecutableNameSize / sizeof(WCHAR)));
+			if (!utf16ExecutableNameLength || utf16ExecutableNameLength > (utf16ExecutableNameSize / sizeof(WCHAR)))
 			{
-				DWORD GetModuleFileNameError = GetLastError();
-				if (GetModuleFileNameError == ERROR_SUCCESS)
+				DWORD getModuleFileNameError = GetLastError();
+				if (getModuleFileNameError == ERROR_SUCCESS)
 				{
-					GetModuleFileNameError = ERROR_UNIDENTIFIED_ERROR;
+					getModuleFileNameError = ERROR_UNIDENTIFIED_ERROR;
 				}
-				VirtualFree(utf16_executable_name, 0, MEM_RELEASE);
-				return GetModuleFileNameError;
+				VirtualFree(utf16ExecutableName, 0, MEM_RELEASE);
+				return getModuleFileNameError;
 			}
 		}
-		
-		size_t utf8_executable_name_length = FlConvertUtf16LeToUtf8(utf16_executable_name_length, utf16_executable_name, 0, 0);
-		size_t utf8_table_size = (((2 * sizeof(char*)) + (utf8_executable_name_length + 1)) + (page_size - 1)) & ~(page_size - 1);
-		char** utf8_table = (char**)VirtualAlloc(0, utf8_table_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-		if (!utf8_table)
+
+		size_t utf8ExecutableNameLength = FlConvertUtf16LeToUtf8(utf16ExecutableNameLength, utf16ExecutableName, 0, 0);
+		size_t utf8TableSize = (((2 * sizeof(char*)) + (utf8ExecutableNameLength + 1)) + (pageSize - 1)) & ~(pageSize - 1);
+		char** utf8Table = (char**)VirtualAlloc(0, utf8TableSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+		if (!utf8Table)
 		{
-			VirtualFree(utf16_executable_name, 0, MEM_RELEASE);
+			VirtualFree(utf16ExecutableName, 0, MEM_RELEASE);
 			return ERROR_OUTOFMEMORY;
 		}
-		char* utf8_executable_name = (char*)((uintptr_t)utf8_table + (2 * sizeof(char*)));
-		utf8_table[0] = utf8_executable_name;
-		utf8_table[1] = 0;
-		FlConvertUtf16LeToUtf8(utf16_executable_name_length, utf16_executable_name, utf8_executable_name_length, utf8_executable_name);
-		utf8_executable_name[utf8_executable_name_length] = 0;
+		char* utf8ExecutableName = (char*)((uintptr_t)utf8Table + (2 * sizeof(char*)));
+		utf8Table[0] = utf8ExecutableName;
+		utf8Table[1] = 0;
+		FlConvertUtf16LeToUtf8(utf16ExecutableNameLength, utf16ExecutableName, utf8ExecutableNameLength, utf8ExecutableName);
+		utf8ExecutableName[utf8ExecutableNameLength] = 0;
 
-		VirtualFree(utf16_executable_name, 0, MEM_RELEASE);
+		VirtualFree(utf16ExecutableName, 0, MEM_RELEASE);
 
-		*argument_count_address = 1;
-		*argument_table_address = utf8_table;
+		*argumentCountAddress = 1;
+		*argumentTableAddress = utf8Table;
 		return 0;
 	}
 
-	size_t command_length = FlConvertUtf16LeToUtf8(native_command_length, native_command, 0, 0);
-	size_t command_size = (((size_t)command_length + 1) + (page_size - 1)) & ~(page_size - 1);
-	char* command = (char*)VirtualAlloc(0, command_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	size_t commandLength = FlConvertUtf16LeToUtf8(nativeCommandLength, nativeCommand, 0, 0);
+	size_t commandSize = (((size_t)commandLength + 1) + (pageSize - 1)) & ~(pageSize - 1);
+	char* command = (char*)VirtualAlloc(0, commandSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 	if (!command)
 	{
 		return ERROR_OUTOFMEMORY;
 	}
-	FlConvertUtf16LeToUtf8(native_command_length, native_command, command_length, command);
-	command[command_length] = 0;
+	FlConvertUtf16LeToUtf8(nativeCommandLength, nativeCommand, commandLength, command);
+	command[commandLength] = 0;
 
-	size_t argument_count = 0;
-	size_t argument_character_count = 0;
-	size_t in_argument = 1;
-	size_t in_quotes = 0;
-	size_t backslash_count = 0;
-	for (size_t i = 0; i != command_length; ++i)
+	size_t argumentCount = 0;
+	size_t argumentCharacterCount = 0;
+	size_t inArgument = 1;
+	size_t inQuotes = 0;
+	size_t backslashCount = 0;
+	for (size_t i = 0; i != commandLength; ++i)
 	{
 		if (command[i] == '\\')
 		{
-			in_argument = 1;
-			++backslash_count;
+			inArgument = 1;
+			++backslashCount;
 		}
 		else if (command[i] == '"')
 		{
-			in_argument = 1;
-			int quoted_double_quote = in_quotes && i + 1 != command_length && command[i + 1] == '"';
-			if (backslash_count && !(backslash_count & 1))
+			inArgument = 1;
+			int quotedDoubleQuote = inQuotes && i + 1 != commandLength && command[i + 1] == '"';
+			if (backslashCount && !(backslashCount & 1))
 			{
-				argument_character_count += (backslash_count / 2);
-				in_quotes = !in_quotes;
+				argumentCharacterCount += (backslashCount / 2);
+				inQuotes = !inQuotes;
 			}
-			else if (backslash_count && (backslash_count & 1))
+			else if (backslashCount && (backslashCount & 1))
 			{
-				argument_character_count += (backslash_count / 2) + 1;
+				argumentCharacterCount += (backslashCount / 2) + 1;
 			}
 			else
 			{
-				in_quotes = !in_quotes;
+				inQuotes = !inQuotes;
 			}
-			if (quoted_double_quote)
+			if (quotedDoubleQuote)
 			{
-				++argument_character_count;
+				++argumentCharacterCount;
 				++i;
 			}
-			backslash_count = 0;
+			backslashCount = 0;
 		}
 		else if (command[i] == ' ' || command[i] == '\t')
 		{
-			if (in_argument)
+			if (inArgument)
 			{
-				if (backslash_count)
+				if (backslashCount)
 				{
-					argument_character_count += backslash_count;
-					backslash_count = 0;
+					argumentCharacterCount += backslashCount;
+					backslashCount = 0;
 				}
-				if (in_quotes)
+				if (inQuotes)
 				{
-					++argument_character_count;
+					++argumentCharacterCount;
 				}
 				else
 				{
-					in_argument = 0;
-					++argument_count;
+					inArgument = 0;
+					++argumentCount;
 				}
 			}
 		}
 		else
 		{
-			in_argument = 1;
-			if (backslash_count)
+			inArgument = 1;
+			if (backslashCount)
 			{
-				argument_character_count += backslash_count;
-				backslash_count = 0;
+				argumentCharacterCount += backslashCount;
+				backslashCount = 0;
 			}
-			++argument_character_count;
+			++argumentCharacterCount;
 		}
 	}
-	if (in_argument)
+	if (inArgument)
 	{
-		if (backslash_count)
+		if (backslashCount)
 		{
-			argument_character_count += backslash_count;
-			backslash_count = 0;
+			argumentCharacterCount += backslashCount;
+			backslashCount = 0;
 		}
-		++argument_count;
+		++argumentCount;
 	}
 
-	size_t argument_table_size = (((((size_t)argument_count + 1) * sizeof(char*)) + (((size_t)argument_character_count + (size_t)argument_count))) + (page_size - 1)) & ~(page_size - 1);
-	char** argument_table = (char**)VirtualAlloc(0, argument_table_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-	if (!argument_table)
+	size_t argumentTableSize = (((((size_t)argumentCount + 1) * sizeof(char*)) + (((size_t)argumentCharacterCount + (size_t)argumentCount))) + (pageSize - 1)) & ~(pageSize - 1);
+	char** argumentTable = (char**)VirtualAlloc(0, argumentTableSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	if (!argumentTable)
 	{
 		VirtualFree(command, 0, MEM_RELEASE);
 		return ERROR_OUTOFMEMORY;
 	}
 
-	char* argument_write = (char*)((uintptr_t)argument_table + (((size_t)argument_count + 1) * sizeof(char*)));
-	in_argument = 1;
-	in_quotes = 0;
-	backslash_count = 0;
-	size_t argument_index = 0;
-	argument_table[0] = argument_write;
-	for (int i = 0; i != command_length; ++i)
+	char* argumentWrite = (char*)((uintptr_t)argumentTable + (((size_t)argumentCount + 1) * sizeof(char*)));
+	inArgument = 1;
+	inQuotes = 0;
+	backslashCount = 0;
+	size_t argumentIndex = 0;
+	argumentTable[0] = argumentWrite;
+	for (int i = 0; i != commandLength; ++i)
 	{
 		if (command[i] == '\\')
 		{
-			if (!in_argument)
+			if (!inArgument)
 			{
-				in_argument = 1;
-				argument_table[argument_index] = argument_write;
+				inArgument = 1;
+				argumentTable[argumentIndex] = argumentWrite;
 			}
-			++backslash_count;
+			++backslashCount;
 		}
 		else if (command[i] == '"')
 		{
-			if (!in_argument)
+			if (!inArgument)
 			{
-				in_argument = 1;
-				argument_table[argument_index] = argument_write;
+				inArgument = 1;
+				argumentTable[argumentIndex] = argumentWrite;
 			}
-			int quoted_double_quote = in_quotes && i + 1 != command_length && command[i + 1] == '"';
-			if (backslash_count && !(backslash_count & 1))
+			int quotedDoubleQuote = inQuotes && i + 1 != commandLength && command[i + 1] == '"';
+			if (backslashCount && !(backslashCount & 1))
 			{
-				for (char* fill_end = argument_write + (backslash_count / 2); argument_write != fill_end;)
+				for (char* fillEnd = argumentWrite + (backslashCount / 2); argumentWrite != fillEnd;)
 				{
-					*argument_write++ = '\\';
+					*argumentWrite++ = '\\';
 				}
-				in_quotes = !in_quotes;
+				inQuotes = !inQuotes;
 			}
-			else if (backslash_count && (backslash_count & 1))
+			else if (backslashCount && (backslashCount & 1))
 			{
-				for (char* fill_end = argument_write + (backslash_count / 2); argument_write != fill_end;)
+				for (char* fillEnd = argumentWrite + (backslashCount / 2); argumentWrite != fillEnd;)
 				{
-					*argument_write++ = '\\';
+					*argumentWrite++ = '\\';
 				}
-				*argument_write++ = '\"';
+				*argumentWrite++ = '\"';
 			}
 			else
 			{
-				in_quotes = !in_quotes;
+				inQuotes = !inQuotes;
 			}
-			if (quoted_double_quote)
+			if (quotedDoubleQuote)
 			{
-				*argument_write++ = '\"';
+				*argumentWrite++ = '\"';
 				++i;
 			}
-			backslash_count = 0;
+			backslashCount = 0;
 		}
 		else if (command[i] == ' ' || command[i] == '\t')
 		{
-			if (in_argument)
+			if (inArgument)
 			{
-				if (backslash_count)
+				if (backslashCount)
 				{
-					for (char* fill_end = argument_write + backslash_count; argument_write != fill_end;)
+					for (char* fillEnd = argumentWrite + backslashCount; argumentWrite != fillEnd;)
 					{
-						*argument_write++ = '\\';
+						*argumentWrite++ = '\\';
 					}
-					backslash_count = 0;
+					backslashCount = 0;
 				}
-				if (in_quotes)
+				if (inQuotes)
 				{
-					*argument_write++ = command[i];
+					*argumentWrite++ = command[i];
 				}
 				else
 				{
-					in_argument = 0;
-					*argument_write++ = 0;
-					++argument_index;
+					inArgument = 0;
+					*argumentWrite++ = 0;
+					++argumentIndex;
 				}
 			}
 		}
 		else
 		{
-			if (!in_argument)
+			if (!inArgument)
 			{
-				in_argument = 1;
-				argument_table[argument_index] = argument_write;
+				inArgument = 1;
+				argumentTable[argumentIndex] = argumentWrite;
 			}
-			if (backslash_count)
+			if (backslashCount)
 			{
-				for (char* fill_end = argument_write + backslash_count; argument_write != fill_end;)
+				for (char* fillEnd = argumentWrite + backslashCount; argumentWrite != fillEnd;)
 				{
-					*argument_write++ = '\\';
+					*argumentWrite++ = '\\';
 				}
-				backslash_count = 0;
+				backslashCount = 0;
 			}
-			*argument_write++ = command[i];
+			*argumentWrite++ = command[i];
 		}
 	}
-	if (in_argument)
+	if (inArgument)
 	{
-		if (backslash_count)
+		if (backslashCount)
 		{
-			for (char* fill_end = argument_write + backslash_count; argument_write != fill_end;)
+			for (char* fillEnd = argumentWrite + backslashCount; argumentWrite != fillEnd;)
 			{
-				*argument_write++ = '\\';
+				*argumentWrite++ = '\\';
 			}
-			backslash_count = 0;
+			backslashCount = 0;
 		}
-		*argument_write++ = 0;
-		++argument_index;
+		*argumentWrite++ = 0;
+		++argumentIndex;
 	}
-	argument_table[argument_count] = 0;
+	argumentTable[argumentCount] = 0;
 
 	VirtualFree(command, 0, MEM_RELEASE);
 
-	*argument_count_address = argument_count;
-	*argument_table_address = argument_table;
+	*argumentCountAddress = argumentCount;
+	*argumentTableAddress = argumentTable;
 	return 0;
 }
 

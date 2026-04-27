@@ -86,18 +86,18 @@ uint32_t FlCrc32Create(void)
 	return 0xFFFFFFFFul;
 }
 
-uint32_t FlCrc32Data(_In_ uint32_t Crc32Context, _In_ size_t data_size, _In_reads_bytes_(data_size) const void* data)
+uint32_t FlCrc32Data(_In_ uint32_t crc32Context, _In_ size_t dataSize, _In_reads_bytes_(dataSize) const void* data)
 {
-	for (const uint8_t* read = (const uint8_t*)data, *read_end = read + data_size; read != read_end; read++)
+	for (const uint8_t* read = (const uint8_t*)data, *readEnd = read + dataSize; read != readEnd; read++)
 	{
-		Crc32Context = FlCrc32LookupTable[(uint32_t)*read ^ (Crc32Context & 0xFF)] ^ (Crc32Context >> 8);
+		crc32Context = FlCrc32LookupTable[(uint32_t)*read ^ (crc32Context & 0xFF)] ^ (crc32Context >> 8);
 	}
-	return Crc32Context;
+	return crc32Context;
 }
 
-uint32_t FlCrc32Finish(_In_ uint32_t Crc32Context)
+uint32_t FlCrc32Finish(_In_ uint32_t crc32Context)
 {
-	return ~Crc32Context;
+	return ~crc32Context;
 }
 
 #ifdef __cplusplus

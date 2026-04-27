@@ -40,7 +40,7 @@ extern "C" {
 
 #define FL_UUID_SIZE 16
 
-void FlUuidCreateRandomId(_Out_writes_bytes_all_(FL_UUID_SIZE) void* Uuid);
+void FlUuidCreateRandomId(_Out_writes_bytes_all_(FL_UUID_SIZE) void* uuid);
 /*
 	Procedure:
 		FlUuidCreateRandomId
@@ -51,11 +51,11 @@ void FlUuidCreateRandomId(_Out_writes_bytes_all_(FL_UUID_SIZE) void* Uuid);
 		This procedure can not fail.
 
 	Parameters:
-		Uuid:
+		uuid:
 			Pointer to a buffer that will receive a new random UUID.
 */
 
-size_t FlUuidEncodeStringUtf8(_In_reads_bytes_(FL_UUID_SIZE) const void* Uuid, _Out_writes_to_(38,return) char* Buffer);
+size_t FlUuidEncodeStringUtf8(_In_reads_bytes_(FL_UUID_SIZE) const void* uuid, _Out_writes_to_(38,return) char* buffer);
 /*
 	Procedure:
 		FlUuidEncodeString
@@ -66,10 +66,10 @@ size_t FlUuidEncodeStringUtf8(_In_reads_bytes_(FL_UUID_SIZE) const void* Uuid, _
 		This procedure can not fail.
 
 	Parameters:
-		Uuid:
+		uuid:
 			Pointer to a UUID to be printed.
 
-		Buffer:
+		buffer:
 			Pointer to a buffer that will receive the non-null terminated printed UUID UTF-8 string.
 			This buffer must be at least 38 characters long.
 
@@ -77,7 +77,7 @@ size_t FlUuidEncodeStringUtf8(_In_reads_bytes_(FL_UUID_SIZE) const void* Uuid, _
 		The procedure returns the length of the string that is always 38.
 */
 
-size_t FlUuidDecodeStringUtf8(_Out_writes_bytes_all_(FL_UUID_SIZE) void* Uuid, _In_ size_t Length, _In_reads_(Length) const char* String);
+size_t FlUuidDecodeStringUtf8(_Out_writes_bytes_all_(FL_UUID_SIZE) void* uuid, _In_ size_t length, _In_reads_(length) const char* string);
 /*
 	Procedure:
 		FlUuidDecodeString
@@ -89,14 +89,14 @@ size_t FlUuidDecodeStringUtf8(_Out_writes_bytes_all_(FL_UUID_SIZE) void* Uuid, _
 		This procedure only fails if the string does not represent an UUID.
 
 	Parameters:
-		Uuid:
+		uuid:
 			Pointer to a buffer that will receive the decoded UUID.
 
-		Length:
+		length:
 			Length of the non-null terminated UTF-8 string.
 			Note that the string may be null terminated if the length excludes the null terminating character.
 
-		String:
+		string:
 			Pointer to a string encoding an UUID value.
 
 	Return:
@@ -104,7 +104,7 @@ size_t FlUuidDecodeStringUtf8(_Out_writes_bytes_all_(FL_UUID_SIZE) void* Uuid, _
 
 */
 
-size_t FlUuidEncodeStringUtf16(_In_reads_bytes_(FL_UUID_SIZE) const void* Uuid, _Out_writes_to_(38,return) WCHAR* Buffer);
+size_t FlUuidEncodeStringUtf16(_In_reads_bytes_(FL_UUID_SIZE) const void* uuid, _Out_writes_to_(38,return) WCHAR* buffer);
 /*
 	Procedure:
 		FlUuidEncodeString
@@ -115,10 +115,10 @@ size_t FlUuidEncodeStringUtf16(_In_reads_bytes_(FL_UUID_SIZE) const void* Uuid, 
 		This procedure can not fail.
 
 	Parameters:
-		Uuid:
+		uuid:
 			Pointer to a UUID to be printed.
 
-		Buffer:
+		buffer:
 			Pointer to a buffer that will receive the non-null terminated printed UUID UTF-16 string.
 			This buffer must be at least 38 characters long.
 
@@ -126,7 +126,7 @@ size_t FlUuidEncodeStringUtf16(_In_reads_bytes_(FL_UUID_SIZE) const void* Uuid, 
 		The procedure returns the length of the string that is always 38.
 */
 
-size_t FlUuidDecodeStringUtf16(_Out_writes_bytes_all_(FL_UUID_SIZE) void* Uuid, _In_ size_t Length, _In_reads_(Length) const WCHAR* String);
+size_t FlUuidDecodeStringUtf16(_Out_writes_bytes_all_(FL_UUID_SIZE) void* uuid, _In_ size_t length, _In_reads_(length) const WCHAR* string);
 /*
 	Procedure:
 		FlUuidDecodeString
@@ -138,14 +138,14 @@ size_t FlUuidDecodeStringUtf16(_Out_writes_bytes_all_(FL_UUID_SIZE) void* Uuid, 
 		This procedure only fails if the string does not represent an UUID.
 
 	Parameters:
-		Uuid:
+		uuid:
 			Pointer to a buffer that will receive the decoded UUID.
 
-		Length:
+		length:
 			Length of the non-null terminated UTF-16 string.
 			Note that the string may be null terminated if the length excludes the null terminating character.
 
-		String:
+		string:
 			Pointer to a string encoding an UUID value.
 
 	Return:

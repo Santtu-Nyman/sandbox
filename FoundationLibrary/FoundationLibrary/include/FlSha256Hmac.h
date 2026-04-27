@@ -43,11 +43,11 @@ extern "C" {
 
 typedef struct
 {
-	FlSha256Context HashContext;
-	uint8_t Pad[FL_SHA256_HMAC_BLOCK_SIZE];
+	FlSha256Context hashContext;
+	uint8_t pad[FL_SHA256_HMAC_BLOCK_SIZE];
 } FlSha256HmacContext;
 
-void FlSha256HmacCreateHmac(_Out_ FlSha256HmacContext* Context, _In_ size_t KeySize, _In_reads_bytes_(KeySize) const void* Key);
+void FlSha256HmacCreateHmac(_Out_ FlSha256HmacContext* context, _In_ size_t keySize, _In_reads_bytes_(keySize) const void* key);
 /*
 	Procedure:
 		FlSha256HmacCreateHmac
@@ -57,17 +57,17 @@ void FlSha256HmacCreateHmac(_Out_ FlSha256HmacContext* Context, _In_ size_t KeyS
 		The pre-initialization contents of the context are ignored and overridden on initialization.
 
 	Parameters:
-		Context:
+		context:
 			Address of the HMAC calculation context.
 
-		KeySize:
+		keySize:
 			Size of the key data in bytes.
 
-		Key:
+		key:
 			Pointer to the location that contains the key data.
 */
 
-void FlSha256HmacHashData(_Inout_ FlSha256HmacContext* Context, _In_ size_t InputSize, _In_reads_bytes_(InputSize) const void* InputData);
+void FlSha256HmacHashData(_Inout_ FlSha256HmacContext* context, _In_ size_t inputSize, _In_reads_bytes_(inputSize) const void* inputData);
 /*
 	Procedure:
 		FlSha256HmacHashData
@@ -77,17 +77,17 @@ void FlSha256HmacHashData(_Inout_ FlSha256HmacContext* Context, _In_ size_t Inpu
 		The user may combine arbitrary number of input chunks for a HMAC calculation by calling this procedure repeatedly passing input chunks in order.
 
 	Parameters:
-		Context:
+		context:
 			Address of the HMAC calculation context.
 
-		InputSize:
+		inputSize:
 			Size of the next data chunk to process in bytes.
 
-		InputData:
+		inputData:
 			pointer to the location that contains the next data chunk to process in the HMAC calculation.
 */
 
-void FlSha256Hmac256FinishHmac(_Inout_ FlSha256HmacContext* Context, _Out_writes_bytes_all_(FL_SHA256_DIGEST_SIZE) void* Digest);
+void FlSha256Hmac256FinishHmac(_Inout_ FlSha256HmacContext* context, _Out_writes_bytes_all_(FL_SHA256_DIGEST_SIZE) void* digest);
 /*
 	Procedure:
 		FlSha256Hmac256Finish
@@ -98,10 +98,10 @@ void FlSha256Hmac256FinishHmac(_Inout_ FlSha256HmacContext* Context, _Out_writes
 		Calling this procedure immediately after context initialization calculates disgust of no input.
 
 	Parameters:
-		Context:
+		context:
 			Address of the HMAC calculation context.
 
-		Digest:
+		digest:
 			The calculated 32 byte HMAC is stored in the location pointed by this parameter.
 */
 

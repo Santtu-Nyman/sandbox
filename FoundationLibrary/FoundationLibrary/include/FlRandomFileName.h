@@ -40,7 +40,7 @@ extern "C" {
 // File name length for a 8.3 file name without dot or extension
 #define FL_RANDOM_FILE_NAME_LENGTH 8
 
-size_t FlCreateRandomFileName(_Out_writes_to_(FL_RANDOM_FILE_NAME_LENGTH,return) WCHAR* NameBuffer);
+size_t FlCreateRandomFileName(_Out_writes_to_(FL_RANDOM_FILE_NAME_LENGTH,return) WCHAR* nameBuffer);
 /*
 	Procedure:
 		FlCreateRandomFileName
@@ -51,7 +51,7 @@ size_t FlCreateRandomFileName(_Out_writes_to_(FL_RANDOM_FILE_NAME_LENGTH,return)
 		The entropy of the file name is log2(52^8) = ~46 bits, so file name collisions are cuite unlikely, but the caller should still check if the file by the generated name already exists.
 
 	Parameters:
-		NameBuffer:
+		nameBuffer:
 			Address of the buffer where the new file name is written into in as non null-terminated UTF-16 string.
 			This buffer must be at least 8 characters long.
 
@@ -59,7 +59,7 @@ size_t FlCreateRandomFileName(_Out_writes_to_(FL_RANDOM_FILE_NAME_LENGTH,return)
 		The procedure returns the length of the string that is always 8.
 */
 
-size_t FlCreateRandomFileNameUtf8(_Out_writes_to_(FL_RANDOM_FILE_NAME_LENGTH,return) char* NameBuffer);
+size_t FlCreateRandomFileNameUtf8(_Out_writes_to_(FL_RANDOM_FILE_NAME_LENGTH,return) char* nameBuffer);
 /*
 	Procedure:
 		FlCreateRandomFileNameUtf8
@@ -70,7 +70,7 @@ size_t FlCreateRandomFileNameUtf8(_Out_writes_to_(FL_RANDOM_FILE_NAME_LENGTH,ret
 		The entropy of the file name is log2(52^8) = ~46 bits, so file name collisions are cuite unlikely, but the caller should still check if the file by the generated name already exists.
 
 	Parameters:
-		NameBuffer:
+		nameBuffer:
 			Address of the buffer where the new file name is written into in as non null-terminated UTF-8 string.
 			This buffer must be at least 8 characters long.
 

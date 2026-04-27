@@ -40,9 +40,9 @@ extern "C" {
 
 uint32_t FlCrc32Create(void);
 
-uint32_t FlCrc32Data(_In_ uint32_t Crc32Context, _In_ size_t data_size, _In_reads_bytes_(data_size) const void* data);
+uint32_t FlCrc32Data(_In_ uint32_t crc32Context, _In_ size_t dataSize, _In_reads_bytes_(dataSize) const void* data);
 
-uint32_t FlCrc32Finish(_In_ uint32_t Crc32Context);
+uint32_t FlCrc32Finish(_In_ uint32_t crc32Context);
 
 #ifdef __cplusplus
 }

@@ -195,6 +195,7 @@
     <ClCompile Include="ut\FlUtf8Utf16ConverterUt.c" />
     <ClCompile Include="ut\FlUtMain.c" />
     <ClCompile Include="ut\FlUuidUt.c" />
+    <ClCompile Include="ut\FlWin32FilePathUt.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

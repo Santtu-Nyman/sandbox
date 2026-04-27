@@ -63,7 +63,7 @@ extern "C" {
 #include <stddef.h>
 #include "FlSAL.h"
 	
-DWORD FlWin32CommandLineToUtf8Arguments(_In_ _Null_terminated_ const WCHAR* native_command, _Out_ size_t* argument_count_address, _Out_ char*** argument_table_address);
+DWORD FlWin32CommandLineToUtf8Arguments(_In_ _Null_terminated_ const WCHAR* nativeCommand, _Out_ size_t* argumentCountAddress, _Out_ char*** argumentTableAddress);
 
 #ifdef __cplusplus
 }

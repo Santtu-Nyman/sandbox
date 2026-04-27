@@ -176,5 +176,8 @@
     <ClCompile Include="ut\FlAes256Ut.c">
       <Filter>Source Files\ut</Filter>
     </ClCompile>
+    <ClCompile Include="ut\FlWin32FilePathUt.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

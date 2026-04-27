@@ -35,15 +35,15 @@ extern "C" {
 #define FL_IS_HEX_WCHAR(C) (((int)(C) >= (int)L'0' && (int)(C) <= (int)L'9') || ((int)(C) >= (int)L'A' && (int)(C) <= (int)L'F') || ((int)(C) >= (int)L'a' && (int)(C) <= (int)L'f'))
 #define FL_IS_HEX_CHAR(C) (((int)(C) >= (int)'0' && (int)(C) <= (int)'9') || ((int)(C) >= (int)'A' && (int)(C) <= (int)'F') || ((int)(C) >= (int)'a' && (int)(C) <= (int)'f'))
 
-static SIZE_T lt_win32_absolute_path_volume_directory_part_length(SIZE_T path_length, const WCHAR* path)
+static SIZE_T lt_win32_absolute_path_volume_directory_part_length(SIZE_T pathLength, const WCHAR* path)
 {
-	if (path_length > 4 && path[0] == L'\\' && path[1] == L'\\' && path[2] == L'?' && path[3] == L'\\')
+	if (pathLength > 4 && path[0] == L'\\' && path[1] == L'\\' && path[2] == L'?' && path[3] == L'\\')
 	{
-		if (path_length > 6 && (path[4] != L'\\' && path[4] != L'/') && path[5] == L':' && (path[6] == L'\\' || path[6] == L'/'))
+		if (pathLength > 6 && (path[4] != L'\\' && path[4] != L'/') && path[5] == L':' && (path[6] == L'\\' || path[6] == L'/'))
 		{
 			return 7;
 		}
-		else if (path_length > 48 &&
+		else if (pathLength > 48 &&
 			(path[4] == L'V' || path[4] == L'v') &&
 			(path[5] == L'O' || path[5] == L'o') &&
 			(path[6] == L'L' || path[6] == L'l') &&
@@ -92,60 +92,60 @@ static SIZE_T lt_win32_absolute_path_volume_directory_part_length(SIZE_T path_le
 		{
 			return 49;
 		}
-		else if (path_length > 7 && (path[4] == L'U' || path[4] == L'u') && (path[5] == L'N' || path[5] == L'n') && (path[6] == L'C' || path[6] == L'c') && (path[7] == L'\\' || path[7] == L'/'))
+		else if (pathLength > 7 && (path[4] == L'U' || path[4] == L'u') && (path[5] == L'N' || path[5] == L'n') && (path[6] == L'C' || path[6] == L'c') && (path[7] == L'\\' || path[7] == L'/'))
 		{
-			size_t server_length = 0;
-			while (8 + server_length < path_length && (path[8 + server_length] != L'\\' && path[8 + server_length] != L'/'))
+			size_t serverLength = 0;
+			while (8 + serverLength < pathLength && (path[8 + serverLength] != L'\\' && path[8 + serverLength] != L'/'))
 			{
-				++server_length;
+				++serverLength;
 			}
-			if (!server_length)
-			{
-				return 0;
-			}
-			size_t share_length = 0;
-			while (9 + server_length + share_length < path_length && (path[9 + server_length + share_length] != L'\\' && path[9 + server_length + share_length] != L'/'))
-			{
-				++share_length;
-			}
-			if (!share_length || (path[9 + server_length + share_length] != L'\\' && path[9 + server_length + share_length] != L'/'))
+			if (!serverLength)
 			{
 				return 0;
 			}
-			return 10 + server_length + share_length;
+			size_t shareLength = 0;
+			while (9 + serverLength + shareLength < pathLength && (path[9 + serverLength + shareLength] != L'\\' && path[9 + serverLength + shareLength] != L'/'))
+			{
+				++shareLength;
+			}
+			if (!shareLength || (path[9 + serverLength + shareLength] != L'\\' && path[9 + serverLength + shareLength] != L'/'))
+			{
+				return 0;
+			}
+			return 10 + serverLength + shareLength;
 		}
 		else
 		{
 			return 0;
 		}
 	}
-	else if (path_length > 4 && path[0] == L'\\' && path[1] == L'?' && path[2] == L'?' && path[3] == L'\\')
+	else if (pathLength > 4 && path[0] == L'\\' && path[1] == L'?' && path[2] == L'?' && path[3] == L'\\')
 	{
-		if (path_length > 6 && (path[4] != L'\\' && path[4] != L'/') && path[5] == L':' && (path[6] == L'\\' || path[6] == L'/'))
+		if (pathLength > 6 && (path[4] != L'\\' && path[4] != L'/') && path[5] == L':' && (path[6] == L'\\' || path[6] == L'/'))
 		{
 			return 7;
 		}
-		else if (path_length > 7 && (path[4] == L'U' || path[4] == L'u') && (path[5] == L'N' || path[5] == L'n') && (path[6] == L'C' || path[6] == L'c') && (path[7] == L'\\' || path[7] == L'/'))
+		else if (pathLength > 7 && (path[4] == L'U' || path[4] == L'u') && (path[5] == L'N' || path[5] == L'n') && (path[6] == L'C' || path[6] == L'c') && (path[7] == L'\\' || path[7] == L'/'))
 		{
-			size_t server_length = 0;
-			while (8 + server_length < path_length && (path[8 + server_length] != L'\\' && path[8 + server_length] != L'/'))
+			size_t serverLength = 0;
+			while (8 + serverLength < pathLength && (path[8 + serverLength] != L'\\' && path[8 + serverLength] != L'/'))
 			{
-				++server_length;
+				++serverLength;
 			}
-			if (!server_length)
-			{
-				return 0;
-			}
-			size_t share_length = 0;
-			while (9 + server_length + share_length < path_length && (path[9 + server_length + share_length] != L'\\' && path[9 + server_length + share_length] != L'/'))
-			{
-				++share_length;
-			}
-			if (!share_length || (path[9 + server_length + share_length] != L'\\' && path[9 + server_length + share_length] != L'/'))
+			if (!serverLength)
 			{
 				return 0;
 			}
-			return 10 + server_length + share_length;
+			size_t shareLength = 0;
+			while (9 + serverLength + shareLength < pathLength && (path[9 + serverLength + shareLength] != L'\\' && path[9 + serverLength + shareLength] != L'/'))
+			{
+				++shareLength;
+			}
+			if (!shareLength || (path[9 + serverLength + shareLength] != L'\\' && path[9 + serverLength + shareLength] != L'/'))
+			{
+				return 0;
+			}
+			return 10 + serverLength + shareLength;
 		}
 		else
 		{
@@ -154,31 +154,31 @@ static SIZE_T lt_win32_absolute_path_volume_directory_part_length(SIZE_T path_le
 	}
 	else
 	{
-		if (path_length > 2 && path[0] != L'\\' && path[0] != L'/' && path[1] == L':' && (path[2] == L'\\' || path[2] == L'/'))
+		if (pathLength > 2 && path[0] != L'\\' && path[0] != L'/' && path[1] == L':' && (path[2] == L'\\' || path[2] == L'/'))
 		{
 			return 3;
 		}
-		else if (path_length > 2 && (path[0] == L'\\' || path[0] == L'/') && (path[1] == L'\\' || path[1] == L'/'))
+		else if (pathLength > 2 && (path[0] == L'\\' || path[0] == L'/') && (path[1] == L'\\' || path[1] == L'/'))
 		{
-			size_t server_length = 0;
-			while (2 + server_length < path_length && (path[2 + server_length] != L'\\' && path[2 + server_length] != L'/'))
+			size_t serverLength = 0;
+			while (2 + serverLength < pathLength && (path[2 + serverLength] != L'\\' && path[2 + serverLength] != L'/'))
 			{
-				++server_length;
+				++serverLength;
 			}
-			if (!server_length)
-			{
-				return 0;
-			}
-			size_t share_length = 0;
-			while (3 + server_length + share_length < path_length && (path[3 + server_length + share_length] != L'\\' && path[3 + server_length + share_length] != L'/'))
-			{
-				++share_length;
-			}
-			if (!share_length || (path[3 + server_length + share_length] != L'\\' && path[3 + server_length + share_length] != L'/'))
+			if (!serverLength)
 			{
 				return 0;
 			}
-			return 4 + server_length + share_length;
+			size_t shareLength = 0;
+			while (3 + serverLength + shareLength < pathLength && (path[3 + serverLength + shareLength] != L'\\' && path[3 + serverLength + shareLength] != L'/'))
+			{
+				++shareLength;
+			}
+			if (!shareLength || (path[3 + serverLength + shareLength] != L'\\' && path[3 + serverLength + shareLength] != L'/'))
+			{
+				return 0;
+			}
+			return 4 + serverLength + shareLength;
 		}
 		else
 		{
@@ -187,574 +187,574 @@ static SIZE_T lt_win32_absolute_path_volume_directory_part_length(SIZE_T path_le
 	}
 }
 
-BOOL FlWin32IsPathFullyQualified(_In_ SIZE_T PathLength, _In_reads_(PathLength) const WCHAR* Path)
+BOOL FlWin32IsPathFullyQualified(_In_ SIZE_T pathLength, _In_reads_(pathLength) const WCHAR* path)
 {
-	size_t path_volume_directory_part_length = lt_win32_absolute_path_volume_directory_part_length(PathLength, Path);
-	if (!path_volume_directory_part_length)
+	size_t pathVolumeDirectoryPartLength = lt_win32_absolute_path_volume_directory_part_length(pathLength, path);
+	if (!pathVolumeDirectoryPartLength)
 	{
 		return FALSE;
 	}
 
-	BOOL extended_prefix = ((PathLength > 4 && Path[0] == L'\\' && Path[1] == L'?' && Path[2] == L'?' && Path[3] == L'\\') || (PathLength > 4 && Path[0] == L'\\' && Path[1] == L'\\' && Path[2] == L'?' && Path[3] == L'\\'));
-	if ((path_volume_directory_part_length > (MAX_PATH - 1)) && !extended_prefix)
+	BOOL extendedPrefix = ((pathLength > 4 && path[0] == L'\\' && path[1] == L'?' && path[2] == L'?' && path[3] == L'\\') || (pathLength > 4 && path[0] == L'\\' && path[1] == L'\\' && path[2] == L'?' && path[3] == L'\\'));
+	if ((pathVolumeDirectoryPartLength > (MAX_PATH - 1)) && !extendedPrefix)
 	{
 		return FALSE;
 	}
 
-	for (size_t offset = path_volume_directory_part_length; offset != PathLength;)
+	for (size_t offset = pathVolumeDirectoryPartLength; offset != pathLength;)
 	{
-		size_t component_lenght = 0;
-		while (offset + component_lenght != PathLength && (Path[offset + component_lenght] != L'\\' && Path[offset + component_lenght] != L'/'))
+		size_t componentLength = 0;
+		while (offset + componentLength != pathLength && (path[offset + componentLength] != L'\\' && path[offset + componentLength] != L'/'))
 		{
-			component_lenght++;
+			componentLength++;
 		}
-		if (!component_lenght || (component_lenght == 1 && Path[0] == L'.') || (component_lenght == 2 && Path[0] == L'.' && Path[1] == L'.'))
+		if (!componentLength || (componentLength == 1 && path[0] == L'.') || (componentLength == 2 && path[0] == L'.' && path[1] == L'.'))
 		{
 			return FALSE;
 		}
-		offset += component_lenght + (((offset + component_lenght) != PathLength) ? 1 : 0);
+		offset += componentLength + (((offset + componentLength) != pathLength) ? 1 : 0);
 	}
 	return TRUE;
 }
 
-SIZE_T FlWin32GetFullyQualifiedPath(_In_ SIZE_T PathLength, _In_reads_(PathLength) const WCHAR* Path, _In_ SIZE_T BasePathLength, _In_reads_(BasePathLength) const WCHAR* BasePath, _In_ SIZE_T PathBufferSize, _Out_writes_to_(PathBufferSize,return) WCHAR* PathBuffer)
+SIZE_T FlWin32GetFullyQualifiedPath(_In_ SIZE_T pathLength, _In_reads_(pathLength) const WCHAR* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const WCHAR* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) WCHAR* pathBuffer)
 {
-	size_t path_volume_part_length = lt_win32_absolute_path_volume_directory_part_length(PathLength, Path);
+	size_t pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length(pathLength, path);
 	// Remove trailing '\' if Path is longer than volume directory Path. Volume directory length is zero when Path is relative
-	if (PathLength && (PathLength > path_volume_part_length) && ((Path[PathLength - 1] == L'\\') || (Path[PathLength - 1] == L'/')))
+	if (pathLength && (pathLength > pathVolumePartLength) && ((path[pathLength - 1] == L'\\') || (path[pathLength - 1] == L'/')))
 	{
-		PathLength--;
+		pathLength--;
 	}
-	if (!BasePathLength && !PathLength)
+	if (!basePathLength && !pathLength)
 	{
 		return 0;
 	}
 
-	if (path_volume_part_length)
+	if (pathVolumePartLength)
 	{
 		// Absolute Path to fully qualified Path
 
-		BOOL extended_prefix = ((PathLength > 4 && Path[0] == L'\\' && Path[1] == L'?' && Path[2] == L'?' && Path[3] == L'\\') || (PathLength > 4 && Path[0] == L'\\' && Path[1] == L'\\' && Path[2] == L'?' && Path[3] == L'\\'));
-		BOOL network_path = FALSE;
-		if (extended_prefix)
+		BOOL extendedPrefix = ((pathLength > 4 && path[0] == L'\\' && path[1] == L'?' && path[2] == L'?' && path[3] == L'\\') || (pathLength > 4 && path[0] == L'\\' && path[1] == L'\\' && path[2] == L'?' && path[3] == L'\\'));
+		BOOL networkPath = FALSE;
+		if (extendedPrefix)
 		{
-			if (PathLength > 7 && (Path[4] == L'U' || Path[4] == L'u') && (Path[5] == L'N' || Path[5] == L'n') && (Path[6] == L'C' || Path[6] == L'c') && (Path[7] == L'\\' || Path[7] == L'/'))
+			if (pathLength > 7 && (path[4] == L'U' || path[4] == L'u') && (path[5] == L'N' || path[5] == L'n') && (path[6] == L'C' || path[6] == L'c') && (path[7] == L'\\' || path[7] == L'/'))
 			{
-				network_path = TRUE;
+				networkPath = TRUE;
 			}
 		}
 		else
 		{
-			if (PathLength > 1 && (Path[0] == L'\\' || Path[0] == L'/') && (Path[1] == L'\\' || Path[1] == L'/'))
+			if (pathLength > 1 && (path[0] == L'\\' || path[0] == L'/') && (path[1] == L'\\' || path[1] == L'/'))
 			{
-				network_path = TRUE;
+				networkPath = TRUE;
 			}
 		}
 
-		size_t fully_qualified_length = path_volume_part_length;
-		for (size_t offset = PathLength, component_count = 0, component_erase_count = 0; offset != path_volume_part_length;)
+		size_t fullyQualifiedLength = pathVolumePartLength;
+		for (size_t offset = pathLength, componentCount = 0, componentEraseCount = 0; offset != pathVolumePartLength;)
 		{
-			size_t component_lenght = 0;
-			while (offset - component_lenght != path_volume_part_length && (Path[offset - component_lenght - 1] != L'\\' && Path[offset - component_lenght - 1] != L'/'))
+			size_t componentLength = 0;
+			while (offset - componentLength != pathVolumePartLength && (path[offset - componentLength - 1] != L'\\' && path[offset - componentLength - 1] != L'/'))
 			{
-				component_lenght++;
+				componentLength++;
 			}
-			size_t component_offset = offset - component_lenght;
-			if (component_lenght == 1 && Path[component_offset] == L'.')
+			size_t componentOffset = offset - componentLength;
+			if (componentLength == 1 && path[componentOffset] == L'.')
 			{
 				// just skip "." components
 			}
-			else if (component_lenght == 2 && Path[component_offset] == L'.' && Path[component_offset + 1] == L'.')
+			else if (componentLength == 2 && path[componentOffset] == L'.' && path[componentOffset + 1] == L'.')
 			{
-				component_erase_count++;
+				componentEraseCount++;
 			}
 			else
 			{
-				if (!component_erase_count)
+				if (!componentEraseCount)
 				{
-					fully_qualified_length += component_lenght + 1;
-					component_count++;
+					fullyQualifiedLength += componentLength + 1;
+					componentCount++;
 				}
 				else
 				{
-					component_erase_count--;
+					componentEraseCount--;
 				}
 			}
-			offset -= component_lenght;
-			if (offset != path_volume_part_length)
+			offset -= componentLength;
+			if (offset != pathVolumePartLength)
 			{
 				offset--;
 			}
 			else
 			{
-				if (component_erase_count)
+				if (componentEraseCount)
 				{
 					return 0;
 				}
-				if (component_count)
+				if (componentCount)
 				{
-					fully_qualified_length--;
+					fullyQualifiedLength--;
 				}
 			}
 		}
 
-		BOOL add_extended_prefix = FALSE;
-		BOOL remove_extended_prefix = FALSE;
-		if ((!extended_prefix && (fully_qualified_length > (MAX_PATH - 1))) || (extended_prefix && ((network_path ? (fully_qualified_length - 6) : (fully_qualified_length - 4)) > (MAX_PATH - 1))))
+		BOOL addExtendedPrefix = FALSE;
+		BOOL removeExtendedPrefix = FALSE;
+		if ((!extendedPrefix && (fullyQualifiedLength > (MAX_PATH - 1))) || (extendedPrefix && ((networkPath ? (fullyQualifiedLength - 6) : (fullyQualifiedLength - 4)) > (MAX_PATH - 1))))
 		{
-			if (!extended_prefix)
+			if (!extendedPrefix)
 			{
-				add_extended_prefix = TRUE;
-				fully_qualified_length += network_path ? 6 : 4;
+				addExtendedPrefix = TRUE;
+				fullyQualifiedLength += networkPath ? 6 : 4;
 			}
 		}
 		else 
 		{
-			if (extended_prefix)
+			if (extendedPrefix)
 			{
-				remove_extended_prefix = TRUE;
-				fully_qualified_length -= network_path ? 6 : 4;
+				removeExtendedPrefix = TRUE;
+				fullyQualifiedLength -= networkPath ? 6 : 4;
 			}
 		}
 
-		if (fully_qualified_length > PathBufferSize)
+		if (fullyQualifiedLength > pathBufferSize)
 		{
-			return fully_qualified_length;
+			return fullyQualifiedLength;
 		}
 
-		size_t write_offset = fully_qualified_length;
-		for (size_t offset = PathLength, component_erase_count = 0; offset != path_volume_part_length;)
+		size_t writeOffset = fullyQualifiedLength;
+		for (size_t offset = pathLength, componentEraseCount = 0; offset != pathVolumePartLength;)
 		{
-			size_t component_lenght = 0;
-			while (offset - component_lenght != path_volume_part_length && (Path[offset - component_lenght - 1] != L'\\' && Path[offset - component_lenght - 1] != L'/'))
+			size_t componentLength = 0;
+			while (offset - componentLength != pathVolumePartLength && (path[offset - componentLength - 1] != L'\\' && path[offset - componentLength - 1] != L'/'))
 			{
-				component_lenght++;
+				componentLength++;
 			}
-			size_t component_offset = offset - component_lenght;
-			if (component_lenght == 1 && Path[component_offset] == L'.')
+			size_t componentOffset = offset - componentLength;
+			if (componentLength == 1 && path[componentOffset] == L'.')
 			{
 				// just skip "." components
 			}
-			else if (component_lenght == 2 && Path[component_offset] == L'.' && Path[component_offset + 1] == L'.')
+			else if (componentLength == 2 && path[componentOffset] == L'.' && path[componentOffset + 1] == L'.')
 			{
-				component_erase_count++;
+				componentEraseCount++;
 			}
 			else
 			{
-				if (!component_erase_count)
+				if (!componentEraseCount)
 				{
-					if (write_offset != fully_qualified_length)
+					if (writeOffset != fullyQualifiedLength)
 					{
-						write_offset--;
-						PathBuffer[write_offset] = '\\';
+						writeOffset--;
+						pathBuffer[writeOffset] = '\\';
 					}
-					write_offset -= component_lenght;
-					memcpy(PathBuffer + write_offset, Path + component_offset, component_lenght * sizeof(WCHAR));
+					writeOffset -= componentLength;
+					memcpy(pathBuffer + writeOffset, path + componentOffset, componentLength * sizeof(WCHAR));
 				}
 				else
 				{
-					component_erase_count--;
+					componentEraseCount--;
 				}
 			}
-			offset -= component_lenght;
-			if (offset != path_volume_part_length)
+			offset -= componentLength;
+			if (offset != pathVolumePartLength)
 			{
 				offset--;
 			}
 		}
 
-		for (size_t path_volume_part_copy_end = (add_extended_prefix ? (network_path ? 6 : 4) : ((remove_extended_prefix && network_path) ? 2 : 0)), volume_part_read_offset = path_volume_part_length - 1; write_offset != path_volume_part_copy_end;)
+		for (size_t pathVolumePartCopyEnd = (addExtendedPrefix ? (networkPath ? 6 : 4) : ((removeExtendedPrefix && networkPath) ? 2 : 0)), volumePartReadOffset = pathVolumePartLength - 1; writeOffset != pathVolumePartCopyEnd;)
 		{
-			WCHAR path_volume_part_character = Path[volume_part_read_offset];
-			volume_part_read_offset--;
-			if (path_volume_part_character == L'/')
+			WCHAR pathVolumePartCharacter = path[volumePartReadOffset];
+			volumePartReadOffset--;
+			if (pathVolumePartCharacter == L'/')
 			{
-				path_volume_part_character = L'\\';
+				pathVolumePartCharacter = L'\\';
 			}
-			write_offset--;
-			PathBuffer[write_offset] = path_volume_part_character;
+			writeOffset--;
+			pathBuffer[writeOffset] = pathVolumePartCharacter;
 		}
-		if (add_extended_prefix)
+		if (addExtendedPrefix)
 		{
-			if (network_path)
+			if (networkPath)
 			{
-				memcpy(PathBuffer + 4, L"UNC\\", 4 * sizeof(WCHAR));
+				memcpy(pathBuffer + 4, L"UNC\\", 4 * sizeof(WCHAR));
 			}
-			memcpy(PathBuffer, L"\\\\?\\", 4 * sizeof(WCHAR));
+			memcpy(pathBuffer, L"\\\\?\\", 4 * sizeof(WCHAR));
 		}
-		else if (remove_extended_prefix && network_path)
+		else if (removeExtendedPrefix && networkPath)
 		{
-			memcpy(PathBuffer, L"\\\\", 2 * sizeof(WCHAR));
+			memcpy(pathBuffer, L"\\\\", 2 * sizeof(WCHAR));
 		}
 
-		return fully_qualified_length;
+		return fullyQualifiedLength;
 	}
 	else
 	{
 		// Relative Path to fully qualified Path
 
 		// Get volume Path part of the base directory
-		size_t base_path_volume_part_length = lt_win32_absolute_path_volume_directory_part_length(BasePathLength, BasePath);
+		size_t basePathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length(basePathLength, basePath);
 		// Remove trailing '\' if Path is longer than volume directory Path. Volume directory length is zero when Path is relative
-		if (BasePathLength && (BasePathLength > base_path_volume_part_length) && ((BasePath[BasePathLength - 1] == L'\\') || (BasePath[BasePathLength - 1] == L'/')))
+		if (basePathLength && (basePathLength > basePathVolumePartLength) && ((basePath[basePathLength - 1] == L'\\') || (basePath[basePathLength - 1] == L'/')))
 		{
-			BasePathLength--;
+			basePathLength--;
 		}
-		if (!BasePathLength)
+		if (!basePathLength)
 		{
 			return 0;
 		}
 
-		BOOL base_path_extended_prefix = ((BasePathLength > 4 && BasePath[0] == L'\\' && BasePath[1] == L'?' && BasePath[2] == L'?' && BasePath[3] == L'\\') || (BasePathLength > 4 && BasePath[0] == L'\\' && BasePath[1] == L'\\' && BasePath[2] == L'?' && BasePath[3] == L'\\'));
-		BOOL base_path_network_path = FALSE;
-		if (base_path_extended_prefix)
+		BOOL basePathExtendedPrefix = ((basePathLength > 4 && basePath[0] == L'\\' && basePath[1] == L'?' && basePath[2] == L'?' && basePath[3] == L'\\') || (basePathLength > 4 && basePath[0] == L'\\' && basePath[1] == L'\\' && basePath[2] == L'?' && basePath[3] == L'\\'));
+		BOOL basePathNetworkPath = FALSE;
+		if (basePathExtendedPrefix)
 		{
-			if (BasePathLength > 7 && (BasePath[4] == L'U' || BasePath[4] == L'u') && (BasePath[5] == L'N' || BasePath[5] == L'n') && (BasePath[6] == L'C' || BasePath[6] == L'c') && (BasePath[7] == L'\\' || BasePath[7] == L'/'))
+			if (basePathLength > 7 && (basePath[4] == L'U' || basePath[4] == L'u') && (basePath[5] == L'N' || basePath[5] == L'n') && (basePath[6] == L'C' || basePath[6] == L'c') && (basePath[7] == L'\\' || basePath[7] == L'/'))
 			{
-				base_path_network_path = TRUE;
+				basePathNetworkPath = TRUE;
 			}
 		}
 		else
 		{
-			if (BasePathLength > 1 && (BasePath[0] == L'\\' || BasePath[0] == L'/') && (BasePath[1] == L'\\' || BasePath[1] == L'/'))
+			if (basePathLength > 1 && (basePath[0] == L'\\' || basePath[0] == L'/') && (basePath[1] == L'\\' || basePath[1] == L'/'))
 			{
-				base_path_network_path = TRUE;
+				basePathNetworkPath = TRUE;
 			}
 		}
 
-		size_t relative_path_component_erase_count = 0;
-		size_t relative_path_component_count = 0;
-		size_t relative_path_length = 0;
-		for (size_t offset = PathLength; offset;)
+		size_t relativePathComponentEraseCount = 0;
+		size_t relativePathComponentCount = 0;
+		size_t relativePathLength = 0;
+		for (size_t offset = pathLength; offset;)
 		{
-			size_t component_lenght = 0;
-			while (offset - component_lenght && (Path[offset - component_lenght - 1] != L'\\' && Path[offset - component_lenght - 1] != L'/'))
+			size_t componentLength = 0;
+			while (offset - componentLength && (path[offset - componentLength - 1] != L'\\' && path[offset - componentLength - 1] != L'/'))
 			{
-				component_lenght++;
+				componentLength++;
 			}
-			size_t component_offset = offset - component_lenght;
-			if (component_lenght == 1 && Path[component_offset] == L'.')
+			size_t componentOffset = offset - componentLength;
+			if (componentLength == 1 && path[componentOffset] == L'.')
 			{
 				// just skip "." components
 			}
-			else if (component_lenght == 2 && Path[component_offset] == L'.' && Path[component_offset + 1] == L'.')
+			else if (componentLength == 2 && path[componentOffset] == L'.' && path[componentOffset + 1] == L'.')
 			{
-				relative_path_component_erase_count++;
+				relativePathComponentEraseCount++;
 			}
 			else
 			{
-				if (!relative_path_component_erase_count)
+				if (!relativePathComponentEraseCount)
 				{
-					relative_path_length += component_lenght + 1;
-					relative_path_component_count++;
+					relativePathLength += componentLength + 1;
+					relativePathComponentCount++;
 				}
 				else
 				{
-					relative_path_component_erase_count--;
+					relativePathComponentEraseCount--;
 				}
 			}
-			offset -= component_lenght;
+			offset -= componentLength;
 			if (offset)
 			{
 				offset--;
 			}
 			else
 			{
-				if (relative_path_component_count)
+				if (relativePathComponentCount)
 				{
-					relative_path_length--;
+					relativePathLength--;
 				}
 			}
 		}
 
 		// Get the base Path component count and length after making it fully qualified. Also erase components as required from the relative sub Path
-		size_t base_path_component_count = 0;
-		size_t base_path_fully_qualified_length = base_path_volume_part_length;
-		for (size_t offset = BasePathLength, component_erase_count = relative_path_component_erase_count; offset != base_path_volume_part_length;)
+		size_t basePathComponentCount = 0;
+		size_t basePathFullyQualifiedLength = basePathVolumePartLength;
+		for (size_t offset = basePathLength, componentEraseCount = relativePathComponentEraseCount; offset != basePathVolumePartLength;)
 		{
-			size_t component_lenght = 0;
-			while (offset - component_lenght != base_path_volume_part_length && (BasePath[offset - component_lenght - 1] != L'\\' && BasePath[offset - component_lenght - 1] != L'/'))
+			size_t componentLength = 0;
+			while (offset - componentLength != basePathVolumePartLength && (basePath[offset - componentLength - 1] != L'\\' && basePath[offset - componentLength - 1] != L'/'))
 			{
-				component_lenght++;
+				componentLength++;
 			}
-			size_t component_offset = offset - component_lenght;
-			if (component_lenght == 1 && BasePath[component_offset] == L'.')
+			size_t componentOffset = offset - componentLength;
+			if (componentLength == 1 && basePath[componentOffset] == L'.')
 			{
 				// just skip "." components
 			}
-			else if (component_lenght == 2 && BasePath[component_offset] == L'.' && BasePath[component_offset + 1] == L'.')
+			else if (componentLength == 2 && basePath[componentOffset] == L'.' && basePath[componentOffset + 1] == L'.')
 			{
-				component_erase_count++;
+				componentEraseCount++;
 			}
 			else
 			{
-				if (!component_erase_count)
+				if (!componentEraseCount)
 				{
-					base_path_fully_qualified_length += component_lenght + 1;
-					base_path_component_count++;
+					basePathFullyQualifiedLength += componentLength + 1;
+					basePathComponentCount++;
 				}
 				else
 				{
-					component_erase_count--;
+					componentEraseCount--;
 				}
 			}
-			offset -= component_lenght;
-			if (offset != base_path_volume_part_length)
+			offset -= componentLength;
+			if (offset != basePathVolumePartLength)
 			{
 				offset--;
 			}
 			else
 			{
-				if (component_erase_count)
+				if (componentEraseCount)
 				{
 					return 0;
 				}
-				if (base_path_component_count)
+				if (basePathComponentCount)
 				{
-					base_path_fully_qualified_length--;
+					basePathFullyQualifiedLength--;
 				}
 			}
 		}
 		
-		size_t fully_qualified_length = base_path_fully_qualified_length + ((relative_path_length && (base_path_fully_qualified_length != base_path_volume_part_length)) ? 1 : 0) + relative_path_length;
+		size_t fullyQualifiedLength = basePathFullyQualifiedLength + ((relativePathLength && (basePathFullyQualifiedLength != basePathVolumePartLength)) ? 1 : 0) + relativePathLength;
 		
-		BOOL add_extended_prefix = FALSE;
-		BOOL remove_extended_prefix = FALSE;
-		if ((!base_path_extended_prefix && (fully_qualified_length > (MAX_PATH - 1))) || (base_path_extended_prefix && ((base_path_network_path ? (fully_qualified_length - 6) : (fully_qualified_length - 4)) > (MAX_PATH - 1))))
+		BOOL addExtendedPrefix = FALSE;
+		BOOL removeExtendedPrefix = FALSE;
+		if ((!basePathExtendedPrefix && (fullyQualifiedLength > (MAX_PATH - 1))) || (basePathExtendedPrefix && ((basePathNetworkPath ? (fullyQualifiedLength - 6) : (fullyQualifiedLength - 4)) > (MAX_PATH - 1))))
 		{
-			if (!base_path_extended_prefix)
+			if (!basePathExtendedPrefix)
 			{
-				add_extended_prefix = TRUE;
-				base_path_fully_qualified_length += base_path_network_path ? 6 : 4;
-				fully_qualified_length += base_path_network_path ? 6 : 4;
+				addExtendedPrefix = TRUE;
+				basePathFullyQualifiedLength += basePathNetworkPath ? 6 : 4;
+				fullyQualifiedLength += basePathNetworkPath ? 6 : 4;
 			}
 		}
 		else
 		{
-			if (base_path_extended_prefix)
+			if (basePathExtendedPrefix)
 			{
-				remove_extended_prefix = TRUE;
-				base_path_fully_qualified_length -= base_path_network_path ? 6 : 4;
-				fully_qualified_length -= base_path_network_path ? 6 : 4;
+				removeExtendedPrefix = TRUE;
+				basePathFullyQualifiedLength -= basePathNetworkPath ? 6 : 4;
+				fullyQualifiedLength -= basePathNetworkPath ? 6 : 4;
 			}
 		}
 		
-		if (fully_qualified_length > PathBufferSize)
+		if (fullyQualifiedLength > pathBufferSize)
 		{
-			return fully_qualified_length;
+			return fullyQualifiedLength;
 		}
 
-		size_t write_offset = fully_qualified_length;
-		for (size_t offset = PathLength, component_erase_count = 0; offset;)
+		size_t writeOffset = fullyQualifiedLength;
+		for (size_t offset = pathLength, componentEraseCount = 0; offset;)
 		{
-			size_t component_lenght = 0;
-			while (offset - component_lenght && (Path[offset - component_lenght - 1] != L'\\' && Path[offset - component_lenght - 1] != L'/'))
+			size_t componentLength = 0;
+			while (offset - componentLength && (path[offset - componentLength - 1] != L'\\' && path[offset - componentLength - 1] != L'/'))
 			{
-				component_lenght++;
+				componentLength++;
 			}
-			size_t component_offset = offset - component_lenght;
-			if (component_lenght == 1 && Path[component_offset] == L'.')
+			size_t componentOffset = offset - componentLength;
+			if (componentLength == 1 && path[componentOffset] == L'.')
 			{
 				// just skip "." components
 			}
-			else if (component_lenght == 2 && Path[component_offset] == L'.' && Path[component_offset + 1] == L'.')
+			else if (componentLength == 2 && path[componentOffset] == L'.' && path[componentOffset + 1] == L'.')
 			{
-				component_erase_count++;
+				componentEraseCount++;
 			}
 			else
 			{
-				if (!component_erase_count)
+				if (!componentEraseCount)
 				{
-					if (write_offset != fully_qualified_length)
+					if (writeOffset != fullyQualifiedLength)
 					{
-						write_offset--;
-						PathBuffer[write_offset] = '\\';
+						writeOffset--;
+						pathBuffer[writeOffset] = '\\';
 					}
-					write_offset -= component_lenght;
-					memcpy(PathBuffer + write_offset, Path + component_offset, component_lenght * sizeof(WCHAR));
+					writeOffset -= componentLength;
+					memcpy(pathBuffer + writeOffset, path + componentOffset, componentLength * sizeof(WCHAR));
 				}
 				else
 				{
-					component_erase_count--;
+					componentEraseCount--;
 				}
 			}
-			offset -= component_lenght;
+			offset -= componentLength;
 			if (offset)
 			{
 				offset--;
 			}
 		}
 
-		if (relative_path_length && base_path_component_count)
+		if (relativePathLength && basePathComponentCount)
 		{
-			write_offset--;
-			PathBuffer[write_offset] = '\\';
+			writeOffset--;
+			pathBuffer[writeOffset] = '\\';
 		}
 
-		for (size_t offset = BasePathLength, component_erase_count = relative_path_component_erase_count; offset != base_path_volume_part_length;)
+		for (size_t offset = basePathLength, componentEraseCount = relativePathComponentEraseCount; offset != basePathVolumePartLength;)
 		{
-			size_t component_lenght = 0;
-			while (offset - component_lenght != base_path_volume_part_length && (BasePath[offset - component_lenght - 1] != L'\\' && BasePath[offset - component_lenght - 1] != L'/'))
+			size_t componentLength = 0;
+			while (offset - componentLength != basePathVolumePartLength && (basePath[offset - componentLength - 1] != L'\\' && basePath[offset - componentLength - 1] != L'/'))
 			{
-				component_lenght++;
+				componentLength++;
 			}
-			size_t component_offset = offset - component_lenght;
-			if (component_lenght == 1 && BasePath[component_offset] == L'.')
+			size_t componentOffset = offset - componentLength;
+			if (componentLength == 1 && basePath[componentOffset] == L'.')
 			{
 				// just skip "." components
 			}
-			else if (component_lenght == 2 && BasePath[component_offset] == L'.' && BasePath[component_offset + 1] == L'.')
+			else if (componentLength == 2 && basePath[componentOffset] == L'.' && basePath[componentOffset + 1] == L'.')
 			{
-				component_erase_count++;
+				componentEraseCount++;
 			}
 			else
 			{
-				if (!component_erase_count)
+				if (!componentEraseCount)
 				{
-					if (write_offset != base_path_fully_qualified_length)
+					if (writeOffset != basePathFullyQualifiedLength)
 					{
-						write_offset--;
-						PathBuffer[write_offset] = '\\';
+						writeOffset--;
+						pathBuffer[writeOffset] = '\\';
 					}
-					write_offset -= component_lenght;
-					memcpy(PathBuffer + write_offset, BasePath + component_offset, component_lenght * sizeof(WCHAR));
+					writeOffset -= componentLength;
+					memcpy(pathBuffer + writeOffset, basePath + componentOffset, componentLength * sizeof(WCHAR));
 				}
 				else
 				{
-					component_erase_count--;
+					componentEraseCount--;
 				}
 			}
-			offset -= component_lenght;
-			if (offset != base_path_volume_part_length)
+			offset -= componentLength;
+			if (offset != basePathVolumePartLength)
 			{
 				offset--;
 			}
 		}
 
-		for (size_t path_volume_part_copy_end = (add_extended_prefix ? (base_path_network_path ? 6 : 4) : ((remove_extended_prefix && base_path_network_path) ? 2 : 0)), volume_part_read_offset = base_path_volume_part_length - 1; write_offset != path_volume_part_copy_end;)
+		for (size_t pathVolumePartCopyEnd = (addExtendedPrefix ? (basePathNetworkPath ? 6 : 4) : ((removeExtendedPrefix && basePathNetworkPath) ? 2 : 0)), volumePartReadOffset = basePathVolumePartLength - 1; writeOffset != pathVolumePartCopyEnd;)
 		{
-			WCHAR path_volume_part_character = BasePath[volume_part_read_offset];
-			volume_part_read_offset--;
-			if (path_volume_part_character == L'/')
+			WCHAR pathVolumePartCharacter = basePath[volumePartReadOffset];
+			volumePartReadOffset--;
+			if (pathVolumePartCharacter == L'/')
 			{
-				path_volume_part_character = L'\\';
+				pathVolumePartCharacter = L'\\';
 			}
-			write_offset--;
-			PathBuffer[write_offset] = path_volume_part_character;
+			writeOffset--;
+			pathBuffer[writeOffset] = pathVolumePartCharacter;
 		}
-		if (add_extended_prefix)
+		if (addExtendedPrefix)
 		{
-			if (base_path_network_path)
+			if (basePathNetworkPath)
 			{
-				memcpy(PathBuffer + 4, L"UNC\\", 4 * sizeof(WCHAR));
+				memcpy(pathBuffer + 4, L"UNC\\", 4 * sizeof(WCHAR));
 			}
-			memcpy(PathBuffer, L"\\\\?\\", 4 * sizeof(WCHAR));
+			memcpy(pathBuffer, L"\\\\?\\", 4 * sizeof(WCHAR));
 		}
-		else if (remove_extended_prefix && base_path_network_path)
+		else if (removeExtendedPrefix && basePathNetworkPath)
 		{
-			memcpy(PathBuffer, L"\\\\", 2 * sizeof(WCHAR));
+			memcpy(pathBuffer, L"\\\\", 2 * sizeof(WCHAR));
 		}
 
-		return fully_qualified_length;
+		return fullyQualifiedLength;
 	}
 }
 
-SIZE_T FlWin32GetVolumeDirectoryPath(_In_ SIZE_T PathLength, _In_reads_(PathLength) const WCHAR* Path, _In_ SIZE_T BasePathLength, _In_reads_(BasePathLength) const WCHAR* BasePath, _In_ SIZE_T PathBufferSize, _Out_writes_to_(PathBufferSize,return) WCHAR* PathBuffer)
+SIZE_T FlWin32GetVolumeDirectoryPath(_In_ SIZE_T pathLength, _In_reads_(pathLength) const WCHAR* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const WCHAR* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) WCHAR* pathBuffer)
 {
-	size_t path_volume_part_length = lt_win32_absolute_path_volume_directory_part_length(PathLength, Path);
-	if (!BasePathLength && !PathLength)
+	size_t pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length(pathLength, path);
+	if (!basePathLength && !pathLength)
 	{
 		return 0;
 	}
-	if (!path_volume_part_length)
+	if (!pathVolumePartLength)
 	{
-		PathLength = BasePathLength;
-		Path = BasePath;
-		path_volume_part_length = lt_win32_absolute_path_volume_directory_part_length(PathLength, Path);
-		if (!path_volume_part_length)
+		pathLength = basePathLength;
+		path = basePath;
+		pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length(pathLength, path);
+		if (!pathVolumePartLength)
 		{
 			return 0;
 		}
 	}
 
-	BOOL extended_prefix = ((PathLength > 4 && Path[0] == L'\\' && Path[1] == L'?' && Path[2] == L'?' && Path[3] == L'\\') || (PathLength > 4 && Path[0] == L'\\' && Path[1] == L'\\' && Path[2] == L'?' && Path[3] == L'\\'));
-	BOOL network_path = FALSE;
-	if (extended_prefix)
+	BOOL extendedPrefix = ((pathLength > 4 && path[0] == L'\\' && path[1] == L'?' && path[2] == L'?' && path[3] == L'\\') || (pathLength > 4 && path[0] == L'\\' && path[1] == L'\\' && path[2] == L'?' && path[3] == L'\\'));
+	BOOL networkPath = FALSE;
+	if (extendedPrefix)
 	{
-		if (PathLength > 7 && (Path[4] == L'U' || Path[4] == L'u') && (Path[5] == L'N' || Path[5] == L'n') && (Path[6] == L'C' || Path[6] == L'c') && (Path[7] == L'\\' || Path[7] == L'/'))
+		if (pathLength > 7 && (path[4] == L'U' || path[4] == L'u') && (path[5] == L'N' || path[5] == L'n') && (path[6] == L'C' || path[6] == L'c') && (path[7] == L'\\' || path[7] == L'/'))
 		{
-			network_path = TRUE;
+			networkPath = TRUE;
 		}
 	}
 	else
 	{
-		if (PathLength > 1 && (Path[0] == L'\\' || Path[0] == L'/') && (Path[1] == L'\\' || Path[1] == L'/'))
+		if (pathLength > 1 && (path[0] == L'\\' || path[0] == L'/') && (path[1] == L'\\' || path[1] == L'/'))
 		{
-			network_path = TRUE;
+			networkPath = TRUE;
 		}
 	}
 
-	size_t fully_qualified_length = path_volume_part_length;
-	BOOL add_extended_prefix = FALSE;
-	BOOL remove_extended_prefix = FALSE;
-	if ((!extended_prefix && (fully_qualified_length > (MAX_PATH - 1))) || (extended_prefix && ((network_path ? (fully_qualified_length - 6) : (fully_qualified_length - 4)) > (MAX_PATH - 1))))
+	size_t fullyQualifiedLength = pathVolumePartLength;
+	BOOL addExtendedPrefix = FALSE;
+	BOOL removeExtendedPrefix = FALSE;
+	if ((!extendedPrefix && (fullyQualifiedLength > (MAX_PATH - 1))) || (extendedPrefix && ((networkPath ? (fullyQualifiedLength - 6) : (fullyQualifiedLength - 4)) > (MAX_PATH - 1))))
 	{
-		if (!extended_prefix)
+		if (!extendedPrefix)
 		{
-			add_extended_prefix = TRUE;
-			fully_qualified_length += network_path ? 6 : 4;
+			addExtendedPrefix = TRUE;
+			fullyQualifiedLength += networkPath ? 6 : 4;
 		}
 	}
 	else
 	{
-		if (extended_prefix)
+		if (extendedPrefix)
 		{
-			remove_extended_prefix = TRUE;
-			fully_qualified_length -= network_path ? 6 : 4;
+			removeExtendedPrefix = TRUE;
+			fullyQualifiedLength -= networkPath ? 6 : 4;
 		}
 	}
 
-	if (fully_qualified_length > PathBufferSize)
+	if (fullyQualifiedLength > pathBufferSize)
 	{
-		return fully_qualified_length;
+		return fullyQualifiedLength;
 	}
 
-	for (size_t path_volume_part_copy_end = (add_extended_prefix ? (network_path ? 6 : 4) : ((remove_extended_prefix && network_path) ? 2 : 0)), write_offset = fully_qualified_length, read_offset = path_volume_part_length - 1; write_offset != path_volume_part_copy_end;)
+	for (size_t pathVolumePartCopyEnd = (addExtendedPrefix ? (networkPath ? 6 : 4) : ((removeExtendedPrefix && networkPath) ? 2 : 0)), writeOffset = fullyQualifiedLength, readOffset = pathVolumePartLength - 1; writeOffset != pathVolumePartCopyEnd;)
 	{
-		WCHAR path_volume_part_character = Path[read_offset];
-		read_offset--;
-		if (path_volume_part_character == L'/')
+		WCHAR pathVolumePartCharacter = path[readOffset];
+		readOffset--;
+		if (pathVolumePartCharacter == L'/')
 		{
-			path_volume_part_character = L'\\';
+			pathVolumePartCharacter = L'\\';
 		}
-		write_offset--;
-		PathBuffer[write_offset] = path_volume_part_character;
+		writeOffset--;
+		pathBuffer[writeOffset] = pathVolumePartCharacter;
 	}
-	if (add_extended_prefix)
+	if (addExtendedPrefix)
 	{
-		if (network_path)
+		if (networkPath)
 		{
-			memcpy(PathBuffer + 4, L"UNC\\", 4 * sizeof(WCHAR));
+			memcpy(pathBuffer + 4, L"UNC\\", 4 * sizeof(WCHAR));
 		}
-		memcpy(PathBuffer, L"\\\\?\\", 4 * sizeof(WCHAR));
+		memcpy(pathBuffer, L"\\\\?\\", 4 * sizeof(WCHAR));
 	}
-	else if (remove_extended_prefix && network_path)
+	else if (removeExtendedPrefix && networkPath)
 	{
-		memcpy(PathBuffer, L"\\\\", 2 * sizeof(WCHAR));
+		memcpy(pathBuffer, L"\\\\", 2 * sizeof(WCHAR));
 	}
 
-	return fully_qualified_length;
+	return fullyQualifiedLength;
 }
 
-static SIZE_T lt_win32_absolute_path_volume_directory_part_length_utf8(SIZE_T path_length, const char* path)
+static SIZE_T lt_win32_absolute_path_volume_directory_part_length_utf8(SIZE_T pathLength, const char* path)
 {
-	if (path_length > 4 && path[0] == '\\' && path[1] == '\\' && path[2] == '?' && path[3] == '\\')
+	if (pathLength > 4 && path[0] == '\\' && path[1] == '\\' && path[2] == '?' && path[3] == '\\')
 	{
-		if (path_length > 6 && (path[4] != '\\' && path[4] != '/') && path[5] == ':' && (path[6] == '\\' || path[6] == '/'))
+		if (pathLength > 6 && (path[4] != '\\' && path[4] != '/') && path[5] == ':' && (path[6] == '\\' || path[6] == '/'))
 		{
 			return 7;
 		}
-		else if (path_length > 48 &&
+		else if (pathLength > 48 &&
 			(path[4] == 'V' || path[4] == 'v') &&
 			(path[5] == 'O' || path[5] == 'o') &&
 			(path[6] == 'L' || path[6] == 'l') &&
@@ -803,60 +803,60 @@ static SIZE_T lt_win32_absolute_path_volume_directory_part_length_utf8(SIZE_T pa
 		{
 			return 49;
 		}
-		else if (path_length > 7 && (path[4] == 'U' || path[4] == 'u') && (path[5] == 'N' || path[5] == 'n') && (path[6] == 'C' || path[6] == 'c') && (path[7] == '\\' || path[7] == '/'))
+		else if (pathLength > 7 && (path[4] == 'U' || path[4] == 'u') && (path[5] == 'N' || path[5] == 'n') && (path[6] == 'C' || path[6] == 'c') && (path[7] == '\\' || path[7] == '/'))
 		{
-			size_t server_length = 0;
-			while (8 + server_length < path_length && (path[8 + server_length] != '\\' && path[8 + server_length] != '/'))
+			size_t serverLength = 0;
+			while (8 + serverLength < pathLength && (path[8 + serverLength] != '\\' && path[8 + serverLength] != '/'))
 			{
-				++server_length;
+				++serverLength;
 			}
-			if (!server_length)
-			{
-				return 0;
-			}
-			size_t share_length = 0;
-			while (9 + server_length + share_length < path_length && (path[9 + server_length + share_length] != '\\' && path[9 + server_length + share_length] != '/'))
-			{
-				++share_length;
-			}
-			if (!share_length || (path[9 + server_length + share_length] != '\\' && path[9 + server_length + share_length] != '/'))
+			if (!serverLength)
 			{
 				return 0;
 			}
-			return 10 + server_length + share_length;
+			size_t shareLength = 0;
+			while (9 + serverLength + shareLength < pathLength && (path[9 + serverLength + shareLength] != '\\' && path[9 + serverLength + shareLength] != '/'))
+			{
+				++shareLength;
+			}
+			if (!shareLength || (path[9 + serverLength + shareLength] != '\\' && path[9 + serverLength + shareLength] != '/'))
+			{
+				return 0;
+			}
+			return 10 + serverLength + shareLength;
 		}
 		else
 		{
 			return 0;
 		}
 	}
-	else if (path_length > 4 && path[0] == '\\' && path[1] == '?' && path[2] == '?' && path[3] == '\\')
+	else if (pathLength > 4 && path[0] == '\\' && path[1] == '?' && path[2] == '?' && path[3] == '\\')
 	{
-		if (path_length > 6 && (path[4] != '\\' && path[4] != '/') && path[5] == ':' && (path[6] == '\\' || path[6] == '/'))
+		if (pathLength > 6 && (path[4] != '\\' && path[4] != '/') && path[5] == ':' && (path[6] == '\\' || path[6] == '/'))
 		{
 			return 7;
 		}
-		else if (path_length > 7 && (path[4] == 'U' || path[4] == 'u') && (path[5] == 'N' || path[5] == 'n') && (path[6] == 'C' || path[6] == 'c') && (path[7] == '\\' || path[7] == '/'))
+		else if (pathLength > 7 && (path[4] == 'U' || path[4] == 'u') && (path[5] == 'N' || path[5] == 'n') && (path[6] == 'C' || path[6] == 'c') && (path[7] == '\\' || path[7] == '/'))
 		{
-			size_t server_length = 0;
-			while (8 + server_length < path_length && (path[8 + server_length] != '\\' && path[8 + server_length] != '/'))
+			size_t serverLength = 0;
+			while (8 + serverLength < pathLength && (path[8 + serverLength] != '\\' && path[8 + serverLength] != '/'))
 			{
-				++server_length;
+				++serverLength;
 			}
-			if (!server_length)
-			{
-				return 0;
-			}
-			size_t share_length = 0;
-			while (9 + server_length + share_length < path_length && (path[9 + server_length + share_length] != '\\' && path[9 + server_length + share_length] != '/'))
-			{
-				++share_length;
-			}
-			if (!share_length || (path[9 + server_length + share_length] != '\\' && path[9 + server_length + share_length] != '/'))
+			if (!serverLength)
 			{
 				return 0;
 			}
-			return 10 + server_length + share_length;
+			size_t shareLength = 0;
+			while (9 + serverLength + shareLength < pathLength && (path[9 + serverLength + shareLength] != '\\' && path[9 + serverLength + shareLength] != '/'))
+			{
+				++shareLength;
+			}
+			if (!shareLength || (path[9 + serverLength + shareLength] != '\\' && path[9 + serverLength + shareLength] != '/'))
+			{
+				return 0;
+			}
+			return 10 + serverLength + shareLength;
 		}
 		else
 		{
@@ -865,31 +865,31 @@ static SIZE_T lt_win32_absolute_path_volume_directory_part_length_utf8(SIZE_T pa
 	}
 	else
 	{
-		if (path_length > 2 && path[0] != '\\' && path[0] != '/' && path[1] == ':' && (path[2] == '\\' || path[2] == '/'))
+		if (pathLength > 2 && path[0] != '\\' && path[0] != '/' && path[1] == ':' && (path[2] == '\\' || path[2] == '/'))
 		{
 			return 3;
 		}
-		else if (path_length > 2 && (path[0] == '\\' || path[0] == '/') && (path[1] == '\\' || path[1] == '/'))
+		else if (pathLength > 2 && (path[0] == '\\' || path[0] == '/') && (path[1] == '\\' || path[1] == '/'))
 		{
-			size_t server_length = 0;
-			while (2 + server_length < path_length && (path[2 + server_length] != '\\' && path[2 + server_length] != '/'))
+			size_t serverLength = 0;
+			while (2 + serverLength < pathLength && (path[2 + serverLength] != '\\' && path[2 + serverLength] != '/'))
 			{
-				++server_length;
+				++serverLength;
 			}
-			if (!server_length)
-			{
-				return 0;
-			}
-			size_t share_length = 0;
-			while (3 + server_length + share_length < path_length && (path[3 + server_length + share_length] != '\\' && path[3 + server_length + share_length] != '/'))
-			{
-				++share_length;
-			}
-			if (!share_length || (path[3 + server_length + share_length] != '\\' && path[3 + server_length + share_length] != '/'))
+			if (!serverLength)
 			{
 				return 0;
 			}
-			return 4 + server_length + share_length;
+			size_t shareLength = 0;
+			while (3 + serverLength + shareLength < pathLength && (path[3 + serverLength + shareLength] != '\\' && path[3 + serverLength + shareLength] != '/'))
+			{
+				++shareLength;
+			}
+			if (!shareLength || (path[3 + serverLength + shareLength] != '\\' && path[3 + serverLength + shareLength] != '/'))
+			{
+				return 0;
+			}
+			return 4 + serverLength + shareLength;
 		}
 		else
 		{
@@ -898,588 +898,588 @@ static SIZE_T lt_win32_absolute_path_volume_directory_part_length_utf8(SIZE_T pa
 	}
 }
 
-BOOL FlWin32IsPathFullyQualifiedUtf8(_In_ SIZE_T PathLength, _In_reads_(PathLength) const char* Path)
+BOOL FlWin32IsPathFullyQualifiedUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLength) const char* path)
 {
-	size_t path_volume_directory_part_length = lt_win32_absolute_path_volume_directory_part_length_utf8(PathLength, Path);
-	if (!path_volume_directory_part_length)
+	size_t pathVolumeDirectoryPartLength = lt_win32_absolute_path_volume_directory_part_length_utf8(pathLength, path);
+	if (!pathVolumeDirectoryPartLength)
 	{
 		return FALSE;
 	}
 
-	size_t utf16_fully_qualified_length = FlConvertUtf8ToUtf16Le(PathLength, Path, 0, 0);
-	BOOL extended_prefix = ((PathLength > 4 && Path[0] == '\\' && Path[1] == '?' && Path[2] == '?' && Path[3] == '\\') || (PathLength > 4 && Path[0] == '\\' && Path[1] == '\\' && Path[2] == '?' && Path[3] == '\\'));
-	if ((utf16_fully_qualified_length > (MAX_PATH - 1)) && !extended_prefix)
+	size_t utf16FullyQualifiedLength = FlConvertUtf8ToUtf16Le(pathLength, path, 0, 0);
+	BOOL extendedPrefix = ((pathLength > 4 && path[0] == '\\' && path[1] == '?' && path[2] == '?' && path[3] == '\\') || (pathLength > 4 && path[0] == '\\' && path[1] == '\\' && path[2] == '?' && path[3] == '\\'));
+	if ((utf16FullyQualifiedLength > (MAX_PATH - 1)) && !extendedPrefix)
 	{
 		return FALSE;
 	}
 
-	for (size_t offset = path_volume_directory_part_length; offset != PathLength;)
+	for (size_t offset = pathVolumeDirectoryPartLength; offset != pathLength;)
 	{
-		size_t component_lenght = 0;
-		while (offset + component_lenght != PathLength && (Path[offset + component_lenght] != '\\' && Path[offset + component_lenght] != '/'))
+		size_t componentLength = 0;
+		while (offset + componentLength != pathLength && (path[offset + componentLength] != '\\' && path[offset + componentLength] != '/'))
 		{
-			component_lenght++;
+			componentLength++;
 		}
-		if (!component_lenght || (component_lenght == 1 && Path[0] == '.') || (component_lenght == 2 && Path[0] == '.' && Path[1] == '.'))
+		if (!componentLength || (componentLength == 1 && path[0] == '.') || (componentLength == 2 && path[0] == '.' && path[1] == '.'))
 		{
 			return FALSE;
 		}
-		offset += component_lenght + (((offset + component_lenght) != PathLength) ? 1 : 0);
+		offset += componentLength + (((offset + componentLength) != pathLength) ? 1 : 0);
 	}
 	return TRUE;
 }
 
-SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T PathLength, _In_reads_(PathLength) const char* Path, _In_ SIZE_T BasePathLength, _In_reads_(BasePathLength) const char* BasePath, _In_ SIZE_T PathBufferSize, _Out_writes_to_(PathBufferSize,return) char* PathBuffer)
+SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLength) const char* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const char* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) char* pathBuffer)
 {
-	size_t path_volume_part_length = lt_win32_absolute_path_volume_directory_part_length_utf8(PathLength, Path);
+	size_t pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length_utf8(pathLength, path);
 	// Remove trailing '\' if Path is longer than volume directory Path. Volume directory length is zero when Path is relative
-	if (PathLength && (PathLength > path_volume_part_length) && ((Path[PathLength - 1] == '\\') || (Path[PathLength - 1] == '/')))
+	if (pathLength && (pathLength > pathVolumePartLength) && ((path[pathLength - 1] == '\\') || (path[pathLength - 1] == '/')))
 	{
-		PathLength--;
+		pathLength--;
 	}
-	if (!BasePathLength && !PathLength)
+	if (!basePathLength && !pathLength)
 	{
 		return 0;
 	}
 
-	if (path_volume_part_length)
+	if (pathVolumePartLength)
 	{
 		// Absolute Path to fully qualified Path
 
-		BOOL extended_prefix = ((PathLength > 4 && Path[0] == '\\' && Path[1] == '?' && Path[2] == '?' && Path[3] == '\\') || (PathLength > 4 && Path[0] == '\\' && Path[1] == '\\' && Path[2] == '?' && Path[3] == '\\'));
-		BOOL network_path = FALSE;
-		if (extended_prefix)
+		BOOL extendedPrefix = ((pathLength > 4 && path[0] == '\\' && path[1] == '?' && path[2] == '?' && path[3] == '\\') || (pathLength > 4 && path[0] == '\\' && path[1] == '\\' && path[2] == '?' && path[3] == '\\'));
+		BOOL networkPath = FALSE;
+		if (extendedPrefix)
 		{
-			if (PathLength > 7 && (Path[4] == 'U' || Path[4] == 'u') && (Path[5] == 'N' || Path[5] == 'n') && (Path[6] == 'C' || Path[6] == 'c') && (Path[7] == '\\' || Path[7] == '/'))
+			if (pathLength > 7 && (path[4] == 'U' || path[4] == 'u') && (path[5] == 'N' || path[5] == 'n') && (path[6] == 'C' || path[6] == 'c') && (path[7] == '\\' || path[7] == '/'))
 			{
-				network_path = TRUE;
+				networkPath = TRUE;
 			}
 		}
 		else
 		{
-			if (PathLength > 1 && (Path[0] == '\\' || Path[0] == '/') && (Path[1] == '\\' || Path[1] == '/'))
+			if (pathLength > 1 && (path[0] == '\\' || path[0] == '/') && (path[1] == '\\' || path[1] == '/'))
 			{
-				network_path = TRUE;
+				networkPath = TRUE;
 			}
 		}
 
-		size_t fully_qualified_length = path_volume_part_length;
-		size_t fully_qualified_utf16_length = FlConvertUtf8ToUtf16Le(path_volume_part_length, Path, 0, 0);
-		for (size_t offset = PathLength, component_count = 0, component_erase_count = 0; offset != path_volume_part_length;)
+		size_t fullyQualifiedLength = pathVolumePartLength;
+		size_t fullyQualifiedUtf16Length = FlConvertUtf8ToUtf16Le(pathVolumePartLength, path, 0, 0);
+		for (size_t offset = pathLength, componentCount = 0, componentEraseCount = 0; offset != pathVolumePartLength;)
 		{
-			size_t component_lenght = 0;
-			while (offset - component_lenght != path_volume_part_length && (Path[offset - component_lenght - 1] != '\\' && Path[offset - component_lenght - 1] != '/'))
+			size_t componentLength = 0;
+			while (offset - componentLength != pathVolumePartLength && (path[offset - componentLength - 1] != '\\' && path[offset - componentLength - 1] != '/'))
 			{
-				component_lenght++;
+				componentLength++;
 			}
-			size_t component_offset = offset - component_lenght;
-			if (component_lenght == 1 && Path[component_offset] == '.')
+			size_t componentOffset = offset - componentLength;
+			if (componentLength == 1 && path[componentOffset] == '.')
 			{
 				// just skip "." components
 			}
-			else if (component_lenght == 2 && Path[component_offset] == '.' && Path[component_offset + 1] == '.')
+			else if (componentLength == 2 && path[componentOffset] == '.' && path[componentOffset + 1] == '.')
 			{
-				component_erase_count++;
+				componentEraseCount++;
 			}
 			else
 			{
-				if (!component_erase_count)
+				if (!componentEraseCount)
 				{
-					fully_qualified_length += component_lenght + 1;
-					fully_qualified_utf16_length += FlConvertUtf8ToUtf16Le(component_lenght, Path + component_offset, 0, 0) + 1;
-					component_count++;
+					fullyQualifiedLength += componentLength + 1;
+					fullyQualifiedUtf16Length += FlConvertUtf8ToUtf16Le(componentLength, path + componentOffset, 0, 0) + 1;
+					componentCount++;
 				}
 				else
 				{
-					component_erase_count--;
+					componentEraseCount--;
 				}
 			}
-			offset -= component_lenght;
-			if (offset != path_volume_part_length)
+			offset -= componentLength;
+			if (offset != pathVolumePartLength)
 			{
 				offset--;
 			}
 			else
 			{
-				if (component_erase_count)
+				if (componentEraseCount)
 				{
 					return 0;
 				}
-				if (component_count)
+				if (componentCount)
 				{
-					fully_qualified_length--;
-					fully_qualified_utf16_length--;
+					fullyQualifiedLength--;
+					fullyQualifiedUtf16Length--;
 				}
 			}
 		}
 
-		BOOL add_extended_prefix = FALSE;
-		BOOL remove_extended_prefix = FALSE;
-		if ((!extended_prefix && (fully_qualified_utf16_length > (MAX_PATH - 1))) || (extended_prefix && ((network_path ? (fully_qualified_utf16_length - 6) : (fully_qualified_utf16_length - 4)) > (MAX_PATH - 1))))
+		BOOL addExtendedPrefix = FALSE;
+		BOOL removeExtendedPrefix = FALSE;
+		if ((!extendedPrefix && (fullyQualifiedUtf16Length > (MAX_PATH - 1))) || (extendedPrefix && ((networkPath ? (fullyQualifiedUtf16Length - 6) : (fullyQualifiedUtf16Length - 4)) > (MAX_PATH - 1))))
 		{
-			if (!extended_prefix)
+			if (!extendedPrefix)
 			{
-				add_extended_prefix = TRUE;
-				size_t length_adjust = network_path ? 6 : 4;
-				fully_qualified_length += length_adjust;
-				fully_qualified_utf16_length += length_adjust;
+				addExtendedPrefix = TRUE;
+				size_t lengthAdjust = networkPath ? 6 : 4;
+				fullyQualifiedLength += lengthAdjust;
+				fullyQualifiedUtf16Length += lengthAdjust;
 			}
 		}
 		else
 		{
-			if (extended_prefix)
+			if (extendedPrefix)
 			{
-				remove_extended_prefix = TRUE;
-				size_t length_adjust = network_path ? 6 : 4;
-				fully_qualified_length -= length_adjust;
-				fully_qualified_utf16_length -= length_adjust;
+				removeExtendedPrefix = TRUE;
+				size_t lengthAdjust = networkPath ? 6 : 4;
+				fullyQualifiedLength -= lengthAdjust;
+				fullyQualifiedUtf16Length -= lengthAdjust;
 			}
 		}
 
-		if (fully_qualified_length > PathBufferSize)
+		if (fullyQualifiedLength > pathBufferSize)
 		{
-			return fully_qualified_length;
+			return fullyQualifiedLength;
 		}
 
-		size_t write_offset = fully_qualified_length;
-		for (size_t offset = PathLength, component_erase_count = 0; offset != path_volume_part_length;)
+		size_t writeOffset = fullyQualifiedLength;
+		for (size_t offset = pathLength, componentEraseCount = 0; offset != pathVolumePartLength;)
 		{
-			size_t component_lenght = 0;
-			while (offset - component_lenght != path_volume_part_length && (Path[offset - component_lenght - 1] != '\\' && Path[offset - component_lenght - 1] != '/'))
+			size_t componentLength = 0;
+			while (offset - componentLength != pathVolumePartLength && (path[offset - componentLength - 1] != '\\' && path[offset - componentLength - 1] != '/'))
 			{
-				component_lenght++;
+				componentLength++;
 			}
-			size_t component_offset = offset - component_lenght;
-			if (component_lenght == 1 && Path[component_offset] == '.')
+			size_t componentOffset = offset - componentLength;
+			if (componentLength == 1 && path[componentOffset] == '.')
 			{
 				// just skip "." components
 			}
-			else if (component_lenght == 2 && Path[component_offset] == '.' && Path[component_offset + 1] == '.')
+			else if (componentLength == 2 && path[componentOffset] == '.' && path[componentOffset + 1] == '.')
 			{
-				component_erase_count++;
+				componentEraseCount++;
 			}
 			else
 			{
-				if (!component_erase_count)
+				if (!componentEraseCount)
 				{
-					if (write_offset != fully_qualified_length)
+					if (writeOffset != fullyQualifiedLength)
 					{
-						write_offset--;
-						PathBuffer[write_offset] = '\\';
+						writeOffset--;
+						pathBuffer[writeOffset] = '\\';
 					}
-					write_offset -= component_lenght;
-					memcpy(PathBuffer + write_offset, Path + component_offset, component_lenght * sizeof(char));
+					writeOffset -= componentLength;
+					memcpy(pathBuffer + writeOffset, path + componentOffset, componentLength * sizeof(char));
 				}
 				else
 				{
-					component_erase_count--;
+					componentEraseCount--;
 				}
 			}
-			offset -= component_lenght;
-			if (offset != path_volume_part_length)
+			offset -= componentLength;
+			if (offset != pathVolumePartLength)
 			{
 				offset--;
 			}
 		}
 
-		for (size_t path_volume_part_copy_end = (add_extended_prefix ? (network_path ? 6 : 4) : ((remove_extended_prefix && network_path) ? 2 : 0)), volume_part_read_offset = path_volume_part_length - 1; write_offset != path_volume_part_copy_end;)
+		for (size_t pathVolumePartCopyEnd = (addExtendedPrefix ? (networkPath ? 6 : 4) : ((removeExtendedPrefix && networkPath) ? 2 : 0)), volumePartReadOffset = pathVolumePartLength - 1; writeOffset != pathVolumePartCopyEnd;)
 		{
-			char path_volume_part_character = Path[volume_part_read_offset];
-			volume_part_read_offset--;
-			if (path_volume_part_character == '/')
+			char pathVolumePartCharacter = path[volumePartReadOffset];
+			volumePartReadOffset--;
+			if (pathVolumePartCharacter == '/')
 			{
-				path_volume_part_character = '\\';
+				pathVolumePartCharacter = '\\';
 			}
-			write_offset--;
-			PathBuffer[write_offset] = path_volume_part_character;
+			writeOffset--;
+			pathBuffer[writeOffset] = pathVolumePartCharacter;
 		}
-		if (add_extended_prefix)
+		if (addExtendedPrefix)
 		{
-			if (network_path)
+			if (networkPath)
 			{
-				memcpy(PathBuffer + 4, "UNC\\", 4 * sizeof(char));
+				memcpy(pathBuffer + 4, "UNC\\", 4 * sizeof(char));
 			}
-			memcpy(PathBuffer, "\\\\?\\", 4 * sizeof(char));
+			memcpy(pathBuffer, "\\\\?\\", 4 * sizeof(char));
 		}
-		else if (remove_extended_prefix && network_path)
+		else if (removeExtendedPrefix && networkPath)
 		{
-			memcpy(PathBuffer, "\\\\", 2 * sizeof(char));
+			memcpy(pathBuffer, "\\\\", 2 * sizeof(char));
 		}
 
-		return fully_qualified_length;
+		return fullyQualifiedLength;
 	}
 	else
 	{
 		// Relative Path to fully qualified Path
 
 		// Get volume Path part of the base directory
-		size_t base_path_volume_part_length = lt_win32_absolute_path_volume_directory_part_length_utf8(BasePathLength, BasePath);
+		size_t basePathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length_utf8(basePathLength, basePath);
 		// Remove trailing '\' if Path is longer than volume directory Path. Volume directory length is zero when Path is relative
-		if (BasePathLength && (BasePathLength > base_path_volume_part_length) && ((BasePath[BasePathLength - 1] == '\\') || (BasePath[BasePathLength - 1] == '/')))
+		if (basePathLength && (basePathLength > basePathVolumePartLength) && ((basePath[basePathLength - 1] == '\\') || (basePath[basePathLength - 1] == '/')))
 		{
-			BasePathLength--;
+			basePathLength--;
 		}
-		if (!BasePathLength)
+		if (!basePathLength)
 		{
 			return 0;
 		}
 
-		BOOL base_path_extended_prefix = ((BasePathLength > 4 && BasePath[0] == '\\' && BasePath[1] == '?' && BasePath[2] == '?' && BasePath[3] == '\\') || (BasePathLength > 4 && BasePath[0] == '\\' && BasePath[1] == '\\' && BasePath[2] == '?' && BasePath[3] == '\\'));
-		BOOL base_path_network_path = FALSE;
-		if (base_path_extended_prefix)
+		BOOL basePathExtendedPrefix = ((basePathLength > 4 && basePath[0] == '\\' && basePath[1] == '?' && basePath[2] == '?' && basePath[3] == '\\') || (basePathLength > 4 && basePath[0] == '\\' && basePath[1] == '\\' && basePath[2] == '?' && basePath[3] == '\\'));
+		BOOL basePathNetworkPath = FALSE;
+		if (basePathExtendedPrefix)
 		{
-			if (BasePathLength > 7 && (BasePath[4] == 'U' || BasePath[4] == 'u') && (BasePath[5] == 'N' || BasePath[5] == 'n') && (BasePath[6] == 'C' || BasePath[6] == 'c') && (BasePath[7] == '\\' || BasePath[7] == '/'))
+			if (basePathLength > 7 && (basePath[4] == 'U' || basePath[4] == 'u') && (basePath[5] == 'N' || basePath[5] == 'n') && (basePath[6] == 'C' || basePath[6] == 'c') && (basePath[7] == '\\' || basePath[7] == '/'))
 			{
-				base_path_network_path = TRUE;
+				basePathNetworkPath = TRUE;
 			}
 		}
 		else
 		{
-			if (BasePathLength > 1 && (BasePath[0] == '\\' || BasePath[0] == '/') && (BasePath[1] == '\\' || BasePath[1] == '/'))
+			if (basePathLength > 1 && (basePath[0] == '\\' || basePath[0] == '/') && (basePath[1] == '\\' || basePath[1] == '/'))
 			{
-				base_path_network_path = TRUE;
+				basePathNetworkPath = TRUE;
 			}
 		}
 
-		size_t relative_path_component_erase_count = 0;
-		size_t relative_path_component_count = 0;
-		size_t relative_path_length = 0;
-		size_t relative_path_utf16_length = 0;
-		for (size_t offset = PathLength; offset;)
+		size_t relativePathComponentEraseCount = 0;
+		size_t relativePathComponentCount = 0;
+		size_t relativePathLength = 0;
+		size_t relativePathUtf16Length = 0;
+		for (size_t offset = pathLength; offset;)
 		{
-			size_t component_lenght = 0;
-			while (offset - component_lenght && (Path[offset - component_lenght - 1] != '\\' && Path[offset - component_lenght - 1] != '/'))
+			size_t componentLength = 0;
+			while (offset - componentLength && (path[offset - componentLength - 1] != '\\' && path[offset - componentLength - 1] != '/'))
 			{
-				component_lenght++;
+				componentLength++;
 			}
-			size_t component_offset = offset - component_lenght;
-			if (component_lenght == 1 && Path[component_offset] == '.')
+			size_t componentOffset = offset - componentLength;
+			if (componentLength == 1 && path[componentOffset] == '.')
 			{
 				// just skip "." components
 			}
-			else if (component_lenght == 2 && Path[component_offset] == '.' && Path[component_offset + 1] == '.')
+			else if (componentLength == 2 && path[componentOffset] == '.' && path[componentOffset + 1] == '.')
 			{
-				relative_path_component_erase_count++;
+				relativePathComponentEraseCount++;
 			}
 			else
 			{
-				if (!relative_path_component_erase_count)
+				if (!relativePathComponentEraseCount)
 				{
-					relative_path_length += component_lenght + 1;
-					relative_path_utf16_length += FlConvertUtf8ToUtf16Le(component_lenght, Path + component_offset, 0, 0) + 1;
-					relative_path_component_count++;
+					relativePathLength += componentLength + 1;
+					relativePathUtf16Length += FlConvertUtf8ToUtf16Le(componentLength, path + componentOffset, 0, 0) + 1;
+					relativePathComponentCount++;
 				}
 				else
 				{
-					relative_path_component_erase_count--;
+					relativePathComponentEraseCount--;
 				}
 			}
-			offset -= component_lenght;
+			offset -= componentLength;
 			if (offset)
 			{
 				offset--;
 			}
 			else
 			{
-				if (relative_path_component_count)
+				if (relativePathComponentCount)
 				{
-					relative_path_length--;
-					relative_path_utf16_length--;
+					relativePathLength--;
+					relativePathUtf16Length--;
 				}
 			}
 		}
 
 		// Get the base Path component count and length after making it fully qualified. Also erase components as required from the relative sub Path
-		size_t base_path_component_count = 0;
-		size_t base_path_fully_qualified_length = base_path_volume_part_length;
-		size_t base_path_fully_qualified_utf16_length = FlConvertUtf8ToUtf16Le(base_path_volume_part_length, BasePath, 0, 0);
-		for (size_t offset = BasePathLength, component_erase_count = relative_path_component_erase_count; offset != base_path_volume_part_length;)
+		size_t basePathComponentCount = 0;
+		size_t basePathFullyQualifiedLength = basePathVolumePartLength;
+		size_t basePathFullyQualifiedUtf16Length = FlConvertUtf8ToUtf16Le(basePathVolumePartLength, basePath, 0, 0);
+		for (size_t offset = basePathLength, componentEraseCount = relativePathComponentEraseCount; offset != basePathVolumePartLength;)
 		{
-			size_t component_lenght = 0;
-			while (offset - component_lenght != base_path_volume_part_length && (BasePath[offset - component_lenght - 1] != '\\' && BasePath[offset - component_lenght - 1] != '/'))
+			size_t componentLength = 0;
+			while (offset - componentLength != basePathVolumePartLength && (basePath[offset - componentLength - 1] != '\\' && basePath[offset - componentLength - 1] != '/'))
 			{
-				component_lenght++;
+				componentLength++;
 			}
-			size_t component_offset = offset - component_lenght;
-			if (component_lenght == 1 && BasePath[component_offset] == '.')
+			size_t componentOffset = offset - componentLength;
+			if (componentLength == 1 && basePath[componentOffset] == '.')
 			{
 				// just skip "." components
 			}
-			else if (component_lenght == 2 && BasePath[component_offset] == '.' && BasePath[component_offset + 1] == '.')
+			else if (componentLength == 2 && basePath[componentOffset] == '.' && basePath[componentOffset + 1] == '.')
 			{
-				component_erase_count++;
+				componentEraseCount++;
 			}
 			else
 			{
-				if (!component_erase_count)
+				if (!componentEraseCount)
 				{
-					base_path_fully_qualified_length += component_lenght + 1;
-					base_path_fully_qualified_utf16_length += FlConvertUtf8ToUtf16Le(component_lenght, BasePath + component_offset, 0, 0) + 1;
-					base_path_component_count++;
+					basePathFullyQualifiedLength += componentLength + 1;
+					basePathFullyQualifiedUtf16Length += FlConvertUtf8ToUtf16Le(componentLength, basePath + componentOffset, 0, 0) + 1;
+					basePathComponentCount++;
 				}
 				else
 				{
-					component_erase_count--;
+					componentEraseCount--;
 				}
 			}
-			offset -= component_lenght;
-			if (offset != base_path_volume_part_length)
+			offset -= componentLength;
+			if (offset != basePathVolumePartLength)
 			{
 				offset--;
 			}
 			else
 			{
-				if (component_erase_count)
+				if (componentEraseCount)
 				{
 					return 0;
 				}
-				if (base_path_component_count)
+				if (basePathComponentCount)
 				{
-					base_path_fully_qualified_length--;
-					base_path_fully_qualified_utf16_length--;
+					basePathFullyQualifiedLength--;
+					basePathFullyQualifiedUtf16Length--;
 				}
 			}
 		}
 
-		BOOL add_base_path_separator = relative_path_length && (base_path_fully_qualified_length != base_path_volume_part_length);
-		size_t fully_qualified_utf16_length = base_path_fully_qualified_utf16_length + (add_base_path_separator ? 1 : 0) + relative_path_utf16_length;
-		size_t fully_qualified_length = base_path_fully_qualified_length + (add_base_path_separator ? 1 : 0) + relative_path_length;
+		BOOL addBasePathSeparator = relativePathLength && (basePathFullyQualifiedLength != basePathVolumePartLength);
+		size_t fullyQualifiedUtf16Length = basePathFullyQualifiedUtf16Length + (addBasePathSeparator ? 1 : 0) + relativePathUtf16Length;
+		size_t fullyQualifiedLength = basePathFullyQualifiedLength + (addBasePathSeparator ? 1 : 0) + relativePathLength;
 
-		BOOL add_extended_prefix = FALSE;
-		BOOL remove_extended_prefix = FALSE;
-		if ((!base_path_extended_prefix && (fully_qualified_utf16_length > (MAX_PATH - 1))) || (base_path_extended_prefix && ((base_path_network_path ? (fully_qualified_utf16_length - 6) : (fully_qualified_utf16_length - 4)) > (MAX_PATH - 1))))
+		BOOL addExtendedPrefix = FALSE;
+		BOOL removeExtendedPrefix = FALSE;
+		if ((!basePathExtendedPrefix && (fullyQualifiedUtf16Length > (MAX_PATH - 1))) || (basePathExtendedPrefix && ((basePathNetworkPath ? (fullyQualifiedUtf16Length - 6) : (fullyQualifiedUtf16Length - 4)) > (MAX_PATH - 1))))
 		{
-			if (!base_path_extended_prefix)
+			if (!basePathExtendedPrefix)
 			{
-				add_extended_prefix = TRUE;
-				size_t length_adjust = base_path_network_path ? 6 : 4;
-				base_path_fully_qualified_length += length_adjust;
-				fully_qualified_length += length_adjust;
-				fully_qualified_utf16_length += length_adjust;
+				addExtendedPrefix = TRUE;
+				size_t lengthAdjust = basePathNetworkPath ? 6 : 4;
+				basePathFullyQualifiedLength += lengthAdjust;
+				fullyQualifiedLength += lengthAdjust;
+				fullyQualifiedUtf16Length += lengthAdjust;
 			}
 		}
 		else
 		{
-			if (base_path_extended_prefix)
+			if (basePathExtendedPrefix)
 			{
-				remove_extended_prefix = TRUE;
-				size_t length_adjust = base_path_network_path ? 6 : 4;
-				base_path_fully_qualified_length -= length_adjust;
-				fully_qualified_length -= length_adjust;
-				fully_qualified_utf16_length -= length_adjust;
+				removeExtendedPrefix = TRUE;
+				size_t lengthAdjust = basePathNetworkPath ? 6 : 4;
+				basePathFullyQualifiedLength -= lengthAdjust;
+				fullyQualifiedLength -= lengthAdjust;
+				fullyQualifiedUtf16Length -= lengthAdjust;
 			}
 		}
 
-		if (fully_qualified_length > PathBufferSize)
+		if (fullyQualifiedLength > pathBufferSize)
 		{
-			return fully_qualified_length;
+			return fullyQualifiedLength;
 		}
 
-		size_t write_offset = fully_qualified_length;
-		for (size_t offset = PathLength, component_erase_count = 0; offset;)
+		size_t writeOffset = fullyQualifiedLength;
+		for (size_t offset = pathLength, componentEraseCount = 0; offset;)
 		{
-			size_t component_lenght = 0;
-			while (offset - component_lenght && (Path[offset - component_lenght - 1] != '\\' && Path[offset - component_lenght - 1] != '/'))
+			size_t componentLength = 0;
+			while (offset - componentLength && (path[offset - componentLength - 1] != '\\' && path[offset - componentLength - 1] != '/'))
 			{
-				component_lenght++;
+				componentLength++;
 			}
-			size_t component_offset = offset - component_lenght;
-			if (component_lenght == 1 && Path[component_offset] == '.')
+			size_t componentOffset = offset - componentLength;
+			if (componentLength == 1 && path[componentOffset] == '.')
 			{
 				// just skip "." components
 			}
-			else if (component_lenght == 2 && Path[component_offset] == '.' && Path[component_offset + 1] == '.')
+			else if (componentLength == 2 && path[componentOffset] == '.' && path[componentOffset + 1] == '.')
 			{
-				component_erase_count++;
+				componentEraseCount++;
 			}
 			else
 			{
-				if (!component_erase_count)
+				if (!componentEraseCount)
 				{
-					if (write_offset != fully_qualified_length)
+					if (writeOffset != fullyQualifiedLength)
 					{
-						write_offset--;
-						PathBuffer[write_offset] = '\\';
+						writeOffset--;
+						pathBuffer[writeOffset] = '\\';
 					}
-					write_offset -= component_lenght;
-					memcpy(PathBuffer + write_offset, Path + component_offset, component_lenght * sizeof(char));
+					writeOffset -= componentLength;
+					memcpy(pathBuffer + writeOffset, path + componentOffset, componentLength * sizeof(char));
 				}
 				else
 				{
-					component_erase_count--;
+					componentEraseCount--;
 				}
 			}
-			offset -= component_lenght;
+			offset -= componentLength;
 			if (offset)
 			{
 				offset--;
 			}
 		}
 
-		if (relative_path_length && base_path_component_count)
+		if (relativePathLength && basePathComponentCount)
 		{
-			write_offset--;
-			PathBuffer[write_offset] = '\\';
+			writeOffset--;
+			pathBuffer[writeOffset] = '\\';
 		}
 
-		for (size_t offset = BasePathLength, component_erase_count = relative_path_component_erase_count; offset != base_path_volume_part_length;)
+		for (size_t offset = basePathLength, componentEraseCount = relativePathComponentEraseCount; offset != basePathVolumePartLength;)
 		{
-			size_t component_lenght = 0;
-			while (offset - component_lenght != base_path_volume_part_length && (BasePath[offset - component_lenght - 1] != '\\' && BasePath[offset - component_lenght - 1] != '/'))
+			size_t componentLength = 0;
+			while (offset - componentLength != basePathVolumePartLength && (basePath[offset - componentLength - 1] != '\\' && basePath[offset - componentLength - 1] != '/'))
 			{
-				component_lenght++;
+				componentLength++;
 			}
-			size_t component_offset = offset - component_lenght;
-			if (component_lenght == 1 && BasePath[component_offset] == '.')
+			size_t componentOffset = offset - componentLength;
+			if (componentLength == 1 && basePath[componentOffset] == '.')
 			{
 				// just skip "." components
 			}
-			else if (component_lenght == 2 && BasePath[component_offset] == '.' && BasePath[component_offset + 1] == '.')
+			else if (componentLength == 2 && basePath[componentOffset] == '.' && basePath[componentOffset + 1] == '.')
 			{
-				component_erase_count++;
+				componentEraseCount++;
 			}
 			else
 			{
-				if (!component_erase_count)
+				if (!componentEraseCount)
 				{
-					if (write_offset != base_path_fully_qualified_length)
+					if (writeOffset != basePathFullyQualifiedLength)
 					{
-						write_offset--;
-						PathBuffer[write_offset] = '\\';
+						writeOffset--;
+						pathBuffer[writeOffset] = '\\';
 					}
-					write_offset -= component_lenght;
-					memcpy(PathBuffer + write_offset, BasePath + component_offset, component_lenght * sizeof(char));
+					writeOffset -= componentLength;
+					memcpy(pathBuffer + writeOffset, basePath + componentOffset, componentLength * sizeof(char));
 				}
 				else
 				{
-					component_erase_count--;
+					componentEraseCount--;
 				}
 			}
-			offset -= component_lenght;
-			if (offset != base_path_volume_part_length)
+			offset -= componentLength;
+			if (offset != basePathVolumePartLength)
 			{
 				offset--;
 			}
 		}
 
-		for (size_t path_volume_part_copy_end = (add_extended_prefix ? (base_path_network_path ? 6 : 4) : ((remove_extended_prefix && base_path_network_path) ? 2 : 0)), volume_part_read_offset = base_path_volume_part_length - 1; write_offset != path_volume_part_copy_end;)
+		for (size_t pathVolumePartCopyEnd = (addExtendedPrefix ? (basePathNetworkPath ? 6 : 4) : ((removeExtendedPrefix && basePathNetworkPath) ? 2 : 0)), volumePartReadOffset = basePathVolumePartLength - 1; writeOffset != pathVolumePartCopyEnd;)
 		{
-			char path_volume_part_character = BasePath[volume_part_read_offset];
-			volume_part_read_offset--;
-			if (path_volume_part_character == '/')
+			char pathVolumePartCharacter = basePath[volumePartReadOffset];
+			volumePartReadOffset--;
+			if (pathVolumePartCharacter == '/')
 			{
-				path_volume_part_character = '\\';
+				pathVolumePartCharacter = '\\';
 			}
-			write_offset--;
-			PathBuffer[write_offset] = path_volume_part_character;
+			writeOffset--;
+			pathBuffer[writeOffset] = pathVolumePartCharacter;
 		}
-		if (add_extended_prefix)
+		if (addExtendedPrefix)
 		{
-			if (base_path_network_path)
+			if (basePathNetworkPath)
 			{
-				memcpy(PathBuffer + 4, "UNC\\", 4 * sizeof(char));
+				memcpy(pathBuffer + 4, "UNC\\", 4 * sizeof(char));
 			}
-			memcpy(PathBuffer, "\\\\?\\", 4 * sizeof(char));
+			memcpy(pathBuffer, "\\\\?\\", 4 * sizeof(char));
 		}
-		else if (remove_extended_prefix && base_path_network_path)
+		else if (removeExtendedPrefix && basePathNetworkPath)
 		{
-			memcpy(PathBuffer, "\\\\", 2 * sizeof(char));
+			memcpy(pathBuffer, "\\\\", 2 * sizeof(char));
 		}
 
-		return fully_qualified_length;
+		return fullyQualifiedLength;
 	}
 }
 
-SIZE_T FlWin32GetVolumeDirectoryPathUtf8(_In_ SIZE_T PathLength, _In_reads_(PathLength) const char* Path, _In_ SIZE_T BasePathLength, _In_reads_(BasePathLength) const char* BasePath, _In_ SIZE_T PathBufferSize, _Out_writes_to_(PathBufferSize,return) char* PathBuffer)
+SIZE_T FlWin32GetVolumeDirectoryPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLength) const char* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const char* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) char* pathBuffer)
 {
-	size_t path_volume_part_length = lt_win32_absolute_path_volume_directory_part_length_utf8(PathLength, Path);
-	if (!BasePathLength && !PathLength)
+	size_t pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length_utf8(pathLength, path);
+	if (!basePathLength && !pathLength)
 	{
 		return 0;
 	}
-	if (!path_volume_part_length)
+	if (!pathVolumePartLength)
 	{
-		PathLength = BasePathLength;
-		Path = BasePath;
-		path_volume_part_length = lt_win32_absolute_path_volume_directory_part_length_utf8(PathLength, Path);
-		if (!path_volume_part_length)
+		pathLength = basePathLength;
+		path = basePath;
+		pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length_utf8(pathLength, path);
+		if (!pathVolumePartLength)
 		{
 			return 0;
 		}
 	}
 
-	BOOL extended_prefix = ((PathLength > 4 && Path[0] == '\\' && Path[1] == '?' && Path[2] == '?' && Path[3] == '\\') || (PathLength > 4 && Path[0] == '\\' && Path[1] == '\\' && Path[2] == '?' && Path[3] == '\\'));
-	BOOL network_path = FALSE;
-	if (extended_prefix)
+	BOOL extendedPrefix = ((pathLength > 4 && path[0] == '\\' && path[1] == '?' && path[2] == '?' && path[3] == '\\') || (pathLength > 4 && path[0] == '\\' && path[1] == '\\' && path[2] == '?' && path[3] == '\\'));
+	BOOL networkPath = FALSE;
+	if (extendedPrefix)
 	{
-		if (PathLength > 7 && (Path[4] == 'U' || Path[4] == 'u') && (Path[5] == 'N' || Path[5] == 'n') && (Path[6] == 'C' || Path[6] == 'c') && (Path[7] == '\\' || Path[7] == '/'))
+		if (pathLength > 7 && (path[4] == 'U' || path[4] == 'u') && (path[5] == 'N' || path[5] == 'n') && (path[6] == 'C' || path[6] == 'c') && (path[7] == '\\' || path[7] == '/'))
 		{
-			network_path = TRUE;
+			networkPath = TRUE;
 		}
 	}
 	else
 	{
-		if (PathLength > 1 && (Path[0] == '\\' || Path[0] == '/') && (Path[1] == '\\' || Path[1] == '/'))
+		if (pathLength > 1 && (path[0] == '\\' || path[0] == '/') && (path[1] == '\\' || path[1] == '/'))
 		{
-			network_path = TRUE;
+			networkPath = TRUE;
 		}
 	}
 
-	size_t fully_qualified_length = path_volume_part_length;
-	size_t utf16_fully_qualified_length = FlConvertUtf8ToUtf16Le(fully_qualified_length, Path, 0, 0);
-	BOOL add_extended_prefix = FALSE;
-	BOOL remove_extended_prefix = FALSE;
-	if ((!extended_prefix && (utf16_fully_qualified_length > (MAX_PATH - 1))) || (extended_prefix && ((network_path ? (utf16_fully_qualified_length - 6) : (utf16_fully_qualified_length - 4)) > (MAX_PATH - 1))))
+	size_t fullyQualifiedLength = pathVolumePartLength;
+	size_t utf16FullyQualifiedLength = FlConvertUtf8ToUtf16Le(fullyQualifiedLength, path, 0, 0);
+	BOOL addExtendedPrefix = FALSE;
+	BOOL removeExtendedPrefix = FALSE;
+	if ((!extendedPrefix && (utf16FullyQualifiedLength > (MAX_PATH - 1))) || (extendedPrefix && ((networkPath ? (utf16FullyQualifiedLength - 6) : (utf16FullyQualifiedLength - 4)) > (MAX_PATH - 1))))
 	{
-		if (!extended_prefix)
+		if (!extendedPrefix)
 		{
-			add_extended_prefix = TRUE;
-			size_t length_adjust = network_path ? 6 : 4;
-			fully_qualified_length += length_adjust;
-			utf16_fully_qualified_length += length_adjust;
+			addExtendedPrefix = TRUE;
+			size_t lengthAdjust = networkPath ? 6 : 4;
+			fullyQualifiedLength += lengthAdjust;
+			utf16FullyQualifiedLength += lengthAdjust;
 		}
 	}
 	else
 	{
-		if (extended_prefix)
+		if (extendedPrefix)
 		{
-			remove_extended_prefix = TRUE;
-			size_t length_adjust = network_path ? 6 : 4;
-			fully_qualified_length -= length_adjust;
-			utf16_fully_qualified_length -= length_adjust;
+			removeExtendedPrefix = TRUE;
+			size_t lengthAdjust = networkPath ? 6 : 4;
+			fullyQualifiedLength -= lengthAdjust;
+			utf16FullyQualifiedLength -= lengthAdjust;
 		}
 	}
 
-	if (fully_qualified_length > PathBufferSize)
+	if (fullyQualifiedLength > pathBufferSize)
 	{
-		return fully_qualified_length;
+		return fullyQualifiedLength;
 	}
 
-	for (size_t path_volume_part_copy_end = (add_extended_prefix ? (network_path ? 6 : 4) : ((remove_extended_prefix && network_path) ? 2 : 0)), write_offset = fully_qualified_length, read_offset = path_volume_part_length - 1; write_offset != path_volume_part_copy_end;)
+	for (size_t pathVolumePartCopyEnd = (addExtendedPrefix ? (networkPath ? 6 : 4) : ((removeExtendedPrefix && networkPath) ? 2 : 0)), writeOffset = fullyQualifiedLength, readOffset = pathVolumePartLength - 1; writeOffset != pathVolumePartCopyEnd;)
 	{
-		char path_volume_part_character = Path[read_offset];
-		read_offset--;
-		if (path_volume_part_character == '/')
+		char pathVolumePartCharacter = path[readOffset];
+		readOffset--;
+		if (pathVolumePartCharacter == '/')
 		{
-			path_volume_part_character = '\\';
+			pathVolumePartCharacter = '\\';
 		}
-		write_offset--;
-		PathBuffer[write_offset] = path_volume_part_character;
+		writeOffset--;
+		pathBuffer[writeOffset] = pathVolumePartCharacter;
 	}
-	if (add_extended_prefix)
+	if (addExtendedPrefix)
 	{
-		if (network_path)
+		if (networkPath)
 		{
-			memcpy(PathBuffer + 4, "UNC\\", 4 * sizeof(char));
+			memcpy(pathBuffer + 4, "UNC\\", 4 * sizeof(char));
 		}
-		memcpy(PathBuffer, "\\\\?\\", 4 * sizeof(char));
+		memcpy(pathBuffer, "\\\\?\\", 4 * sizeof(char));
 	}
-	else if (remove_extended_prefix && network_path)
+	else if (removeExtendedPrefix && networkPath)
 	{
-		memcpy(PathBuffer, "\\\\", 2 * sizeof(char));
+		memcpy(pathBuffer, "\\\\", 2 * sizeof(char));
 	}
 
-	return fully_qualified_length;
+	return fullyQualifiedLength;
 }
 
 #ifdef __cplusplus
