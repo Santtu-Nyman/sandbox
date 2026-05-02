@@ -59,6 +59,7 @@ void FlUtf8Utf16ConverterUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCo
 void FlUnicodeCaseProcessingUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount);
 void FlAes256UtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount);
 void FlWin32FilePathUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount);
+void FlWin32CommandLineUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount);
 
 // Runs a UT category, prints its result line, and accumulates into the totals.
 #define FL_UT_RUN_CATEGORY(category_name, run_function, total_test_count, total_fail_count) \
@@ -74,8 +75,6 @@ void FlWin32FilePathUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount);
 		*(total_test_count) += categoryTestCount; \
 		*(total_fail_count) += categoryFailCount; \
 	} while (0)
-
-#include "FlUuid.h"
 
 int main(void)
 {
@@ -96,6 +95,7 @@ int main(void)
 	FL_UT_RUN_CATEGORY("UnicodeCaseProcessing", FlUnicodeCaseProcessingUtRun, &testCount, &failCount);
 	FL_UT_RUN_CATEGORY("AES-256",               FlAes256UtRun,               &testCount, &failCount);
 	FL_UT_RUN_CATEGORY("Win32FilePath",         FlWin32FilePathUtRun,        &testCount, &failCount);
+	FL_UT_RUN_CATEGORY("Win32CommandLine",      FlWin32CommandLineUtRun,     &testCount, &failCount);
 
 	printf("--------------------------------------------------\n");
 	if (failCount == 0)

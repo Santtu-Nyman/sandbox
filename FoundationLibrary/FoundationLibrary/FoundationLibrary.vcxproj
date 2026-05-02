@@ -145,7 +145,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\FlAes256.h" />
-    <ClInclude Include="include\FlCommandLineToArgvW.h" />
     <ClInclude Include="include\FlCrc32.h" />
     <ClInclude Include="include\FlFraction64.h" />
     <ClInclude Include="include\flHRESULT.h" />
@@ -160,13 +159,12 @@
     <ClInclude Include="include\FlUnicodeCaseProcessing.h" />
     <ClInclude Include="include\FlUtf8Utf16Converter.h" />
     <ClInclude Include="include\FlUuid.h" />
-    <ClInclude Include="include\FlWin32CommandLineToUtf8Arguments.h" />
+    <ClInclude Include="include\FlWin32CommandLine.h" />
     <ClInclude Include="include\FlWin32FilePath.h" />
     <ClInclude Include="ut\FlUt.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\FlAes256.c" />
-    <ClCompile Include="source\FlCommandLineToArgvW.c" />
     <ClCompile Include="source\FlCrc32.c" />
     <ClCompile Include="source\FlFraction64.c" />
     <ClCompile Include="source\FlMd5.c" />
@@ -179,7 +177,7 @@
     <ClCompile Include="source\FlUnicodeCaseProcessing.c" />
     <ClCompile Include="source\FlUtf8Utf16Converter.c" />
     <ClCompile Include="source\FlUuid.c" />
-    <ClCompile Include="source\FlWin32CommandLineToUtf8Arguments.c" />
+    <ClCompile Include="source\FlWin32CommandLine.c" />
     <ClCompile Include="source\FlWin32FilePath.c" />
     <ClCompile Include="ut\FlAes256Ut.c" />
     <ClCompile Include="ut\FlCrc32Ut.c" />
@@ -195,6 +193,7 @@
     <ClCompile Include="ut\FlUtf8Utf16ConverterUt.c" />
     <ClCompile Include="ut\FlUtMain.c" />
     <ClCompile Include="ut\FlUuidUt.c" />
+    <ClCompile Include="ut\FlWin32CommandLineUt.c" />
     <ClCompile Include="ut\FlWin32FilePathUt.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

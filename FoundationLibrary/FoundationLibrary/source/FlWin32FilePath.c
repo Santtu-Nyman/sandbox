@@ -196,7 +196,12 @@ BOOL FlWin32IsPathFullyQualified(_In_ SIZE_T pathLength, _In_reads_(pathLength) 
 	}
 
 	BOOL extendedPrefix = ((pathLength > 4 && path[0] == L'\\' && path[1] == L'?' && path[2] == L'?' && path[3] == L'\\') || (pathLength > 4 && path[0] == L'\\' && path[1] == L'\\' && path[2] == L'?' && path[3] == L'\\'));
-	if ((pathVolumeDirectoryPartLength > (MAX_PATH - 1)) && !extendedPrefix)
+	if ((pathLength > (MAX_PATH - 1)) && !extendedPrefix)
+	{
+		return FALSE;
+	}
+
+	if (pathLength > pathVolumeDirectoryPartLength && (path[pathLength - 1] == L'\\' || path[pathLength - 1] == L'/'))
 	{
 		return FALSE;
 	}
@@ -208,7 +213,7 @@ BOOL FlWin32IsPathFullyQualified(_In_ SIZE_T pathLength, _In_reads_(pathLength) 
 		{
 			componentLength++;
 		}
-		if (!componentLength || (componentLength == 1 && path[0] == L'.') || (componentLength == 2 && path[0] == L'.' && path[1] == L'.'))
+		if (!componentLength || (componentLength == 1 && path[offset] == L'.') || (componentLength == 2 && path[offset] == L'.' && path[offset + 1] == L'.'))
 		{
 			return FALSE;
 		}
@@ -300,6 +305,7 @@ SIZE_T FlWin32GetFullyQualifiedPath(_In_ SIZE_T pathLength, _In_reads_(pathLengt
 
 		BOOL addExtendedPrefix = FALSE;
 		BOOL removeExtendedPrefix = FALSE;
+		BOOL volumeGuidPath = extendedPrefix && !networkPath && pathVolumePartLength == 49;
 		if ((!extendedPrefix && (fullyQualifiedLength > (MAX_PATH - 1))) || (extendedPrefix && ((networkPath ? (fullyQualifiedLength - 6) : (fullyQualifiedLength - 4)) > (MAX_PATH - 1))))
 		{
 			if (!extendedPrefix)
@@ -308,9 +314,9 @@ SIZE_T FlWin32GetFullyQualifiedPath(_In_ SIZE_T pathLength, _In_reads_(pathLengt
 				fullyQualifiedLength += networkPath ? 6 : 4;
 			}
 		}
-		else 
+		else
 		{
-			if (extendedPrefix)
+			if (extendedPrefix && !volumeGuidPath)
 			{
 				removeExtendedPrefix = TRUE;
 				fullyQualifiedLength -= networkPath ? 6 : 4;
@@ -470,6 +476,10 @@ SIZE_T FlWin32GetFullyQualifiedPath(_In_ SIZE_T pathLength, _In_reads_(pathLengt
 		// Get the base Path component count and length after making it fully qualified. Also erase components as required from the relative sub Path
 		size_t basePathComponentCount = 0;
 		size_t basePathFullyQualifiedLength = basePathVolumePartLength;
+		if (basePathLength == basePathVolumePartLength && relativePathComponentEraseCount)
+		{
+			return 0;
+		}
 		for (size_t offset = basePathLength, componentEraseCount = relativePathComponentEraseCount; offset != basePathVolumePartLength;)
 		{
 			size_t componentLength = 0;
@@ -662,19 +672,100 @@ SIZE_T FlWin32GetFullyQualifiedPath(_In_ SIZE_T pathLength, _In_reads_(pathLengt
 SIZE_T FlWin32GetVolumeDirectoryPath(_In_ SIZE_T pathLength, _In_reads_(pathLength) const WCHAR* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const WCHAR* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) WCHAR* pathBuffer)
 {
 	size_t pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length(pathLength, path);
-	if (!basePathLength && !pathLength)
-	{
-		return 0;
-	}
+	size_t componentEraseCountFromRelativePath = 0;
 	if (!pathVolumePartLength)
 	{
-		pathLength = basePathLength;
-		path = basePath;
-		pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length(pathLength, path);
+		pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length(basePathLength, basePath);
 		if (!pathVolumePartLength)
 		{
 			return 0;
 		}
+
+		// Remove trailing '\'
+		if (pathLength && ((path[pathLength - 1] == L'\\') || (path[pathLength - 1] == L'/')))
+		{
+			pathLength--;
+		}
+		// Get nunber of path components to erase from the end of the base path
+		for (size_t realComponentCount = 0, offset = 0; offset < pathLength;)
+		{
+			size_t componentLength = 0;
+			while ((offset + componentLength < pathLength) && (path[offset + componentLength] != L'\\' && path[offset + componentLength] != L'/'))
+			{
+				componentLength++;
+			}
+			if (componentLength == 1 && path[offset] == L'.')
+			{
+				// just skip "." components
+			}
+			else if (componentLength == 2 && path[offset] == L'.' && path[offset + 1] == L'.')
+			{
+				if (realComponentCount)
+				{
+					realComponentCount--;
+				}
+				else
+				{
+					componentEraseCountFromRelativePath++;
+				}
+			}
+			else
+			{
+				realComponentCount++;
+			}
+			offset += componentLength;
+			if (offset < pathLength)
+			{
+				offset++;
+			}
+		}
+
+		pathLength = basePathLength;
+		path = basePath;
+	}
+
+	// Remove trailing '\' if path is longer than volume directory Path.
+	if ((pathLength > pathVolumePartLength) && ((path[pathLength - 1] == '\\') || (path[pathLength - 1] == '/')))
+	{
+		pathLength--;
+	}
+
+	// Check if the the path traces back out of root.
+	size_t realComponentCount = 0;
+	for (size_t offset = pathVolumePartLength; offset < pathLength;)
+	{
+		size_t componentLength = 0;
+		while ((offset + componentLength < pathLength) && (path[offset + componentLength] != L'\\' && path[offset + componentLength] != L'/'))
+		{
+			componentLength++;
+		}
+		if (componentLength == 1 && path[offset] == L'.')
+		{
+			// just skip "." components
+		}
+		else if (componentLength == 2 && path[offset] == L'.' && path[offset + 1] == L'.')
+		{
+			if (!realComponentCount)
+			{
+				// Trying to erase past root directory
+				return 0;
+			}
+			realComponentCount--;
+		}
+		else
+		{
+			realComponentCount++;
+		}
+		offset += componentLength;
+		if (offset < pathLength)
+		{
+			offset++;
+		}
+	}
+	if (componentEraseCountFromRelativePath > realComponentCount)
+	{
+		// Trying to erase past root directory from the relative path
+		return 0;
 	}
 
 	BOOL extendedPrefix = ((pathLength > 4 && path[0] == L'\\' && path[1] == L'?' && path[2] == L'?' && path[3] == L'\\') || (pathLength > 4 && path[0] == L'\\' && path[1] == L'\\' && path[2] == L'?' && path[3] == L'\\'));
@@ -697,6 +788,7 @@ SIZE_T FlWin32GetVolumeDirectoryPath(_In_ SIZE_T pathLength, _In_reads_(pathLeng
 	size_t fullyQualifiedLength = pathVolumePartLength;
 	BOOL addExtendedPrefix = FALSE;
 	BOOL removeExtendedPrefix = FALSE;
+	BOOL volumeGuidPath = extendedPrefix && !networkPath && pathVolumePartLength == 49;
 	if ((!extendedPrefix && (fullyQualifiedLength > (MAX_PATH - 1))) || (extendedPrefix && ((networkPath ? (fullyQualifiedLength - 6) : (fullyQualifiedLength - 4)) > (MAX_PATH - 1))))
 	{
 		if (!extendedPrefix)
@@ -707,7 +799,7 @@ SIZE_T FlWin32GetVolumeDirectoryPath(_In_ SIZE_T pathLength, _In_reads_(pathLeng
 	}
 	else
 	{
-		if (extendedPrefix)
+		if (extendedPrefix && !volumeGuidPath)
 		{
 			removeExtendedPrefix = TRUE;
 			fullyQualifiedLength -= networkPath ? 6 : 4;
@@ -913,6 +1005,11 @@ BOOL FlWin32IsPathFullyQualifiedUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLeng
 		return FALSE;
 	}
 
+	if (pathLength > pathVolumeDirectoryPartLength && (path[pathLength - 1] == '\\' || path[pathLength - 1] == '/'))
+	{
+		return FALSE;
+	}
+
 	for (size_t offset = pathVolumeDirectoryPartLength; offset != pathLength;)
 	{
 		size_t componentLength = 0;
@@ -920,7 +1017,7 @@ BOOL FlWin32IsPathFullyQualifiedUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLeng
 		{
 			componentLength++;
 		}
-		if (!componentLength || (componentLength == 1 && path[0] == '.') || (componentLength == 2 && path[0] == '.' && path[1] == '.'))
+		if (!componentLength || (componentLength == 1 && path[offset] == '.') || (componentLength == 2 && path[offset] == '.' && path[offset + 1] == '.'))
 		{
 			return FALSE;
 		}
@@ -1015,6 +1112,7 @@ SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathL
 
 		BOOL addExtendedPrefix = FALSE;
 		BOOL removeExtendedPrefix = FALSE;
+		BOOL volumeGuidPath = extendedPrefix && !networkPath && pathVolumePartLength == 49;
 		if ((!extendedPrefix && (fullyQualifiedUtf16Length > (MAX_PATH - 1))) || (extendedPrefix && ((networkPath ? (fullyQualifiedUtf16Length - 6) : (fullyQualifiedUtf16Length - 4)) > (MAX_PATH - 1))))
 		{
 			if (!extendedPrefix)
@@ -1027,7 +1125,7 @@ SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathL
 		}
 		else
 		{
-			if (extendedPrefix)
+			if (extendedPrefix && !volumeGuidPath)
 			{
 				removeExtendedPrefix = TRUE;
 				size_t lengthAdjust = networkPath ? 6 : 4;
@@ -1193,6 +1291,10 @@ SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathL
 		size_t basePathComponentCount = 0;
 		size_t basePathFullyQualifiedLength = basePathVolumePartLength;
 		size_t basePathFullyQualifiedUtf16Length = FlConvertUtf8ToUtf16Le(basePathVolumePartLength, basePath, 0, 0);
+		if (basePathLength == basePathVolumePartLength && relativePathComponentEraseCount)
+		{
+			return 0;
+		}
 		for (size_t offset = basePathLength, componentEraseCount = relativePathComponentEraseCount; offset != basePathVolumePartLength;)
 		{
 			size_t componentLength = 0;
@@ -1393,19 +1495,100 @@ SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathL
 SIZE_T FlWin32GetVolumeDirectoryPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLength) const char* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const char* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) char* pathBuffer)
 {
 	size_t pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length_utf8(pathLength, path);
-	if (!basePathLength && !pathLength)
-	{
-		return 0;
-	}
+	size_t componentEraseCountFromRelativePath = 0;
 	if (!pathVolumePartLength)
 	{
-		pathLength = basePathLength;
-		path = basePath;
-		pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length_utf8(pathLength, path);
+		pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length_utf8(basePathLength, basePath);
 		if (!pathVolumePartLength)
 		{
 			return 0;
 		}
+
+		// Remove trailing '\'
+		if (pathLength && ((path[pathLength - 1] == '\\') || (path[pathLength - 1] == '/')))
+		{
+			pathLength--;
+		}
+		// Get nunber of path components to erase from the end of the base path
+		for (size_t realComponentCount = 0, offset = 0; offset < pathLength;)
+		{
+			size_t componentLength = 0;
+			while ((offset + componentLength < pathLength) && (path[offset + componentLength] != '\\' && path[offset + componentLength] != '/'))
+			{
+				componentLength++;
+			}
+			if (componentLength == 1 && path[offset] == '.')
+			{
+				// just skip "." components
+			}
+			else if (componentLength == 2 && path[offset] == '.' && path[offset + 1] == '.')
+			{
+				if (realComponentCount)
+				{
+					realComponentCount--;
+				}
+				else
+				{
+					componentEraseCountFromRelativePath++;
+				}
+			}
+			else
+			{
+				realComponentCount++;
+			}
+			offset += componentLength;
+			if (offset < pathLength)
+			{
+				offset++;
+			}
+		}
+
+		pathLength = basePathLength;
+		path = basePath;
+	}
+
+	// Remove trailing '\' if path is longer than volume directory Path.
+	if ((pathLength > pathVolumePartLength) && ((path[pathLength - 1] == '\\') || (path[pathLength - 1] == '/')))
+	{
+		pathLength--;
+	}
+
+	// Check if the the path traces back out of root.
+	size_t realComponentCount = 0;
+	for (size_t offset = pathVolumePartLength; offset < pathLength;)
+	{
+		size_t componentLength = 0;
+		while ((offset + componentLength < pathLength) && (path[offset + componentLength] != '\\' && path[offset + componentLength] != '/'))
+		{
+			componentLength++;
+		}
+		if (componentLength == 1 && path[offset] == '.')
+		{
+			// just skip "." components
+		}
+		else if (componentLength == 2 && path[offset] == '.' && path[offset + 1] == '.')
+		{
+			if (!realComponentCount)
+			{
+				// Trying to erase past root directory
+				return 0;
+			}
+			realComponentCount--;
+		}
+		else
+		{
+			realComponentCount++;
+		}
+		offset += componentLength;
+		if (offset < pathLength)
+		{
+			offset++;
+		}
+	}
+	if (componentEraseCountFromRelativePath > realComponentCount)
+	{
+		// Trying to erase past root directory from the relative path
+		return 0;
 	}
 
 	BOOL extendedPrefix = ((pathLength > 4 && path[0] == '\\' && path[1] == '?' && path[2] == '?' && path[3] == '\\') || (pathLength > 4 && path[0] == '\\' && path[1] == '\\' && path[2] == '?' && path[3] == '\\'));
@@ -1429,6 +1612,7 @@ SIZE_T FlWin32GetVolumeDirectoryPathUtf8(_In_ SIZE_T pathLength, _In_reads_(path
 	size_t utf16FullyQualifiedLength = FlConvertUtf8ToUtf16Le(fullyQualifiedLength, path, 0, 0);
 	BOOL addExtendedPrefix = FALSE;
 	BOOL removeExtendedPrefix = FALSE;
+	BOOL volumeGuidPath = extendedPrefix && !networkPath && pathVolumePartLength == 49;
 	if ((!extendedPrefix && (utf16FullyQualifiedLength > (MAX_PATH - 1))) || (extendedPrefix && ((networkPath ? (utf16FullyQualifiedLength - 6) : (utf16FullyQualifiedLength - 4)) > (MAX_PATH - 1))))
 	{
 		if (!extendedPrefix)
@@ -1441,7 +1625,7 @@ SIZE_T FlWin32GetVolumeDirectoryPathUtf8(_In_ SIZE_T pathLength, _In_reads_(path
 	}
 	else
 	{
-		if (extendedPrefix)
+		if (extendedPrefix && !volumeGuidPath)
 		{
 			removeExtendedPrefix = TRUE;
 			size_t lengthAdjust = networkPath ? 6 : 4;

@@ -27,9 +27,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\FlCommandLineToArgvW.h">
-      <Filter>Header Files\include</Filter>
-    </ClInclude>
     <ClInclude Include="include\FlCrc32.h">
       <Filter>Header Files\include</Filter>
     </ClInclude>
@@ -72,7 +69,7 @@
     <ClInclude Include="include\FlUuid.h">
       <Filter>Header Files\include</Filter>
     </ClInclude>
-    <ClInclude Include="include\FlWin32CommandLineToUtf8Arguments.h">
+    <ClInclude Include="include\FlWin32CommandLine.h">
       <Filter>Header Files\include</Filter>
     </ClInclude>
     <ClInclude Include="include\FlWin32FilePath.h">
@@ -86,9 +83,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\FlCommandLineToArgvW.c">
-      <Filter>Source Files\source</Filter>
-    </ClCompile>
     <ClCompile Include="source\FlCrc32.c">
       <Filter>Source Files\source</Filter>
     </ClCompile>
@@ -125,7 +119,7 @@
     <ClCompile Include="source\FlUuid.c">
       <Filter>Source Files\source</Filter>
     </ClCompile>
-    <ClCompile Include="source\FlWin32CommandLineToUtf8Arguments.c">
+    <ClCompile Include="source\FlWin32CommandLine.c">
       <Filter>Source Files\source</Filter>
     </ClCompile>
     <ClCompile Include="source\FlWin32FilePath.c">
@@ -177,6 +171,9 @@
       <Filter>Source Files\ut</Filter>
     </ClCompile>
     <ClCompile Include="ut\FlWin32FilePathUt.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlWin32CommandLineUt.c">
       <Filter>Source Files\ut</Filter>
     </ClCompile>
   </ItemGroup>

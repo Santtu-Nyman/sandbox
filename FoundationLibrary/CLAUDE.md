@@ -19,12 +19,14 @@ Coding Conventions:
  - Prefer using types from <stddef.h> and <stdint.h>.
  - Prefer using size_t for indexing when the maximum index is unknown at run-time.
  - Never use thread-local storage.
+ - Use Allman style braces.
  - Use screaming snake casing ("SCREAMING_SNAKE_CASING") for naming macros, enum types and enum values. 
  - Use Pascal casing with initial uppercase letter ("PascalCasing") when naming functions, structure types. 
  - Use camel casing with initial lowercase letter ("camelCasing") when naming any variables.
  - Use upper casing for hexadecimal digits numbers.
- - Use descriptive names for functions, variables and macros.
- - Old code not following these conventions should not be used as an example for coding style.
+ - Use meaningful and descriptive names for functions, variables and macros.
+ - Prefer clarity over brevity for identifier names. Never use abbreviated or shortened versions of words for identifier names.
+ - Do not use any acronyms that are not widely accepted, and even if they are, only when necessary.
  - Avoid using single-letter names, except for simple loop counters and spacial coordinates. Letter n maybe used as the number of iterations on a loop like "for(size_t n = GetItemCount(list), i = 0; i < n; i++)".
  - Whenever an object or function is declared or defined, its type shall be explicitly stated.
  - Functions with no parameters shall be declared and defined with the parameter list void.
@@ -92,6 +94,7 @@ Testing:
  - Never modify or remove existing UTs.
  - After writing or modifying code double check that it follows these rules and run unit tests for it.
  - The UTs are not performance critical. UT cases do not need to follow the performance related coding conventions unlike all other code.
+ - In UTs avoiding dynamic memory allocation is not necessary, unlike in other code.
  - After finishing any code modifications always build and run all UTs to verify that UTs are all passing. Use "FoundationLibrary/ut/build_ut.bat" to build and run UTs.
  - Before reporting a task complete, verify it actually works by running UTs.
  - If compiling UTs fail or there are aby failing UT cases fix resolve these issues.
