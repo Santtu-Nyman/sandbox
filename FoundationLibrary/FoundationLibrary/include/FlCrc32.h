@@ -39,10 +39,61 @@ extern "C" {
 #include "FlSAL.h"
 
 uint32_t FlCrc32Create(void);
+/*
+	Function:
+		FlCrc32Create
+
+	Description:
+		This function creates and returns the initial CRC-32/ISO-HDLC calculation context.
+		The returned context must be passed to FlCrc32Data to process input data,
+		or directly to FlCrc32Finish to obtain the CRC-32 checksum of empty input.
+
+	Return value:
+		Returns the initial CRC-32/ISO-HDLC calculation context.
+*/
 
 uint32_t FlCrc32Data(_In_ uint32_t crc32Context, _In_ size_t dataSize, _In_reads_bytes_(dataSize) const void* data);
+/*
+	Function:
+		FlCrc32Data
+
+	Description:
+		This function processes a chunk of input data and returns the updated CRC-32/ISO-HDLC calculation context.
+		The caller may process an arbitrary number of input chunks by calling this function repeatedly,
+		passing the returned context value as the context for the next call.
+		The chunks must be provided in order.
+		Calling this function with dataSize equal to zero leaves the context unchanged.
+
+	Parameters:
+		crc32Context:
+			The current CRC-32/ISO-HDLC calculation context returned by FlCrc32Create or a previous call to FlCrc32Data.
+
+		dataSize:
+			Size of the data chunk to process in bytes.
+
+		data:
+			Pointer to the data chunk to process.
+
+	Return value:
+		Returns the updated CRC-32/ISO-HDLC calculation context.
+*/
 
 uint32_t FlCrc32Finish(_In_ uint32_t crc32Context);
+/*
+	Function:
+		FlCrc32Finish
+
+	Description:
+		This function finalizes the CRC-32/ISO-HDLC calculation and returns the resulting checksum.
+		Calling this function immediately after FlCrc32Create returns the CRC-32 checksum of empty input.
+
+	Parameters:
+		crc32Context:
+			The current CRC-32/ISO-HDLC calculation context returned by FlCrc32Create or FlCrc32Data.
+
+	Return value:
+		Returns the finalized 32-bit CRC-32/ISO-HDLC checksum of all input data processed.
+*/
 
 #ifdef __cplusplus
 }

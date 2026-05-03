@@ -35,7 +35,7 @@ extern "C" {
 #define FL_IS_HEX_WCHAR(C) (((int)(C) >= (int)L'0' && (int)(C) <= (int)L'9') || ((int)(C) >= (int)L'A' && (int)(C) <= (int)L'F') || ((int)(C) >= (int)L'a' && (int)(C) <= (int)L'f'))
 #define FL_IS_HEX_CHAR(C) (((int)(C) >= (int)'0' && (int)(C) <= (int)'9') || ((int)(C) >= (int)'A' && (int)(C) <= (int)'F') || ((int)(C) >= (int)'a' && (int)(C) <= (int)'f'))
 
-static SIZE_T lt_win32_absolute_path_volume_directory_part_length(SIZE_T pathLength, const WCHAR* path)
+static SIZE_T FlWin32AbsolutePathVolumeDirectoryPartLength(SIZE_T pathLength, const WCHAR* path)
 {
 	if (pathLength > 4 && path[0] == L'\\' && path[1] == L'\\' && path[2] == L'?' && path[3] == L'\\')
 	{
@@ -189,7 +189,7 @@ static SIZE_T lt_win32_absolute_path_volume_directory_part_length(SIZE_T pathLen
 
 BOOL FlWin32IsPathFullyQualified(_In_ SIZE_T pathLength, _In_reads_(pathLength) const WCHAR* path)
 {
-	size_t pathVolumeDirectoryPartLength = lt_win32_absolute_path_volume_directory_part_length(pathLength, path);
+	size_t pathVolumeDirectoryPartLength = FlWin32AbsolutePathVolumeDirectoryPartLength(pathLength, path);
 	if (!pathVolumeDirectoryPartLength)
 	{
 		return FALSE;
@@ -224,7 +224,7 @@ BOOL FlWin32IsPathFullyQualified(_In_ SIZE_T pathLength, _In_reads_(pathLength) 
 
 SIZE_T FlWin32GetFullyQualifiedPath(_In_ SIZE_T pathLength, _In_reads_(pathLength) const WCHAR* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const WCHAR* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) WCHAR* pathBuffer)
 {
-	size_t pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length(pathLength, path);
+	size_t pathVolumePartLength = FlWin32AbsolutePathVolumeDirectoryPartLength(pathLength, path);
 	// Remove trailing '\' if Path is longer than volume directory Path. Volume directory length is zero when Path is relative
 	if (pathLength && (pathLength > pathVolumePartLength) && ((path[pathLength - 1] == L'\\') || (path[pathLength - 1] == L'/')))
 	{
@@ -400,7 +400,7 @@ SIZE_T FlWin32GetFullyQualifiedPath(_In_ SIZE_T pathLength, _In_reads_(pathLengt
 		// Relative Path to fully qualified Path
 
 		// Get volume Path part of the base directory
-		size_t basePathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length(basePathLength, basePath);
+		size_t basePathVolumePartLength = FlWin32AbsolutePathVolumeDirectoryPartLength(basePathLength, basePath);
 		// Remove trailing '\' if Path is longer than volume directory Path. Volume directory length is zero when Path is relative
 		if (basePathLength && (basePathLength > basePathVolumePartLength) && ((basePath[basePathLength - 1] == L'\\') || (basePath[basePathLength - 1] == L'/')))
 		{
@@ -671,11 +671,11 @@ SIZE_T FlWin32GetFullyQualifiedPath(_In_ SIZE_T pathLength, _In_reads_(pathLengt
 
 SIZE_T FlWin32GetVolumeDirectoryPath(_In_ SIZE_T pathLength, _In_reads_(pathLength) const WCHAR* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const WCHAR* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) WCHAR* pathBuffer)
 {
-	size_t pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length(pathLength, path);
+	size_t pathVolumePartLength = FlWin32AbsolutePathVolumeDirectoryPartLength(pathLength, path);
 	size_t componentEraseCountFromRelativePath = 0;
 	if (!pathVolumePartLength)
 	{
-		pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length(basePathLength, basePath);
+		pathVolumePartLength = FlWin32AbsolutePathVolumeDirectoryPartLength(basePathLength, basePath);
 		if (!pathVolumePartLength)
 		{
 			return 0;
@@ -838,7 +838,7 @@ SIZE_T FlWin32GetVolumeDirectoryPath(_In_ SIZE_T pathLength, _In_reads_(pathLeng
 	return fullyQualifiedLength;
 }
 
-static SIZE_T lt_win32_absolute_path_volume_directory_part_length_utf8(SIZE_T pathLength, const char* path)
+static SIZE_T FlWin32AbsolutePathVolumeDirectoryPartLengthUtf8(SIZE_T pathLength, const char* path)
 {
 	if (pathLength > 4 && path[0] == '\\' && path[1] == '\\' && path[2] == '?' && path[3] == '\\')
 	{
@@ -992,7 +992,7 @@ static SIZE_T lt_win32_absolute_path_volume_directory_part_length_utf8(SIZE_T pa
 
 BOOL FlWin32IsPathFullyQualifiedUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLength) const char* path)
 {
-	size_t pathVolumeDirectoryPartLength = lt_win32_absolute_path_volume_directory_part_length_utf8(pathLength, path);
+	size_t pathVolumeDirectoryPartLength = FlWin32AbsolutePathVolumeDirectoryPartLengthUtf8(pathLength, path);
 	if (!pathVolumeDirectoryPartLength)
 	{
 		return FALSE;
@@ -1028,7 +1028,7 @@ BOOL FlWin32IsPathFullyQualifiedUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLeng
 
 SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLength) const char* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const char* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) char* pathBuffer)
 {
-	size_t pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length_utf8(pathLength, path);
+	size_t pathVolumePartLength = FlWin32AbsolutePathVolumeDirectoryPartLengthUtf8(pathLength, path);
 	// Remove trailing '\' if Path is longer than volume directory Path. Volume directory length is zero when Path is relative
 	if (pathLength && (pathLength > pathVolumePartLength) && ((path[pathLength - 1] == '\\') || (path[pathLength - 1] == '/')))
 	{
@@ -1211,7 +1211,7 @@ SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathL
 		// Relative Path to fully qualified Path
 
 		// Get volume Path part of the base directory
-		size_t basePathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length_utf8(basePathLength, basePath);
+		size_t basePathVolumePartLength = FlWin32AbsolutePathVolumeDirectoryPartLengthUtf8(basePathLength, basePath);
 		// Remove trailing '\' if Path is longer than volume directory Path. Volume directory length is zero when Path is relative
 		if (basePathLength && (basePathLength > basePathVolumePartLength) && ((basePath[basePathLength - 1] == '\\') || (basePath[basePathLength - 1] == '/')))
 		{
@@ -1494,11 +1494,11 @@ SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathL
 
 SIZE_T FlWin32GetVolumeDirectoryPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLength) const char* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const char* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) char* pathBuffer)
 {
-	size_t pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length_utf8(pathLength, path);
+	size_t pathVolumePartLength = FlWin32AbsolutePathVolumeDirectoryPartLengthUtf8(pathLength, path);
 	size_t componentEraseCountFromRelativePath = 0;
 	if (!pathVolumePartLength)
 	{
-		pathVolumePartLength = lt_win32_absolute_path_volume_directory_part_length_utf8(basePathLength, basePath);
+		pathVolumePartLength = FlWin32AbsolutePathVolumeDirectoryPartLengthUtf8(basePathLength, basePath);
 		if (!pathVolumePartLength)
 		{
 			return 0;

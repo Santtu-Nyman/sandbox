@@ -41,7 +41,7 @@ extern "C" {
 #define FL_AES256_BLOCK_SIZE 16
 #define FL_AES256_KEY_SIZE 32
 #define FL_AES256_ROUND_KEY_SIZE 240
-#define FL_AES256_GCM_NONCE_SIZE 12 // recommended 96-bit nonce length; other lengths are also accepted
+#define FL_AES256_GCM_NONCE_SIZE 12 // recommended 96-bit nonce length
 #define FL_AES256_GCM_TAG_SIZE 16
 
 void FlAes256KeyExpansion(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _Out_writes_bytes_all_(FL_AES256_ROUND_KEY_SIZE) void* roundKey);
@@ -109,7 +109,6 @@ void FlAes256EcbEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _I
 	Description:
 		This procedure encrypts a buffer of plain text using AES-256 in ECB (Electronic Codebook) mode.
 		Each 16-byte block is encrypted independently with the same key.
-		textSize must be a multiple of FL_AES256_BLOCK_SIZE.
 
 	Parameters:
 		key:
@@ -117,7 +116,6 @@ void FlAes256EcbEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _I
 
 		textSize:
 			Size of the plain text and cipher text buffers in bytes.
-			Must be a non-zero multiple of FL_AES256_BLOCK_SIZE.
 
 		plainText:
 			Pointer to the plain text buffer to encrypt.
@@ -137,7 +135,6 @@ void FlAes256EcbDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _I
 	Description:
 		This procedure decrypts a buffer of cipher text using AES-256 in ECB (Electronic Codebook) mode.
 		Each 16-byte block is decrypted independently with the same key.
-		textSize must be a multiple of FL_AES256_BLOCK_SIZE.
 
 	Parameters:
 		key:
@@ -145,7 +142,7 @@ void FlAes256EcbDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _I
 
 		textSize:
 			Size of the cipher text and plain text buffers in bytes.
-			Must be a non-zero multiple of FL_AES256_BLOCK_SIZE.
+
 
 		cipherText:
 			Pointer to the cipher text buffer to decrypt.
@@ -169,7 +166,6 @@ void FlAes256CtrEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _I
 		incremented as a 128-bit big-endian integer.
 		Because CTR mode is symmetric, the same procedure decrypts cipher text.
 		The macro FlAes256CtrDecrypt is provided as a self-documenting alias.
-		textSize must be a multiple of FL_AES256_BLOCK_SIZE.
 
 	Parameters:
 		key:
@@ -182,7 +178,6 @@ void FlAes256CtrEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _I
 
 		textSize:
 			Size of the plain text and cipher text buffers in bytes.
-			Must be a non-zero multiple of FL_AES256_BLOCK_SIZE.
 
 		plainText:
 			Pointer to the plain text buffer to encrypt.
@@ -205,7 +200,6 @@ void FlAes256CbcEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _I
 		This procedure encrypts a buffer of plain text using AES-256 in CBC (Cipher Block Chaining) mode.
 		Before each block is encrypted it is XORed with the previous cipher text block.
 		The IV serves as the initial previous block for the first plain text block.
-		textSize must be a multiple of FL_AES256_BLOCK_SIZE.
 
 	Parameters:
 		key:
@@ -217,7 +211,6 @@ void FlAes256CbcEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _I
 
 		textSize:
 			Size of the plain text and cipher text buffers in bytes.
-			Must be a non-zero multiple of FL_AES256_BLOCK_SIZE.
 
 		plainText:
 			Pointer to the plain text buffer to encrypt.
@@ -238,7 +231,6 @@ void FlAes256CbcDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _I
 		This procedure decrypts a buffer of cipher text using AES-256 in CBC (Cipher Block Chaining) mode.
 		Each block is AES-decrypted and then XORed with the previous cipher text block to recover the plain text.
 		The IV serves as the initial previous block for the first cipher text block.
-		textSize must be a multiple of FL_AES256_BLOCK_SIZE.
 
 	Parameters:
 		key:
@@ -250,7 +242,6 @@ void FlAes256CbcDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _I
 
 		textSize:
 			Size of the cipher text and plain text buffers in bytes.
-			Must be a non-zero multiple of FL_AES256_BLOCK_SIZE.
 
 		cipherText:
 			Pointer to the cipher text buffer to decrypt.
@@ -271,10 +262,7 @@ void FlAes256GcmEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _I
 		This procedure encrypts a buffer of plain text and computes an authentication tag using AES-256 in GCM
 		(Galois/Counter Mode). GCM provides both confidentiality and authenticity. The nonce must be unique
 		for every encryption operation performed with the same key. textSize and aadSize may be zero.
-
-		Any nonce length is accepted. When nonceSize is 12 (FL_AES256_GCM_NONCE_SIZE) the nonce is used
-		directly as the counter base (J0 = nonce || 0x00000001). For all other lengths J0 is derived via
-		GHASH per NIST SP 800-38D section 7.1. A 12-byte nonce is strongly recommended.
+		Any nonce length is accepted, but A 12-byte nonce is strongly recommended.
 
 	Parameters:
 		key:
@@ -323,9 +311,7 @@ int FlAes256GcmDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _In
 		(Galois/Counter Mode). Returns 1 if the tag is valid and decryption succeeded, or 0 if authentication
 		failed. The plainText output is only meaningful when the return value is 1. The tag check is performed
 		in constant time to prevent timing side-channels. textSize and aadSize may be zero.
-
-		Any nonce length is accepted; see FlAes256GcmEncrypt for details. nonceSize must match the value used
-		during encryption.
+		The nonceSize must match the value used during encryption.
 
 	Parameters:
 		key:
