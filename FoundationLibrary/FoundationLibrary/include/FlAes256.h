@@ -307,7 +307,7 @@ void FlAes256GcmEncrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _I
 			Pointer to the 16-byte (FL_AES256_GCM_TAG_SIZE) buffer that receives the authentication tag.
 */
 
-int FlAes256GcmDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _In_ size_t nonceSize, _In_reads_bytes_(nonceSize) const void* nonce, _In_ size_t aadSize, _In_reads_bytes_(aadSize) const void* aad, _In_ size_t textSize, _In_reads_bytes_(textSize) const void* cipherText, _Out_writes_bytes_all_(textSize) void* plainText, _In_reads_bytes_(FL_AES256_GCM_TAG_SIZE) const void* tag);
+_Success_(return != 0) int FlAes256GcmDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _In_ size_t nonceSize, _In_reads_bytes_(nonceSize) const void* nonce, _In_ size_t aadSize, _In_reads_bytes_(aadSize) const void* aad, _In_ size_t textSize, _In_reads_bytes_(textSize) const void* cipherText, _Out_writes_bytes_all_(textSize) void* plainText, _In_reads_bytes_(FL_AES256_GCM_TAG_SIZE) const void* tag);
 /*
 	Procedure:
 		FlAes256GcmDecrypt

@@ -81,7 +81,7 @@ size_t FlUuidEncodeStringUtf8(_In_reads_bytes_(FL_UUID_SIZE) const void* uuid, _
 		The procedure returns the length of the string that is always 38.
 */
 
-size_t FlUuidDecodeStringUtf8(_Out_writes_bytes_all_(FL_UUID_SIZE) void* uuid, _In_ size_t length, _In_reads_(length) const char* string);
+_Success_(return != 0) size_t FlUuidDecodeStringUtf8(_Out_writes_bytes_all_(FL_UUID_SIZE) void* uuid, _In_ size_t length, _In_reads_(length) const char* string);
 /*
 	Procedure:
 		FlUuidDecodeString
@@ -130,7 +130,7 @@ size_t FlUuidEncodeStringUtf16(_In_reads_bytes_(FL_UUID_SIZE) const void* uuid, 
 		The procedure returns the length of the string that is always 38.
 */
 
-size_t FlUuidDecodeStringUtf16(_Out_writes_bytes_all_(FL_UUID_SIZE) void* uuid, _In_ size_t length, _In_reads_(length) const WCHAR* string);
+_Success_(return != 0) size_t FlUuidDecodeStringUtf16(_Out_writes_bytes_all_(FL_UUID_SIZE) void* uuid, _In_ size_t length, _In_reads_(length) const WCHAR* string);
 /*
 	Procedure:
 		FlUuidDecodeString

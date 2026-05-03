@@ -1,5 +1,5 @@
 /*
-	UTF-8 / UTF-16 converter unit tests by Santtu S. Nyman.
+	UTF-8 / UTF-16 / UTF-32 converter unit tests by Santtu S. Nyman.
 
 	License:
 
@@ -29,26 +29,33 @@
 	Description:
 
 		Unit tests for FlConvertUtf8ToUtf16, FlConvertUtf16ToUtf8,
-		FlConvertUtf8ToUtf16Be, and FlConvertUtf16BeToUtf8.
+		FlConvertUtf8ToUtf32, FlConvertUtf32ToUtf8, FlConvertUtf32ToUtf16,
+		FlConvertUtf16ToUtf32, FlCompareStringOrdinalUtf32, and related APIs.
 
 		Test vectors cover all four UTF-8 sequence lengths, surrogate pairs
 		for supplementary code points, the maximum valid code point (U+10FFFF),
-		mixed content, empty input, invalid UTF-8, and lone surrogates.
+		mixed content, empty input, invalid UTF-8, lone surrogates, and
+		out-of-range UTF-32 code points.
 
 		UTF-16 BE variant stores each 16-bit code unit with bytes swapped
 		relative to the LE value, i.e. WCHAR_be = (v << 8) | (v >> 8).
 
-		Encode vectors (UTF-8 bytes  ->  UTF-16 LE WCHARs):
+		Encode vectors (UTF-8 bytes  ->  UTF-16 LE WCHARs  ->  UTF-32 ints):
 		  #0  48 65 6C 6C 6F                               ("Hello", ASCII)
 		        -> 0048 0065 006C 006C 006F
+		        -> 00000048 00000065 0000006C 0000006C 0000006F
 		  #1  C3 A9 E4 B8 96 E2 82 AC                      (U+00E9 U+4E16 U+20AC)
 		        -> 00E9 4E16 20AC
+		        -> 000000E9 00004E16 000020AC
 		  #2  F0 9F 98 80                                   (U+1F600, 4-byte -> surrogate pair)
 		        -> D83D DE00
+		        -> 0001F600
 		  #3  F4 8F BF BF                                   (U+10FFFF, maximum code point)
 		        -> DBFF DFFF
+		        -> 0010FFFF
 		  #4  41 E2 82 AC 42 F0 9F 98 80 43                 (A U+20AC B U+1F600 C, mixed)
 		        -> 0041 20AC 0042 D83D DE00 0043
+		        -> 00000041 000020AC 00000042 0001F600 00000043
 		  #5  (empty)  ->  (empty)
 */
 
@@ -88,9 +95,17 @@ static const uint8_t FlUtf8V4[]    = { 0x41, 0xE2, 0x82, 0xAC, 0x42, 0xF0, 0x9F,
 static const WCHAR   FlUtf16LeV4[] = { 0x0041, 0x20AC, 0x0042, 0xD83D, 0xDE00, 0x0043 };
 static const WCHAR   FlUtf16BeV4[] = { 0x4100, 0xAC20, 0x4200, 0x3DD8, 0x00DE, 0x4300 };
 
+// UTF-32 code point arrays corresponding to the five encode vectors.
+static const int FlUtf32V0[] = { 0x00000048, 0x00000065, 0x0000006C, 0x0000006C, 0x0000006F };
+static const int FlUtf32V1[] = { 0x000000E9, 0x00004E16, 0x000020AC };
+static const int FlUtf32V2[] = { 0x0001F600 };
+static const int FlUtf32V3[] = { 0x0010FFFF };
+static const int FlUtf32V4[] = { 0x00000041, 0x000020AC, 0x00000042, 0x0001F600, 0x00000043 };
+
 // Lengths
 static const size_t FlUtf8Len[]    = { 5, 8, 4, 4, 10 }; // byte counts
 static const size_t FlUtf16Len[]   = { 5, 3, 2, 2,  6 }; // WCHAR counts
+static const size_t FlUtf32Len[]   = { 5, 3, 1, 1,  5 }; // int element counts
 
 // ---------------------------------------------------------------------------
 // UTF-8 -> UTF-16 LE tests
@@ -231,6 +246,287 @@ static void FlUnicodeUtRoundTripLe(_Inout_ size_t* testCount, _Inout_ size_t* fa
 	size_t nUtf8 = FlConvertUtf16ToUtf8(nWide, intermediate, 10, (char*)result);
 	FL_UT_CHECK(nUtf8 == FlUtf8Len[4] && memcmp(result, FlUtf8V4, FlUtf8Len[4]) == 0,
 	            "FlUnicodeUtRoundTripLe");
+}
+
+// ---------------------------------------------------------------------------
+// UTF-8 -> UTF-32 tests
+// ---------------------------------------------------------------------------
+
+// ASCII "Hello": five one-byte sequences -> five code points, return 5.
+static void FlUnicodeUtAsciiToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	int buf[5];
+	size_t n = FlConvertUtf8ToUtf32(FlUtf8Len[0], (const char*)FlUtf8V0, 5, buf);
+	FL_UT_CHECK(n == FlUtf32Len[0] && memcmp(buf, FlUtf32V0, FlUtf32Len[0] * sizeof(int)) == 0,
+	            "FlUnicodeUtAsciiToUtf32");
+}
+
+// Two-byte (U+00E9) and three-byte (U+4E16, U+20AC) sequences -> BMP code points.
+static void FlUnicodeUtBmpToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	int buf[3];
+	size_t n = FlConvertUtf8ToUtf32(FlUtf8Len[1], (const char*)FlUtf8V1, 3, buf);
+	FL_UT_CHECK(n == FlUtf32Len[1] && memcmp(buf, FlUtf32V1, FlUtf32Len[1] * sizeof(int)) == 0,
+	            "FlUnicodeUtBmpToUtf32");
+}
+
+// Four-byte sequences -> supplementary code points: U+1F600 and U+10FFFF.
+static void FlUnicodeUtSupplementaryToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	int buf2[1], buf3[1];
+	size_t n2 = FlConvertUtf8ToUtf32(FlUtf8Len[2], (const char*)FlUtf8V2, 1, buf2);
+	size_t n3 = FlConvertUtf8ToUtf32(FlUtf8Len[3], (const char*)FlUtf8V3, 1, buf3);
+	FL_UT_CHECK(
+	    n2 == FlUtf32Len[2] && memcmp(buf2, FlUtf32V2, FlUtf32Len[2] * sizeof(int)) == 0 &&
+	    n3 == FlUtf32Len[3] && memcmp(buf3, FlUtf32V3, FlUtf32Len[3] * sizeof(int)) == 0,
+	    "FlUnicodeUtSupplementaryToUtf32");
+}
+
+// Mixed content: ASCII + BMP + ASCII + supplementary + ASCII -> 5 code points.
+static void FlUnicodeUtMixedToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	int buf[5];
+	size_t n = FlConvertUtf8ToUtf32(FlUtf8Len[4], (const char*)FlUtf8V4, 5, buf);
+	FL_UT_CHECK(n == FlUtf32Len[4] && memcmp(buf, FlUtf32V4, FlUtf32Len[4] * sizeof(int)) == 0,
+	            "FlUnicodeUtMixedToUtf32");
+}
+
+// ---------------------------------------------------------------------------
+// UTF-32 -> UTF-8 tests
+// ---------------------------------------------------------------------------
+
+// Five ASCII code points -> "Hello" UTF-8 bytes.
+static void FlUnicodeUtAsciiFromUtf32ToUtf8(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	uint8_t buf[5];
+	size_t n = FlConvertUtf32ToUtf8(FlUtf32Len[0], FlUtf32V0, 5, (char*)buf);
+	FL_UT_CHECK(n == FlUtf8Len[0] && memcmp(buf, FlUtf8V0, FlUtf8Len[0]) == 0,
+	            "FlUnicodeUtAsciiFromUtf32ToUtf8");
+}
+
+// BMP code points -> 2-byte and 3-byte UTF-8 sequences.
+static void FlUnicodeUtBmpFromUtf32ToUtf8(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	uint8_t buf[8];
+	size_t n = FlConvertUtf32ToUtf8(FlUtf32Len[1], FlUtf32V1, 8, (char*)buf);
+	FL_UT_CHECK(n == FlUtf8Len[1] && memcmp(buf, FlUtf8V1, FlUtf8Len[1]) == 0,
+	            "FlUnicodeUtBmpFromUtf32ToUtf8");
+}
+
+// Supplementary code points -> four-byte UTF-8: U+1F600 and U+10FFFF.
+static void FlUnicodeUtSupplementaryFromUtf32ToUtf8(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	uint8_t buf2[4], buf3[4];
+	size_t n2 = FlConvertUtf32ToUtf8(FlUtf32Len[2], FlUtf32V2, 4, (char*)buf2);
+	size_t n3 = FlConvertUtf32ToUtf8(FlUtf32Len[3], FlUtf32V3, 4, (char*)buf3);
+	FL_UT_CHECK(
+	    n2 == FlUtf8Len[2] && memcmp(buf2, FlUtf8V2, FlUtf8Len[2]) == 0 &&
+	    n3 == FlUtf8Len[3] && memcmp(buf3, FlUtf8V3, FlUtf8Len[3]) == 0,
+	    "FlUnicodeUtSupplementaryFromUtf32ToUtf8");
+}
+
+// Mixed content: ASCII + BMP + ASCII + supplementary + ASCII -> 10 bytes.
+static void FlUnicodeUtMixedFromUtf32ToUtf8(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	uint8_t buf[10];
+	size_t n = FlConvertUtf32ToUtf8(FlUtf32Len[4], FlUtf32V4, 10, (char*)buf);
+	FL_UT_CHECK(n == FlUtf8Len[4] && memcmp(buf, FlUtf8V4, FlUtf8Len[4]) == 0,
+	            "FlUnicodeUtMixedFromUtf32ToUtf8");
+}
+
+// ---------------------------------------------------------------------------
+// UTF-32 -> UTF-16 tests
+// ---------------------------------------------------------------------------
+
+// Five ASCII code points -> five ASCII WCHARs.
+static void FlUnicodeUtAsciiFromUtf32ToUtf16(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	WCHAR buf[5];
+	size_t n = FlConvertUtf32ToUtf16(FlUtf32Len[0], FlUtf32V0, 5, buf);
+	FL_UT_CHECK(n == FlUtf16Len[0] && memcmp(buf, FlUtf16LeV0, FlUtf16Len[0] * sizeof(WCHAR)) == 0,
+	            "FlUnicodeUtAsciiFromUtf32ToUtf16");
+}
+
+// BMP code points -> BMP WCHARs.
+static void FlUnicodeUtBmpFromUtf32ToUtf16(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	WCHAR buf[3];
+	size_t n = FlConvertUtf32ToUtf16(FlUtf32Len[1], FlUtf32V1, 3, buf);
+	FL_UT_CHECK(n == FlUtf16Len[1] && memcmp(buf, FlUtf16LeV1, FlUtf16Len[1] * sizeof(WCHAR)) == 0,
+	            "FlUnicodeUtBmpFromUtf32ToUtf16");
+}
+
+// Supplementary code points -> surrogate pairs: U+1F600 and U+10FFFF.
+static void FlUnicodeUtSupplementaryFromUtf32ToUtf16(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	WCHAR buf2[2], buf3[2];
+	size_t n2 = FlConvertUtf32ToUtf16(FlUtf32Len[2], FlUtf32V2, 2, buf2);
+	size_t n3 = FlConvertUtf32ToUtf16(FlUtf32Len[3], FlUtf32V3, 2, buf3);
+	FL_UT_CHECK(
+	    n2 == FlUtf16Len[2] && memcmp(buf2, FlUtf16LeV2, FlUtf16Len[2] * sizeof(WCHAR)) == 0 &&
+	    n3 == FlUtf16Len[3] && memcmp(buf3, FlUtf16LeV3, FlUtf16Len[3] * sizeof(WCHAR)) == 0,
+	    "FlUnicodeUtSupplementaryFromUtf32ToUtf16");
+}
+
+// Mixed content: 5 code points -> 6 WCHARs (supplementary character expands to surrogate pair).
+static void FlUnicodeUtMixedFromUtf32ToUtf16(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	WCHAR buf[6];
+	size_t n = FlConvertUtf32ToUtf16(FlUtf32Len[4], FlUtf32V4, 6, buf);
+	FL_UT_CHECK(n == FlUtf16Len[4] && memcmp(buf, FlUtf16LeV4, FlUtf16Len[4] * sizeof(WCHAR)) == 0,
+	            "FlUnicodeUtMixedFromUtf32ToUtf16");
+}
+
+// ---------------------------------------------------------------------------
+// UTF-16 -> UTF-32 tests
+// ---------------------------------------------------------------------------
+
+// Five ASCII WCHARs -> five ASCII code points.
+static void FlUnicodeUtAsciiFromUtf16ToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	int buf[5];
+	size_t n = FlConvertUtf16ToUtf32(FlUtf16Len[0], FlUtf16LeV0, 5, buf);
+	FL_UT_CHECK(n == FlUtf32Len[0] && memcmp(buf, FlUtf32V0, FlUtf32Len[0] * sizeof(int)) == 0,
+	            "FlUnicodeUtAsciiFromUtf16ToUtf32");
+}
+
+// BMP WCHARs -> BMP code points.
+static void FlUnicodeUtBmpFromUtf16ToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	int buf[3];
+	size_t n = FlConvertUtf16ToUtf32(FlUtf16Len[1], FlUtf16LeV1, 3, buf);
+	FL_UT_CHECK(n == FlUtf32Len[1] && memcmp(buf, FlUtf32V1, FlUtf32Len[1] * sizeof(int)) == 0,
+	            "FlUnicodeUtBmpFromUtf16ToUtf32");
+}
+
+// Surrogate pairs -> supplementary code points: D83D DE00 -> U+1F600, DBFF DFFF -> U+10FFFF.
+static void FlUnicodeUtSurrogateFromUtf16ToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	int buf2[1], buf3[1];
+	size_t n2 = FlConvertUtf16ToUtf32(FlUtf16Len[2], FlUtf16LeV2, 1, buf2);
+	size_t n3 = FlConvertUtf16ToUtf32(FlUtf16Len[3], FlUtf16LeV3, 1, buf3);
+	FL_UT_CHECK(
+	    n2 == FlUtf32Len[2] && memcmp(buf2, FlUtf32V2, FlUtf32Len[2] * sizeof(int)) == 0 &&
+	    n3 == FlUtf32Len[3] && memcmp(buf3, FlUtf32V3, FlUtf32Len[3] * sizeof(int)) == 0,
+	    "FlUnicodeUtSurrogateFromUtf16ToUtf32");
+}
+
+// Mixed content: 6 WCHARs (including a surrogate pair) -> 5 code points.
+static void FlUnicodeUtMixedFromUtf16ToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	int buf[5];
+	size_t n = FlConvertUtf16ToUtf32(FlUtf16Len[4], FlUtf16LeV4, 5, buf);
+	FL_UT_CHECK(n == FlUtf32Len[4] && memcmp(buf, FlUtf32V4, FlUtf32Len[4] * sizeof(int)) == 0,
+	            "FlUnicodeUtMixedFromUtf16ToUtf32");
+}
+
+// ---------------------------------------------------------------------------
+// Empty input for UTF-32 functions
+// ---------------------------------------------------------------------------
+
+// All four UTF-32 conversion functions return 0 and write nothing for empty input.
+static void FlUnicodeUtEmptyInputUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	int     i32Buf[1] = { 0x7FFFFFFF };
+	WCHAR   wBuf[1]   = { 0xFFFF };
+	uint8_t cBuf[1]   = { 0xFF };
+	size_t r0 = FlConvertUtf8ToUtf32(0, "",      0, i32Buf);
+	size_t r1 = FlConvertUtf32ToUtf8(0, i32Buf,  0, (char*)cBuf);
+	size_t r2 = FlConvertUtf32ToUtf16(0, i32Buf, 0, wBuf);
+	size_t r3 = FlConvertUtf16ToUtf32(0, wBuf,   0, i32Buf);
+	FL_UT_CHECK(r0 == 0 && r1 == 0 && r2 == 0 && r3 == 0,
+	            "FlUnicodeUtEmptyInputUtf32");
+}
+
+// ---------------------------------------------------------------------------
+// Invalid input for UTF-32 functions
+// ---------------------------------------------------------------------------
+
+// Invalid UTF-8 byte (0xFF) is replaced with U+FFFD (0x0000FFFD) in UTF-32 output.
+static void FlUnicodeUtInvalidUtf8ToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const uint8_t badFF[]         = { 0xFF };
+	static const int     expectedFFFD[1] = { 0x0000FFFD };
+	int buf[1];
+	size_t n = FlConvertUtf8ToUtf32(1, (const char*)badFF, 1, buf);
+	FL_UT_CHECK(n == 1 && memcmp(buf, expectedFFFD, sizeof(int)) == 0,
+	            "FlUnicodeUtInvalidUtf8ToUtf32");
+}
+
+// Out-of-range UTF-32 code point (0x00200000, greater than the 4-byte UTF-8 maximum
+// 0x1FFFFF and greater than the UTF-16 maximum 0x10FFFF) is replaced with U+FFFD
+// in both UTF-8 output (EF BF BD) and UTF-16 output (0xFFFD).
+static void FlUnicodeUtOutOfRangeUtf32CodePoint(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int     outOfRange[1]        = { 0x00200000 };
+	static const uint8_t expectedFFFDUtf8[3]  = { 0xEF, 0xBF, 0xBD };
+	static const WCHAR   expectedFFFDUtf16[1] = { 0xFFFD };
+	uint8_t utf8Buf[3];
+	WCHAR   utf16Buf[1];
+	size_t nUtf8  = FlConvertUtf32ToUtf8(1, outOfRange, 3, (char*)utf8Buf);
+	size_t nUtf16 = FlConvertUtf32ToUtf16(1, outOfRange, 1, utf16Buf);
+	FL_UT_CHECK(
+	    nUtf8 == 3 && memcmp(utf8Buf, expectedFFFDUtf8, 3) == 0 &&
+	    nUtf16 == 1 && memcmp(utf16Buf, expectedFFFDUtf16, sizeof(WCHAR)) == 0,
+	    "FlUnicodeUtOutOfRangeUtf32CodePoint");
+}
+
+// A lone high surrogate (0xD83D) and a lone low surrogate (0xDE00) in a UTF-16
+// stream each become U+FFFD (0x0000FFFD) in the UTF-32 output.
+static void FlUnicodeUtLoneSurrogateToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const WCHAR loneHigh[1]     = { 0xD83D };
+	static const WCHAR loneLow[1]      = { 0xDE00 };
+	static const int   expectedFFFD[1] = { 0x0000FFFD };
+	int bufHigh[1], bufLow[1];
+	size_t nHigh = FlConvertUtf16ToUtf32(1, loneHigh, 1, bufHigh);
+	size_t nLow  = FlConvertUtf16ToUtf32(1, loneLow,  1, bufLow);
+	FL_UT_CHECK(
+	    nHigh == 1 && memcmp(bufHigh, expectedFFFD, sizeof(int)) == 0 &&
+	    nLow  == 1 && memcmp(bufLow,  expectedFFFD, sizeof(int)) == 0,
+	    "FlUnicodeUtLoneSurrogateToUtf32");
+}
+
+// Passing 0 for the output buffer length returns the required element count
+// without writing any output, for each of the four UTF-32 conversion functions.
+static void FlUnicodeUtUtf32BufferQuery(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	size_t nUtf8ToUtf32  = FlConvertUtf8ToUtf32(FlUtf8Len[4], (const char*)FlUtf8V4, 0, NULL);
+	size_t nUtf32ToUtf8  = FlConvertUtf32ToUtf8(FlUtf32Len[4], FlUtf32V4, 0, NULL);
+	size_t nUtf32ToUtf16 = FlConvertUtf32ToUtf16(FlUtf32Len[4], FlUtf32V4, 0, NULL);
+	size_t nUtf16ToUtf32 = FlConvertUtf16ToUtf32(FlUtf16Len[4], FlUtf16LeV4, 0, NULL);
+	FL_UT_CHECK(
+	    nUtf8ToUtf32  == FlUtf32Len[4] &&
+	    nUtf32ToUtf8  == FlUtf8Len[4] &&
+	    nUtf32ToUtf16 == FlUtf16Len[4] &&
+	    nUtf16ToUtf32 == FlUtf32Len[4],
+	    "FlUnicodeUtUtf32BufferQuery");
+}
+
+// ---------------------------------------------------------------------------
+// Round-trip tests involving UTF-32
+// ---------------------------------------------------------------------------
+
+// UTF-8 -> UTF-32 -> UTF-8 using the mixed vector restores the original bytes exactly.
+static void FlUnicodeUtRoundTripUtf8Utf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	int     intermediate[5];
+	uint8_t result[10];
+	size_t nUtf32 = FlConvertUtf8ToUtf32(FlUtf8Len[4], (const char*)FlUtf8V4, 5, intermediate);
+	size_t nUtf8  = FlConvertUtf32ToUtf8(nUtf32, intermediate, 10, (char*)result);
+	FL_UT_CHECK(nUtf8 == FlUtf8Len[4] && memcmp(result, FlUtf8V4, FlUtf8Len[4]) == 0,
+	            "FlUnicodeUtRoundTripUtf8Utf32");
+}
+
+// UTF-16 -> UTF-32 -> UTF-16 using the mixed vector restores the original WCHARs exactly.
+static void FlUnicodeUtRoundTripUtf16Utf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	int   intermediate[5];
+	WCHAR result[6];
+	size_t nUtf32 = FlConvertUtf16ToUtf32(FlUtf16Len[4], FlUtf16LeV4, 5, intermediate);
+	size_t nUtf16 = FlConvertUtf32ToUtf16(nUtf32, intermediate, 6, result);
+	FL_UT_CHECK(nUtf16 == FlUtf16Len[4] && memcmp(result, FlUtf16LeV4, FlUtf16Len[4] * sizeof(WCHAR)) == 0,
+	            "FlUnicodeUtRoundTripUtf16Utf32");
 }
 
 
@@ -985,12 +1281,265 @@ static void FlUnicodeUtUtf16ValidCharVsLoneSurrogate(_Inout_ size_t* testCount, 
 }
 
 // ---------------------------------------------------------------------------
+// FlCompareStringOrdinalUtf32 — ASCII
+// ---------------------------------------------------------------------------
+
+// Identical ASCII strings must compare as equal (case-sensitive).
+static void FlUnicodeUtUtf32CaseSensitiveEqual(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int strA[] = { 0x68, 0x65, 0x6C, 0x6C, 0x6F }; // "hello"
+	static const int strB[] = { 0x68, 0x65, 0x6C, 0x6C, 0x6F };
+	int result = FlCompareStringOrdinalUtf32(strA, 5, strB, 5, FALSE);
+	FL_UT_CHECK(result == CSTR_EQUAL, "FlUnicodeUtUtf32CaseSensitiveEqual");
+}
+
+// "abc" must compare as less than "abd" (case-sensitive).
+static void FlUnicodeUtUtf32CaseSensitiveLess(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int strA[] = { 0x61, 0x62, 0x63 }; // "abc"
+	static const int strB[] = { 0x61, 0x62, 0x64 }; // "abd"
+	int result = FlCompareStringOrdinalUtf32(strA, 3, strB, 3, FALSE);
+	FL_UT_CHECK(result == CSTR_LESS_THAN, "FlUnicodeUtUtf32CaseSensitiveLess");
+}
+
+// "abd" must compare as greater than "abc" (case-sensitive).
+static void FlUnicodeUtUtf32CaseSensitiveGreater(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int strA[] = { 0x61, 0x62, 0x64 }; // "abd"
+	static const int strB[] = { 0x61, 0x62, 0x63 }; // "abc"
+	int result = FlCompareStringOrdinalUtf32(strA, 3, strB, 3, FALSE);
+	FL_UT_CHECK(result == CSTR_GREATER_THAN, "FlUnicodeUtUtf32CaseSensitiveGreater");
+}
+
+// "abc" must compare as greater than "ABC" in case-sensitive mode because the
+// raw code point value of 'a' (0x61) is greater than 'A' (0x41).
+static void FlUnicodeUtUtf32CaseSensitiveDifferentCase(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int strLower[] = { 0x61, 0x62, 0x63 }; // "abc"
+	static const int strUpper[] = { 0x41, 0x42, 0x43 }; // "ABC"
+	int result = FlCompareStringOrdinalUtf32(strLower, 3, strUpper, 3, FALSE);
+	FL_UT_CHECK(result == CSTR_GREATER_THAN, "FlUnicodeUtUtf32CaseSensitiveDifferentCase");
+}
+
+// "hello" and "HELLO" must compare as equal when case is ignored.
+static void FlUnicodeUtUtf32CaseInsensitiveEqual(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int strLower[] = { 0x68, 0x65, 0x6C, 0x6C, 0x6F }; // "hello"
+	static const int strUpper[] = { 0x48, 0x45, 0x4C, 0x4C, 0x4F }; // "HELLO"
+	int result = FlCompareStringOrdinalUtf32(strLower, 5, strUpper, 5, TRUE);
+	FL_UT_CHECK(result == CSTR_EQUAL, "FlUnicodeUtUtf32CaseInsensitiveEqual");
+}
+
+// "abc" must compare as less than "abd" in case-insensitive mode.
+static void FlUnicodeUtUtf32CaseInsensitiveLess(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int strA[] = { 0x61, 0x62, 0x63 }; // "abc"
+	static const int strB[] = { 0x61, 0x62, 0x64 }; // "abd"
+	int result = FlCompareStringOrdinalUtf32(strA, 3, strB, 3, TRUE);
+	FL_UT_CHECK(result == CSTR_LESS_THAN, "FlUnicodeUtUtf32CaseInsensitiveLess");
+}
+
+// "001000" must compare as less than "002000".
+static void FlUnicodeUtUtf32CaseNumberLess(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int str001[] = { 0x30, 0x30, 0x31, 0x30, 0x30, 0x30 }; // "001000"
+	static const int str002[] = { 0x30, 0x30, 0x32, 0x30, 0x30, 0x30 }; // "002000"
+	int result = FlCompareStringOrdinalUtf32(str001, 6, str002, 6, TRUE);
+	FL_UT_CHECK(result == CSTR_LESS_THAN, "FlUnicodeUtUtf32CaseNumberLess");
+}
+
+// Two empty strings must compare as equal in both modes.
+static void FlUnicodeUtUtf32EmptyEqual(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int empty[] = { 0 };
+	int resultCS = FlCompareStringOrdinalUtf32(empty, 0, empty, 0, FALSE);
+	int resultCI = FlCompareStringOrdinalUtf32(empty, 0, empty, 0, TRUE);
+	FL_UT_CHECK(resultCS == CSTR_EQUAL, "FlUnicodeUtUtf32EmptyEqual_CS");
+	FL_UT_CHECK(resultCI == CSTR_EQUAL, "FlUnicodeUtUtf32EmptyEqual_CI");
+}
+
+// An empty string must compare as less than a non-empty string (case-sensitive).
+static void FlUnicodeUtUtf32EmptyLessThanNonEmpty(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int empty[] = { 0 };
+	static const int strA[]  = { 0x61 }; // "a"
+	int result = FlCompareStringOrdinalUtf32(empty, 0, strA, 1, FALSE);
+	FL_UT_CHECK(result == CSTR_LESS_THAN, "FlUnicodeUtUtf32EmptyLessThanNonEmpty");
+}
+
+// Passing (size_t)-1 as length must give the same result as passing the
+// explicit element count for a null-terminated string.
+static void FlUnicodeUtUtf32NullTerminated(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int strA[] = { 0x68, 0x65, 0x6C, 0x6C, 0x6F, 0 }; // "hello\0"
+	static const int strB[] = { 0x68, 0x65, 0x6C, 0x6C, 0x6F, 0 };
+	int resultCS = FlCompareStringOrdinalUtf32(strA, (size_t)-1, strB, (size_t)-1, FALSE);
+	int resultCI = FlCompareStringOrdinalUtf32(strA, (size_t)-1, strB, (size_t)-1, TRUE);
+	FL_UT_CHECK(resultCS == CSTR_EQUAL, "FlUnicodeUtUtf32NullTerminated_CS");
+	FL_UT_CHECK(resultCI == CSTR_EQUAL, "FlUnicodeUtUtf32NullTerminated_CI");
+}
+
+// ---------------------------------------------------------------------------
+// FlCompareStringOrdinalUtf32 — Non-ASCII
+// ---------------------------------------------------------------------------
+
+// Non-ASCII letters with case pairs must compare as equal when case is ignored.
+// U+00E4 (ä) == U+00C4 (Ä), U+00F6 (ö) == U+00D6 (Ö), U+00FC (ü) == U+00DC (Ü),
+// U+00E5 (å) == U+00C5 (Å).
+static void FlUnicodeUtUtf32CaseInsensitiveNonAsciiEqual(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int ae_lower[] = { 0x00E4 }; // ä  U+00E4
+	static const int ae_upper[] = { 0x00C4 }; // Ä  U+00C4
+	static const int oe_lower[] = { 0x00F6 }; // ö  U+00F6
+	static const int oe_upper[] = { 0x00D6 }; // Ö  U+00D6
+	static const int ue_lower[] = { 0x00FC }; // ü  U+00FC
+	static const int ue_upper[] = { 0x00DC }; // Ü  U+00DC
+	static const int aa_lower[] = { 0x00E5 }; // å  U+00E5
+	static const int aa_upper[] = { 0x00C5 }; // Å  U+00C5
+
+	FL_UT_CHECK(FlCompareStringOrdinalUtf32(ae_lower, 1, ae_upper, 1, TRUE) == CSTR_EQUAL, "FlUnicodeUtUtf32CaseInsensitiveNonAsciiEqual_ae");
+	FL_UT_CHECK(FlCompareStringOrdinalUtf32(oe_lower, 1, oe_upper, 1, TRUE) == CSTR_EQUAL, "FlUnicodeUtUtf32CaseInsensitiveNonAsciiEqual_oe");
+	FL_UT_CHECK(FlCompareStringOrdinalUtf32(ue_lower, 1, ue_upper, 1, TRUE) == CSTR_EQUAL, "FlUnicodeUtUtf32CaseInsensitiveNonAsciiEqual_ue");
+	FL_UT_CHECK(FlCompareStringOrdinalUtf32(aa_lower, 1, aa_upper, 1, TRUE) == CSTR_EQUAL, "FlUnicodeUtUtf32CaseInsensitiveNonAsciiEqual_aa");
+}
+
+// ä (U+00E4) and ö (U+00F6) are distinct characters; they must not compare as
+// equal in either case-sensitive or case-insensitive mode.
+static void FlUnicodeUtUtf32CaseInsensitiveNonEqual(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int ae[] = { 0x00E4 }; // ä  U+00E4
+	static const int oe[] = { 0x00F6 }; // ö  U+00F6
+	int resultCI = FlCompareStringOrdinalUtf32(ae, 1, oe, 1, TRUE);
+	int resultCS = FlCompareStringOrdinalUtf32(ae, 1, oe, 1, FALSE);
+	FL_UT_CHECK(resultCI != CSTR_EQUAL, "FlUnicodeUtUtf32CaseInsensitiveNonEqual_CI");
+	FL_UT_CHECK(resultCS != CSTR_EQUAL, "FlUnicodeUtUtf32CaseInsensitiveNonEqual_CS");
+}
+
+// German: "schön" (s c h U+00F6 n) must compare equal to "SCHÖN" (S C H U+00D6 N)
+// when case is ignored, and must not compare equal to "schon" (plain o) even when
+// case is ignored.
+static void FlUnicodeUtUtf32GermanCaseInsensitive(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	// "schön":  s       c       h       ö        n
+	static const int schoen[] = { 0x73, 0x63, 0x68, 0x00F6, 0x6E };
+	// "SCHÖN":  S       C       H       Ö        N
+	static const int SCHOEN[] = { 0x53, 0x43, 0x48, 0x00D6, 0x4E };
+	// "schon":  s       c       h       o        n
+	static const int schon[]  = { 0x73, 0x63, 0x68, 0x6F,   0x6E };
+
+	int resultEqual    = FlCompareStringOrdinalUtf32(schoen, 5, SCHOEN, 5, TRUE);
+	int resultNotEqual = FlCompareStringOrdinalUtf32(schoen, 5, schon,  5, TRUE);
+
+	FL_UT_CHECK(resultEqual    == CSTR_EQUAL, "FlUnicodeUtUtf32GermanCaseInsensitive_Equal");
+	FL_UT_CHECK(resultNotEqual != CSTR_EQUAL, "FlUnicodeUtUtf32GermanCaseInsensitive_NotEqual");
+}
+
+// Finnish: "äiti" (U+00E4 i t i) must compare equal to "ÄITI" (U+00C4 I T I)
+// when case is ignored, and must not compare equal to "aiti" (plain a) even when
+// case is ignored.
+static void FlUnicodeUtUtf32FinnishCaseInsensitive(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	// "äiti":   ä        i       t       i
+	static const int aiti_lower[] = { 0x00E4, 0x69, 0x74, 0x69 };
+	// "ÄITI":   Ä        I       T       I
+	static const int AITI_upper[] = { 0x00C4, 0x49, 0x54, 0x49 };
+	// "aiti":   a        i       t       i
+	static const int aiti_plain[] = { 0x61,   0x69, 0x74, 0x69 };
+
+	int resultEqual    = FlCompareStringOrdinalUtf32(aiti_lower, 4, AITI_upper, 4, TRUE);
+	int resultNotEqual = FlCompareStringOrdinalUtf32(aiti_lower, 4, aiti_plain, 4, TRUE);
+
+	FL_UT_CHECK(resultEqual    == CSTR_EQUAL, "FlUnicodeUtUtf32FinnishCaseInsensitive_Equal");
+	FL_UT_CHECK(resultNotEqual != CSTR_EQUAL, "FlUnicodeUtUtf32FinnishCaseInsensitive_NotEqual");
+}
+
+// Swedish: "ålder" (U+00E5 l d e r) must compare equal to "ÅLDER" (U+00C5 L D E R)
+// when case is ignored, and must not compare equal to "alder" (plain a) even when
+// case is ignored.
+static void FlUnicodeUtUtf32SwedishCaseInsensitive(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	// "ålder":  å        l       d       e       r
+	static const int alder_lower[] = { 0x00E5, 0x6C, 0x64, 0x65, 0x72 };
+	// "ÅLDER":  Å        L       D       E       R
+	static const int ALDER_upper[] = { 0x00C5, 0x4C, 0x44, 0x45, 0x52 };
+	// "alder":  a        l       d       e       r
+	static const int alder_plain[] = { 0x61,   0x6C, 0x64, 0x65, 0x72 };
+
+	int resultEqual    = FlCompareStringOrdinalUtf32(alder_lower, 5, ALDER_upper, 5, TRUE);
+	int resultNotEqual = FlCompareStringOrdinalUtf32(alder_lower, 5, alder_plain, 5, TRUE);
+
+	FL_UT_CHECK(resultEqual    == CSTR_EQUAL, "FlUnicodeUtUtf32SwedishCaseInsensitive_Equal");
+	FL_UT_CHECK(resultNotEqual != CSTR_EQUAL, "FlUnicodeUtUtf32SwedishCaseInsensitive_NotEqual");
+}
+
+// ---------------------------------------------------------------------------
+// FlCompareStringOrdinalUtf32 — Invalid (out-of-range code points)
+// ---------------------------------------------------------------------------
+
+// Two strings containing the same out-of-range code point must compare as equal
+// in case-sensitive mode (raw values are identical).
+static void FlUnicodeUtUtf32InvalidEqualSame(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int invalid[] = { 0x00200000 };
+	int result = FlCompareStringOrdinalUtf32(invalid, 1, invalid, 1, FALSE);
+	FL_UT_CHECK(result == CSTR_EQUAL, "FlUnicodeUtUtf32InvalidEqualSame");
+}
+
+// Same out-of-range code point must also compare as equal in case-insensitive mode.
+static void FlUnicodeUtUtf32InvalidEqualSameCaseInsensitive(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int invalid[] = { 0x00200000 };
+	int result = FlCompareStringOrdinalUtf32(invalid, 1, invalid, 1, TRUE);
+	FL_UT_CHECK(result == CSTR_EQUAL, "FlUnicodeUtUtf32InvalidEqualSameCaseInsensitive");
+}
+
+// Two different out-of-range code points must compare as not equal (case-sensitive).
+static void FlUnicodeUtUtf32InvalidNotEqual(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int invalidLow[]  = { 0x00200000 };
+	static const int invalidHigh[] = { 0x00200001 };
+	int result = FlCompareStringOrdinalUtf32(invalidLow, 1, invalidHigh, 1, FALSE);
+	FL_UT_CHECK(result != CSTR_EQUAL, "FlUnicodeUtUtf32InvalidNotEqual");
+}
+
+// Ordering must still be correct for valid code points that follow an identical
+// prefix of out-of-range code points, in both comparison modes.
+static void FlUnicodeUtUtf32ValidAfterInvalid(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int invalidAStr[] = { 0x00200000, 0x00200000, 0x00200000, 0x00200000, 0x41 };
+	static const int invalidBStr[] = { 0x00200000, 0x00200000, 0x00200000, 0x00200000, 0x42 };
+
+	int resultCI = FlCompareStringOrdinalUtf32(invalidAStr, 5, invalidBStr, 5, TRUE);
+	int resultCS = FlCompareStringOrdinalUtf32(invalidAStr, 5, invalidBStr, 5, FALSE);
+
+	FL_UT_CHECK(resultCI == CSTR_LESS_THAN && resultCS == CSTR_LESS_THAN, "FlUnicodeUtUtf32ValidAfterInvalid");
+}
+
+// A valid code point and an out-of-range code point must compare as not equal
+// in both modes.
+static void FlUnicodeUtUtf32ValidVsInvalid(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	static const int validStr[]   = { 0x61 };       // "a" U+0061
+	static const int invalidStr[] = { 0x00200000 };
+
+	int resultValidCS   = FlCompareStringOrdinalUtf32(validStr,   1, invalidStr, 1, FALSE);
+	int resultValidCI   = FlCompareStringOrdinalUtf32(validStr,   1, invalidStr, 1, TRUE);
+	int resultInvalidCS = FlCompareStringOrdinalUtf32(invalidStr, 1, validStr,   1, FALSE);
+	int resultInvalidCI = FlCompareStringOrdinalUtf32(invalidStr, 1, validStr,   1, TRUE);
+
+	FL_UT_CHECK(resultValidCS   != CSTR_EQUAL, "FlUnicodeUtUtf32ValidVsInvalid_Valid_CS");
+	FL_UT_CHECK(resultInvalidCS != CSTR_EQUAL, "FlUnicodeUtUtf32ValidVsInvalid_Invalid_CS");
+	FL_UT_CHECK(resultValidCI   != CSTR_EQUAL, "FlUnicodeUtUtf32ValidVsInvalid_Valid_CI");
+	FL_UT_CHECK(resultInvalidCI != CSTR_EQUAL, "FlUnicodeUtUtf32ValidVsInvalid_Invalid_CI");
+}
+
+// ---------------------------------------------------------------------------
 // Test suite entry point
 // ---------------------------------------------------------------------------
 
 void FlUnicodeUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	// Encoding conversion
+	// UTF-8 / UTF-16 encoding conversion
 	FlUnicodeUtAsciiToUtf16Le(testCount, failCount);
 	FlUnicodeUtBmpToUtf16Le(testCount, failCount);
 	FlUnicodeUtSurrogateToUtf16Le(testCount, failCount);
@@ -1002,6 +1551,39 @@ void FlUnicodeUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 	FlUnicodeUtInvalidUtf8(testCount, failCount);
 	FlUnicodeUtLoneSurrogate(testCount, failCount);
 	FlUnicodeUtRoundTripLe(testCount, failCount);
+
+	// UTF-8 -> UTF-32
+	FlUnicodeUtAsciiToUtf32(testCount, failCount);
+	FlUnicodeUtBmpToUtf32(testCount, failCount);
+	FlUnicodeUtSupplementaryToUtf32(testCount, failCount);
+	FlUnicodeUtMixedToUtf32(testCount, failCount);
+
+	// UTF-32 -> UTF-8
+	FlUnicodeUtAsciiFromUtf32ToUtf8(testCount, failCount);
+	FlUnicodeUtBmpFromUtf32ToUtf8(testCount, failCount);
+	FlUnicodeUtSupplementaryFromUtf32ToUtf8(testCount, failCount);
+	FlUnicodeUtMixedFromUtf32ToUtf8(testCount, failCount);
+
+	// UTF-32 -> UTF-16
+	FlUnicodeUtAsciiFromUtf32ToUtf16(testCount, failCount);
+	FlUnicodeUtBmpFromUtf32ToUtf16(testCount, failCount);
+	FlUnicodeUtSupplementaryFromUtf32ToUtf16(testCount, failCount);
+	FlUnicodeUtMixedFromUtf32ToUtf16(testCount, failCount);
+
+	// UTF-16 -> UTF-32
+	FlUnicodeUtAsciiFromUtf16ToUtf32(testCount, failCount);
+	FlUnicodeUtBmpFromUtf16ToUtf32(testCount, failCount);
+	FlUnicodeUtSurrogateFromUtf16ToUtf32(testCount, failCount);
+	FlUnicodeUtMixedFromUtf16ToUtf32(testCount, failCount);
+
+	// UTF-32 conversion — empty, invalid, buffer query, round-trips
+	FlUnicodeUtEmptyInputUtf32(testCount, failCount);
+	FlUnicodeUtInvalidUtf8ToUtf32(testCount, failCount);
+	FlUnicodeUtOutOfRangeUtf32CodePoint(testCount, failCount);
+	FlUnicodeUtLoneSurrogateToUtf32(testCount, failCount);
+	FlUnicodeUtUtf32BufferQuery(testCount, failCount);
+	FlUnicodeUtRoundTripUtf8Utf32(testCount, failCount);
+	FlUnicodeUtRoundTripUtf16Utf32(testCount, failCount);
 
 	// FlCodepointToUpperCase
 	FlUnicodeUtUpperCaseAsciiLowercase(testCount, failCount);
@@ -1071,4 +1653,30 @@ void FlUnicodeUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 	FlUnicodeUtUtf16ValidAfterLoneSurrogate(testCount, failCount);
 	FlUnicodeUtUtf16LoneSurrogateVsValidChar(testCount, failCount);
 	FlUnicodeUtUtf16ValidCharVsLoneSurrogate(testCount, failCount);
+
+	// FlCompareStringOrdinalUtf32 — ASCII
+	FlUnicodeUtUtf32CaseSensitiveEqual(testCount, failCount);
+	FlUnicodeUtUtf32CaseSensitiveLess(testCount, failCount);
+	FlUnicodeUtUtf32CaseSensitiveGreater(testCount, failCount);
+	FlUnicodeUtUtf32CaseSensitiveDifferentCase(testCount, failCount);
+	FlUnicodeUtUtf32CaseInsensitiveEqual(testCount, failCount);
+	FlUnicodeUtUtf32CaseInsensitiveLess(testCount, failCount);
+	FlUnicodeUtUtf32CaseNumberLess(testCount, failCount);
+	FlUnicodeUtUtf32EmptyEqual(testCount, failCount);
+	FlUnicodeUtUtf32EmptyLessThanNonEmpty(testCount, failCount);
+	FlUnicodeUtUtf32NullTerminated(testCount, failCount);
+
+	// FlCompareStringOrdinalUtf32 — Non-ASCII
+	FlUnicodeUtUtf32CaseInsensitiveNonAsciiEqual(testCount, failCount);
+	FlUnicodeUtUtf32CaseInsensitiveNonEqual(testCount, failCount);
+	FlUnicodeUtUtf32GermanCaseInsensitive(testCount, failCount);
+	FlUnicodeUtUtf32FinnishCaseInsensitive(testCount, failCount);
+	FlUnicodeUtUtf32SwedishCaseInsensitive(testCount, failCount);
+
+	// FlCompareStringOrdinalUtf32 — Invalid (out-of-range code points)
+	FlUnicodeUtUtf32InvalidEqualSame(testCount, failCount);
+	FlUnicodeUtUtf32InvalidEqualSameCaseInsensitive(testCount, failCount);
+	FlUnicodeUtUtf32InvalidNotEqual(testCount, failCount);
+	FlUnicodeUtUtf32ValidAfterInvalid(testCount, failCount);
+	FlUnicodeUtUtf32ValidVsInvalid(testCount, failCount);
 }

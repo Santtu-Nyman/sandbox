@@ -68,7 +68,7 @@ BOOL FlWin32IsPathFullyQualified(_In_ SIZE_T pathLength, _In_reads_(pathLength) 
 		Returns TRUE if the path is fully qualified, FALSE otherwise.
 */
 
-SIZE_T FlWin32GetFullyQualifiedPath(_In_ SIZE_T pathLength, _In_reads_(pathLength) const WCHAR* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const WCHAR* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) WCHAR* pathBuffer);
+_Success_(return != 0 && return <= pathBufferSize) SIZE_T FlWin32GetFullyQualifiedPath(_In_ SIZE_T pathLength, _In_reads_(pathLength) const WCHAR* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const WCHAR* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_opt_(pathBufferSize, return) WCHAR* pathBuffer);
 /*
 	Function:
 		FlWin32GetFullyQualifiedPath
@@ -117,7 +117,7 @@ SIZE_T FlWin32GetFullyQualifiedPath(_In_ SIZE_T pathLength, _In_reads_(pathLengt
 		both path and basePath are empty or unusable.
 */
 
-SIZE_T FlWin32GetVolumeDirectoryPath(_In_ SIZE_T pathLength, _In_reads_(pathLength) const WCHAR* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const WCHAR* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) WCHAR* pathBuffer);
+_Success_(return != 0 && return <= pathBufferSize) SIZE_T FlWin32GetVolumeDirectoryPath(_In_ SIZE_T pathLength, _In_reads_(pathLength) const WCHAR* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const WCHAR* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_opt_(pathBufferSize, return) WCHAR* pathBuffer);
 /*
 	Function:
 		FlWin32GetVolumeDirectoryPath
@@ -192,7 +192,7 @@ BOOL FlWin32IsPathFullyQualifiedUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLeng
 		Returns TRUE if the path is fully qualified, FALSE otherwise.
 */
 
-SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLength) const char* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const char* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) char* pathBuffer);
+_Success_(return != 0 && return <= pathBufferSize) SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLength) const char* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const char* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_opt_(pathBufferSize, return) char* pathBuffer);
 /*
 	Function:
 		FlWin32GetFullyQualifiedPathUtf8
@@ -244,7 +244,7 @@ SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathL
 		both path and basePath are empty or unusable.
 */
 
-SIZE_T FlWin32GetVolumeDirectoryPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLength) const char* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const char* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_(pathBufferSize,return) char* pathBuffer);
+_Success_(return != 0 && return <= pathBufferSize) SIZE_T FlWin32GetVolumeDirectoryPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLength) const char* path, _In_ SIZE_T basePathLength, _In_reads_(basePathLength) const char* basePath, _In_ SIZE_T pathBufferSize, _Out_writes_to_opt_(pathBufferSize, return) char* pathBuffer);
 /*
 	Function:
 		FlWin32GetVolumeDirectoryPathUtf8

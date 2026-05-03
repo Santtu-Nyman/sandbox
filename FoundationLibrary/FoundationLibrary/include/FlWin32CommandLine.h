@@ -147,7 +147,7 @@ HRESULT FlWin32CommandLineToArgumentsUtf8(_In_ _Null_terminated_ const WCHAR* wi
 		Returns another HRESULT error code on failure.
 */
 
-WCHAR** FlCommandLineToArgvW(_In_ _Null_terminated_ const WCHAR* win32CommandLine, _Out_ int* argumentCountAddress);
+_Success_(return != NULL) WCHAR** FlCommandLineToArgvW(_In_ _Null_terminated_ const WCHAR* win32CommandLine, _Out_ int* argumentCountAddress);
 /*
 	Function:
 		FlCommandLineToArgvW
