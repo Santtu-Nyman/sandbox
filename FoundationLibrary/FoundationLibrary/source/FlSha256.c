@@ -94,58 +94,58 @@ FL_SHA256_ALIGN(256) static const uint32_t FlSha256InternalConstantTableK[64] = 
 	0x19a4c116lu, 0x1e376c08lu, 0x2748774clu, 0x34b0bcb5lu, 0x391c0cb3lu, 0x4ed8aa4alu, 0x5b9cca4flu, 0x682e6ff3lu,
 	0x748f82eelu, 0x78a5636flu, 0x84c87814lu, 0x8cc70208lu, 0x90befffalu, 0xa4506ceblu, 0xbef9a3f7lu, 0xc67178f2lu };
 
-static void FlSha256InternalConsumeChunk(_Inout_updates_(8) uint32_t* h, _In_reads_bytes_(16) const uint32_t* p)
+static void FlSha256InternalConsumeChunk(_Inout_updates_(8) uint32_t* hashState, _In_reads_bytes_(16) const uint32_t* chunkData)
 {
-	uint32_t ah[8];
-	uint32_t w[16];
+	uint32_t workingVariables[8];
+	uint32_t messageSchedule[16];
 	for (int i = 0; i < 8; i++)
 	{
-		ah[i] = h[i];
+		workingVariables[i] = hashState[i];
 	}
 	for (int i = 0; i < 16; i++)
 	{
-		uint32_t wx = FL_SHA256_BYTE_SWAP_32(p[i]);
-		uint32_t s1 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 6) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 11) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 25);
-		uint32_t ch = (ah[4] & ah[5]) ^ (~ah[4] & ah[6]);
-		uint32_t temp1 = ah[7] + s1 + ch + FlSha256InternalConstantTableK[i] + wx;
-		uint32_t s0 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 2) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 13) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 22);
-		uint32_t maj = (ah[0] & ah[1]) ^ (ah[0] & ah[2]) ^ (ah[1] & ah[2]);
-		uint32_t temp2 = s0 + maj;
-		w[i] = wx;
-		ah[7] = ah[6];
-		ah[6] = ah[5];
-		ah[5] = ah[4];
-		ah[4] = ah[3] + temp1;
-		ah[3] = ah[2];
-		ah[2] = ah[1];
-		ah[1] = ah[0];
-		ah[0] = temp1 + temp2;
+		uint32_t inputWord = FL_SHA256_BYTE_SWAP_32(chunkData[i]);
+		uint32_t roundSigma1 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(workingVariables[4], 6) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(workingVariables[4], 11) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(workingVariables[4], 25);
+		uint32_t chooseValue = (workingVariables[4] & workingVariables[5]) ^ (~workingVariables[4] & workingVariables[6]);
+		uint32_t temp1 = workingVariables[7] + roundSigma1 + chooseValue + FlSha256InternalConstantTableK[i] + inputWord;
+		uint32_t roundSigma0 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(workingVariables[0], 2) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(workingVariables[0], 13) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(workingVariables[0], 22);
+		uint32_t maj = (workingVariables[0] & workingVariables[1]) ^ (workingVariables[0] & workingVariables[2]) ^ (workingVariables[1] & workingVariables[2]);
+		uint32_t temp2 = roundSigma0 + maj;
+		messageSchedule[i] = inputWord;
+		workingVariables[7] = workingVariables[6];
+		workingVariables[6] = workingVariables[5];
+		workingVariables[5] = workingVariables[4];
+		workingVariables[4] = workingVariables[3] + temp1;
+		workingVariables[3] = workingVariables[2];
+		workingVariables[2] = workingVariables[1];
+		workingVariables[1] = workingVariables[0];
+		workingVariables[0] = temp1 + temp2;
 	}
 	for (int i = 0; i < 48; i++)
 	{
 		int j = i & 0xf;
-		uint32_t s0 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(w[(j + 1) & 0xf], 7) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(w[(j + 1) & 0xf], 18) ^ (w[(j + 1) & 0xf] >> 3);
-		uint32_t s1 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(w[(j + 14) & 0xf], 17) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(w[(j + 14) & 0xf], 19) ^ (w[(j + 14) & 0xf] >> 10);
-		uint32_t wx = w[j] + s0 + w[(j + 9) & 0xf] + s1;
-		uint32_t s3 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 6) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 11) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[4], 25);
-		uint32_t ch = (ah[4] & ah[5]) ^ (~ah[4] & ah[6]);
-		uint32_t temp1 = ah[7] + s3 + ch + FlSha256InternalConstantTableK[((i & 0x30) + 16) | j] + wx;
-		uint32_t s2 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 2) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 13) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(ah[0], 22);
-		uint32_t maj = (ah[0] & ah[1]) ^ (ah[0] & ah[2]) ^ (ah[1] & ah[2]);
-		uint32_t temp2 = s2 + maj;
-		w[j] = wx;
-		ah[7] = ah[6];
-		ah[6] = ah[5];
-		ah[5] = ah[4];
-		ah[4] = ah[3] + temp1;
-		ah[3] = ah[2];
-		ah[2] = ah[1];
-		ah[1] = ah[0];
-		ah[0] = temp1 + temp2;
+		uint32_t expansionSigma0 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(messageSchedule[(j + 1) & 0xf], 7) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(messageSchedule[(j + 1) & 0xf], 18) ^ (messageSchedule[(j + 1) & 0xf] >> 3);
+		uint32_t expansionSigma1 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(messageSchedule[(j + 14) & 0xf], 17) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(messageSchedule[(j + 14) & 0xf], 19) ^ (messageSchedule[(j + 14) & 0xf] >> 10);
+		uint32_t scheduleWord = messageSchedule[j] + expansionSigma0 + messageSchedule[(j + 9) & 0xf] + expansionSigma1;
+		uint32_t roundSigma1 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(workingVariables[4], 6) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(workingVariables[4], 11) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(workingVariables[4], 25);
+		uint32_t chooseValue = (workingVariables[4] & workingVariables[5]) ^ (~workingVariables[4] & workingVariables[6]);
+		uint32_t temp1 = workingVariables[7] + roundSigma1 + chooseValue + FlSha256InternalConstantTableK[((i & 0x30) + 16) | j] + scheduleWord;
+		uint32_t roundSigma0 = FL_SHA256_INTERNAL_ROTATE_RIGHT_32(workingVariables[0], 2) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(workingVariables[0], 13) ^ FL_SHA256_INTERNAL_ROTATE_RIGHT_32(workingVariables[0], 22);
+		uint32_t maj = (workingVariables[0] & workingVariables[1]) ^ (workingVariables[0] & workingVariables[2]) ^ (workingVariables[1] & workingVariables[2]);
+		uint32_t temp2 = roundSigma0 + maj;
+		messageSchedule[j] = scheduleWord;
+		workingVariables[7] = workingVariables[6];
+		workingVariables[6] = workingVariables[5];
+		workingVariables[5] = workingVariables[4];
+		workingVariables[4] = workingVariables[3] + temp1;
+		workingVariables[3] = workingVariables[2];
+		workingVariables[2] = workingVariables[1];
+		workingVariables[1] = workingVariables[0];
+		workingVariables[0] = temp1 + temp2;
 	}
 	for (int i = 0; i < 8; i++)
 	{
-		h[i] += ah[i];
+		hashState[i] += workingVariables[i];
 	}
 }
 

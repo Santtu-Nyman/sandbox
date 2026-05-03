@@ -76,45 +76,45 @@ FL_MD5_ALIGN(64) static uint8_t FlMd5InternalConstantTableS[64] = {
 
 static void FlMd5InternalConsumeChunk(uint32_t* buffer, const uint32_t* input)
 {
-	uint32_t aa = buffer[0];
-	uint32_t bb = buffer[1];
-	uint32_t cc = buffer[2];
-	uint32_t dd = buffer[3];
+	uint32_t stateA = buffer[0];
+	uint32_t stateB = buffer[1];
+	uint32_t stateC = buffer[2];
+	uint32_t stateD = buffer[3];
 	for (int i = 0; i < 64; i++)
 	{
-		uint32_t e;
+		uint32_t booleanFunctionResult;
 		int j;
 		switch (i >> 4)
 		{
 			case 0:
-				e = FL_MD5_INTERNAL_STEP_F(bb, cc, dd);
+				booleanFunctionResult = FL_MD5_INTERNAL_STEP_F(stateB, stateC, stateD);
 				j = i;
 				break;
 			case 1:
-				e = FL_MD5_INTERNAL_STEP_G(bb, cc, dd);
+				booleanFunctionResult = FL_MD5_INTERNAL_STEP_G(stateB, stateC, stateD);
 				j = ((i * 5) + 1) & 0xF;
 				break;
 			case 2:
-				e = FL_MD5_INTERNAL_STEP_H(bb, cc, dd);
+				booleanFunctionResult = FL_MD5_INTERNAL_STEP_H(stateB, stateC, stateD);
 				j = ((i * 3) + 5) & 0xF;
 				break;
 			default:
-				e = FL_MD5_INTERNAL_STEP_I(bb, cc, dd);
+				booleanFunctionResult = FL_MD5_INTERNAL_STEP_I(stateB, stateC, stateD);
 				j = (i * 7) & 0xF;
 				break;
 		}
-		uint32_t t0 = dd;
-		uint32_t t1 = aa + e + FlMd5InternalConstantTableK[i] + input[j];
+		uint32_t savedStateD = stateD;
+		uint32_t rotationInput = stateA + booleanFunctionResult + FlMd5InternalConstantTableK[i] + input[j];
 		int shift = (int)FlMd5InternalConstantTableS[i];
-		dd = cc;
-		cc = bb;
-		bb = bb + FL_MD5_INTERNAL_ROTATE_LEFT_32(t1, shift);
-		aa = t0;
+		stateD = stateC;
+		stateC = stateB;
+		stateB = stateB + FL_MD5_INTERNAL_ROTATE_LEFT_32(rotationInput, shift);
+		stateA = savedStateD;
 	}
-	buffer[0] += aa;
-	buffer[1] += bb;
-	buffer[2] += cc;
-	buffer[3] += dd;
+	buffer[0] += stateA;
+	buffer[1] += stateB;
+	buffer[2] += stateC;
+	buffer[3] += stateD;
 }
 
 void FlMd5CreateHash(_Out_ FlMd5Context* context)

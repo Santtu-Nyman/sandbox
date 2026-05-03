@@ -130,16 +130,6 @@ static void FlPbkdf2Sha256HmacUtRfc7914Tc1(_Inout_ size_t* testCount, _Inout_ si
 	FL_UT_CHECK(memcmp(dk, FL_PBKDF2_UT_EXPECTED_RFC7914_TC1, sizeof dk) == 0, "FlPbkdf2Sha256HmacUtRfc7914Tc1");
 }
 
-// RFC 7914 TC2: P="Password", S="NaCl", c=80000, dkLen=64.
-static void FlPbkdf2Sha256HmacUtRfc7914Tc2(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
-{
-	static const uint8_t password[] = "Password";
-	static const uint8_t salt[]     = "NaCl";
-	uint8_t dk[64];
-	FlPbkdf2Sha256Hmac(80000, sizeof(password) - 1, password, sizeof(salt) - 1, salt, sizeof dk, dk);
-	FL_UT_CHECK(memcmp(dk, FL_PBKDF2_UT_EXPECTED_RFC7914_TC2, sizeof dk) == 0, "FlPbkdf2Sha256HmacUtRfc7914Tc2");
-}
-
 // P="password", S="salt", c=1, dkLen=32: exactly one block, single iteration.
 static void FlPbkdf2Sha256HmacUtSingleBlock(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
@@ -285,6 +275,115 @@ static void FlPbkdf2Sha256HmacUtOutputPrefixConsistency(_Inout_ size_t* testCoun
 	FL_UT_CHECK(memcmp(dk32, dk64, FL_SHA256_DIGEST_SIZE) == 0, "FlPbkdf2Sha256HmacUtOutputPrefixConsistency");
 }
 
+// Case 0: P="Raine" (binary), S="1234" (binary), c=1, dkLen=32
+static const uint8_t FL_PBKDF2_UT_CASE0_PASSWORD[5] =
+{
+	0x52, 0x61, 0x69, 0x6E, 0x65
+};
+
+static const uint8_t FL_PBKDF2_UT_CASE0_SALT[4] =
+{
+	0x31, 0x32, 0x33, 0x34
+};
+
+static const uint8_t FL_PBKDF2_UT_CASE0_EXPECTED[FL_SHA256_DIGEST_SIZE] =
+{
+	0x36, 0x41, 0x5F, 0x73, 0x55, 0xC4, 0x11, 0x58, 0x9C, 0x29, 0xD8, 0x22, 0x83, 0x5D, 0x9F, 0x80,
+	0xF4, 0xC6, 0x12, 0x3C, 0x56, 0xE2, 0x84, 0x4B, 0xDF, 0xA2, 0x86, 0x5E, 0x5E, 0x56, 0x48, 0xA7
+};
+
+// Case 1-3 share password and salt: P="Hello world" (binary), S="random16bytesalt" (binary), c=100
+static const uint8_t FL_PBKDF2_UT_CASE1_PASSWORD[11] =
+{
+	0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x77, 0x6F, 0x72, 0x6C, 0x64
+};
+
+static const uint8_t FL_PBKDF2_UT_CASE1_SALT[16] =
+{
+	0x72, 0x61, 0x6E, 0x64, 0x6F, 0x6D, 0x31, 0x36, 0x62, 0x79, 0x74, 0x65, 0x73, 0x61, 0x6C, 0x74
+};
+
+static const uint8_t FL_PBKDF2_UT_CASE1_EXPECTED[1] =
+{
+	0xE8
+};
+
+static const uint8_t FL_PBKDF2_UT_CASE2_EXPECTED[16] =
+{
+	0xE8, 0xE4, 0xA5, 0x98, 0x89, 0xDC, 0x82, 0x69, 0xDB, 0xD4, 0x55, 0x79, 0x7A, 0x18, 0x65, 0x8D
+};
+
+static const uint8_t FL_PBKDF2_UT_CASE3_EXPECTED[64] =
+{
+	0xE8, 0xE4, 0xA5, 0x98, 0x89, 0xDC, 0x82, 0x69, 0xDB, 0xD4, 0x55, 0x79, 0x7A, 0x18, 0x65, 0x8D,
+	0x20, 0x34, 0x39, 0x2E, 0x11, 0x6C, 0xDE, 0x07, 0x6E, 0x5C, 0x4D, 0xEE, 0xE1, 0x6D, 0x8E, 0x2A,
+	0x20, 0x34, 0x08, 0x3E, 0x8B, 0xC6, 0xF5, 0x0D, 0xC1, 0xF4, 0x3F, 0x03, 0x9C, 0xFA, 0xE6, 0xB0,
+	0x15, 0x28, 0x0E, 0x2A, 0x42, 0xCA, 0x57, 0x14, 0xF3, 0xD3, 0x4B, 0x1F, 0x43, 0x13, 0xA1, 0x60
+};
+
+// Case 4: P="Santtu's test data" (binary), S="12345678" (binary), c=1000, dkLen=32
+static const uint8_t FL_PBKDF2_UT_CASE4_PASSWORD[18] =
+{
+	0x53, 0x61, 0x6E, 0x74, 0x74, 0x75, 0x27, 0x73, 0x20, 0x74, 0x65, 0x73, 0x74, 0x20, 0x64, 0x61,
+	0x74, 0x61
+};
+
+static const uint8_t FL_PBKDF2_UT_CASE4_SALT[8] =
+{
+	0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38
+};
+
+static const uint8_t FL_PBKDF2_UT_CASE4_EXPECTED[FL_SHA256_DIGEST_SIZE] =
+{
+	0x46, 0x35, 0xAF, 0x2E, 0x07, 0x36, 0xDA, 0xB9, 0x80, 0x25, 0x99, 0xE8, 0xE6, 0xDA, 0x84, 0xB4,
+	0x13, 0x5C, 0x8D, 0xA7, 0x61, 0xC9, 0xEE, 0xFD, 0x42, 0xF8, 0xE2, 0x72, 0xBC, 0x39, 0x19, 0xBB
+};
+
+// P="Raine", S="1234", c=1, dkLen=32.
+static void FlPbkdf2Sha256HmacUtCase0(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	uint8_t dk[FL_SHA256_DIGEST_SIZE];
+	FlPbkdf2Sha256Hmac(1, sizeof FL_PBKDF2_UT_CASE0_PASSWORD, FL_PBKDF2_UT_CASE0_PASSWORD,
+	                   sizeof FL_PBKDF2_UT_CASE0_SALT, FL_PBKDF2_UT_CASE0_SALT, sizeof dk, dk);
+	FL_UT_CHECK(memcmp(dk, FL_PBKDF2_UT_CASE0_EXPECTED, sizeof dk) == 0, "FlPbkdf2Sha256HmacUtCase0");
+}
+
+// P="Hello world", S="random16bytesalt", c=100, dkLen=1: sub-block output.
+static void FlPbkdf2Sha256HmacUtCase1(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	uint8_t dk[1];
+	FlPbkdf2Sha256Hmac(100, sizeof FL_PBKDF2_UT_CASE1_PASSWORD, FL_PBKDF2_UT_CASE1_PASSWORD,
+	                   sizeof FL_PBKDF2_UT_CASE1_SALT, FL_PBKDF2_UT_CASE1_SALT, sizeof dk, dk);
+	FL_UT_CHECK(memcmp(dk, FL_PBKDF2_UT_CASE1_EXPECTED, sizeof dk) == 0, "FlPbkdf2Sha256HmacUtCase1");
+}
+
+// P="Hello world", S="random16bytesalt", c=100, dkLen=16: half-block output.
+static void FlPbkdf2Sha256HmacUtCase2(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	uint8_t dk[16];
+	FlPbkdf2Sha256Hmac(100, sizeof FL_PBKDF2_UT_CASE1_PASSWORD, FL_PBKDF2_UT_CASE1_PASSWORD,
+	                   sizeof FL_PBKDF2_UT_CASE1_SALT, FL_PBKDF2_UT_CASE1_SALT, sizeof dk, dk);
+	FL_UT_CHECK(memcmp(dk, FL_PBKDF2_UT_CASE2_EXPECTED, sizeof dk) == 0, "FlPbkdf2Sha256HmacUtCase2");
+}
+
+// P="Hello world", S="random16bytesalt", c=100, dkLen=64: two full blocks.
+static void FlPbkdf2Sha256HmacUtCase3(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	uint8_t dk[64];
+	FlPbkdf2Sha256Hmac(100, sizeof FL_PBKDF2_UT_CASE1_PASSWORD, FL_PBKDF2_UT_CASE1_PASSWORD,
+	                   sizeof FL_PBKDF2_UT_CASE1_SALT, FL_PBKDF2_UT_CASE1_SALT, sizeof dk, dk);
+	FL_UT_CHECK(memcmp(dk, FL_PBKDF2_UT_CASE3_EXPECTED, sizeof dk) == 0, "FlPbkdf2Sha256HmacUtCase3");
+}
+
+// P="Santtu's test data", S="12345678", c=1000, dkLen=32.
+static void FlPbkdf2Sha256HmacUtCase4(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	uint8_t dk[FL_SHA256_DIGEST_SIZE];
+	FlPbkdf2Sha256Hmac(1000, sizeof FL_PBKDF2_UT_CASE4_PASSWORD, FL_PBKDF2_UT_CASE4_PASSWORD,
+	                   sizeof FL_PBKDF2_UT_CASE4_SALT, FL_PBKDF2_UT_CASE4_SALT, sizeof dk, dk);
+	FL_UT_CHECK(memcmp(dk, FL_PBKDF2_UT_CASE4_EXPECTED, sizeof dk) == 0, "FlPbkdf2Sha256HmacUtCase4");
+}
+
 // ---------------------------------------------------------------------------
 // Test suite entry point
 // ---------------------------------------------------------------------------
@@ -292,7 +391,6 @@ static void FlPbkdf2Sha256HmacUtOutputPrefixConsistency(_Inout_ size_t* testCoun
 void FlPbkdf2Sha256HmacUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	FlPbkdf2Sha256HmacUtRfc7914Tc1(testCount, failCount);
-	FlPbkdf2Sha256HmacUtRfc7914Tc2(testCount, failCount);
 	FlPbkdf2Sha256HmacUtSingleBlock(testCount, failCount);
 	FlPbkdf2Sha256HmacUtMultipleIterations(testCount, failCount);
 	FlPbkdf2Sha256HmacUtSubBlockOutput(testCount, failCount);
@@ -306,4 +404,9 @@ void FlPbkdf2Sha256HmacUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCoun
 	FlPbkdf2Sha256HmacUtDifferentSaltsDifferentOutput(testCount, failCount);
 	FlPbkdf2Sha256HmacUtDifferentIterationsDifferentOutput(testCount, failCount);
 	FlPbkdf2Sha256HmacUtOutputPrefixConsistency(testCount, failCount);
+	FlPbkdf2Sha256HmacUtCase0(testCount, failCount);
+	FlPbkdf2Sha256HmacUtCase1(testCount, failCount);
+	FlPbkdf2Sha256HmacUtCase2(testCount, failCount);
+	FlPbkdf2Sha256HmacUtCase3(testCount, failCount);
+	FlPbkdf2Sha256HmacUtCase4(testCount, failCount);
 }

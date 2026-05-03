@@ -685,53 +685,53 @@ FL_AES256_ALIGN(32) static const uint16_t FlAes256ReductionConstant4bitTable[16]
     
 static void FlAes256GcmGHASH(_In_reads_(32) const uint64_t* hashKeyLookupTable, _Inout_updates_(16) uint8_t* hash)
 {
-	uint8_t l = hash[15] & 0xF;
-	uint8_t h = hash[15] >> 4;
-	uint64_t z[2] = { hashKeyLookupTable[(l << 1) | 0], hashKeyLookupTable[(l << 1) | 1] };
+	uint8_t lowNibble = hash[15] & 0xF;
+	uint8_t highNibble = hash[15] >> 4;
+	uint64_t ghashAccumulator[2] = { hashKeyLookupTable[(lowNibble << 1) | 0], hashKeyLookupTable[(lowNibble << 1) | 1] };
 
-	uint64_t r = z[1] & 0xF;
-	z[1] = (z[1] >> 4) | (z[0] << 60);
-	z[0] = (z[0] >> 4);
-	z[0] ^= (uint64_t)FlAes256ReductionConstant4bitTable[r] << 48;
-	z[0] ^= hashKeyLookupTable[(h << 1) | 0];
-	z[1] ^= hashKeyLookupTable[(h << 1) | 1];
+	uint64_t reductionValue = ghashAccumulator[1] & 0xF;
+	ghashAccumulator[1] = (ghashAccumulator[1] >> 4) | (ghashAccumulator[0] << 60);
+	ghashAccumulator[0] = (ghashAccumulator[0] >> 4);
+	ghashAccumulator[0] ^= (uint64_t)FlAes256ReductionConstant4bitTable[reductionValue] << 48;
+	ghashAccumulator[0] ^= hashKeyLookupTable[(highNibble << 1) | 0];
+	ghashAccumulator[1] ^= hashKeyLookupTable[(highNibble << 1) | 1];
 
 	for (int i = 15; i--; i)
 	{
-		l = hash[i] & 0xF;
-		h = hash[i] >> 4;
+		lowNibble = hash[i] & 0xF;
+		highNibble = hash[i] >> 4;
 
-		uint64_t rl = z[1] & 0xF;
-		z[1] = (z[1] >> 4) | (z[0] << 60);
-		z[0] = (z[0] >> 4);
-		z[0] ^= (uint64_t)FlAes256ReductionConstant4bitTable[rl] << 48;
-		z[0] ^= hashKeyLookupTable[(l << 1) | 0];
-		z[1] ^= hashKeyLookupTable[(l << 1) | 1];
+		uint64_t lowReductionValue = ghashAccumulator[1] & 0xF;
+		ghashAccumulator[1] = (ghashAccumulator[1] >> 4) | (ghashAccumulator[0] << 60);
+		ghashAccumulator[0] = (ghashAccumulator[0] >> 4);
+		ghashAccumulator[0] ^= (uint64_t)FlAes256ReductionConstant4bitTable[lowReductionValue] << 48;
+		ghashAccumulator[0] ^= hashKeyLookupTable[(lowNibble << 1) | 0];
+		ghashAccumulator[1] ^= hashKeyLookupTable[(lowNibble << 1) | 1];
 
-		uint64_t rh = z[1] & 0xF;
-		z[1] = (z[1] >> 4) | (z[0] << 60);
-		z[0] = (z[0] >> 4);
-		z[0] ^= (uint64_t)FlAes256ReductionConstant4bitTable[rh] << 48;
-		z[0] ^= hashKeyLookupTable[(h << 1) | 0];
-		z[1] ^= hashKeyLookupTable[(h << 1) | 1];
+		uint64_t highReductionValue = ghashAccumulator[1] & 0xF;
+		ghashAccumulator[1] = (ghashAccumulator[1] >> 4) | (ghashAccumulator[0] << 60);
+		ghashAccumulator[0] = (ghashAccumulator[0] >> 4);
+		ghashAccumulator[0] ^= (uint64_t)FlAes256ReductionConstant4bitTable[highReductionValue] << 48;
+		ghashAccumulator[0] ^= hashKeyLookupTable[(highNibble << 1) | 0];
+		ghashAccumulator[1] ^= hashKeyLookupTable[(highNibble << 1) | 1];
 	}
 
-	hash[0] = (uint8_t)(z[0] >> 56);
-	hash[1] = (uint8_t)(z[0] >> 48);
-	hash[2] = (uint8_t)(z[0] >> 40);
-	hash[3] = (uint8_t)(z[0] >> 32);
-	hash[4] = (uint8_t)(z[0] >> 24);
-	hash[5] = (uint8_t)(z[0] >> 16);
-	hash[6] = (uint8_t)(z[0] >> 8);
-	hash[7] = (uint8_t)(z[0]);
-	hash[8] = (uint8_t)(z[1] >> 56);
-	hash[9] = (uint8_t)(z[1] >> 48);
-	hash[10] = (uint8_t)(z[1] >> 40);
-	hash[11] = (uint8_t)(z[1] >> 32);
-	hash[12] = (uint8_t)(z[1] >> 24);
-	hash[13] = (uint8_t)(z[1] >> 16);
-	hash[14] = (uint8_t)(z[1] >> 8);
-	hash[15] = (uint8_t)(z[1]);
+	hash[0] = (uint8_t)(ghashAccumulator[0] >> 56);
+	hash[1] = (uint8_t)(ghashAccumulator[0] >> 48);
+	hash[2] = (uint8_t)(ghashAccumulator[0] >> 40);
+	hash[3] = (uint8_t)(ghashAccumulator[0] >> 32);
+	hash[4] = (uint8_t)(ghashAccumulator[0] >> 24);
+	hash[5] = (uint8_t)(ghashAccumulator[0] >> 16);
+	hash[6] = (uint8_t)(ghashAccumulator[0] >> 8);
+	hash[7] = (uint8_t)(ghashAccumulator[0]);
+	hash[8] = (uint8_t)(ghashAccumulator[1] >> 56);
+	hash[9] = (uint8_t)(ghashAccumulator[1] >> 48);
+	hash[10] = (uint8_t)(ghashAccumulator[1] >> 40);
+	hash[11] = (uint8_t)(ghashAccumulator[1] >> 32);
+	hash[12] = (uint8_t)(ghashAccumulator[1] >> 24);
+	hash[13] = (uint8_t)(ghashAccumulator[1] >> 16);
+	hash[14] = (uint8_t)(ghashAccumulator[1] >> 8);
+	hash[15] = (uint8_t)(ghashAccumulator[1]);
 }
 
 static void FlAes256GcmComputeInitialCounter(_In_reads_(32) const uint64_t* hashKeyLookupTable, _In_ size_t nonceSize, _In_reads_bytes_(nonceSize) const void* nonce, _Out_writes_bytes_all_(FL_AES256_BLOCK_SIZE) uint8_t* initialCounter)

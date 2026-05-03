@@ -36,6 +36,9 @@ extern "C" {
 #include "FlSha256.h"
 #include "FlSha256Hmac.h"
 #include "FlWin32FilePath.h"
+#include <winsock2.h>
+#include <iphlpapi.h>
+#include <limits.h>
 #include <stdint.h>
 #include <string.h>
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
@@ -64,6 +67,8 @@ typedef struct
 	HMODULE imageBase;
 	HMODULE kernel32;
 	HMODULE advapi32;
+	HMODULE iphlpapi;
+	HMODULE user32;
 	HANDLE currentProcess;
 	HANDLE currentThread;
 	HANDLE currentProcessToken;
@@ -91,6 +96,9 @@ typedef struct
 	int currentThreadPriority;
 	DWORD currentProcessClass;
 	DWORD currentProcessHandleCount;
+	POINT cursorPosition;
+	HKL keybordLayout;
+	int isRemoteSession;
 	SYSTEMTIME localTime;
 	IO_COUNTERS currentProcessIoCounters;
 	FILETIME currentProcessCreationTime;
@@ -119,7 +127,8 @@ __declspec(noinline) static void FlRandomInternalGenerateRandomSeed(uint64_t* no
 	HANDLE currentProcessTokenHandle = 0;
 
 	HMODULE kernel32Module = GetModuleHandleW(L"Kernel32.dll");
-	HMODULE advapi32Module = 0;
+	HMODULE advapi32Module = NULL;
+	HMODULE iphlpapiModule = NULL;
 
 	DWORD64 systemTime = 0;
 	GetSystemTimeAsFileTime((FILETIME*)&systemTime);
@@ -302,6 +311,7 @@ __declspec(noinline) static void FlRandomInternalGenerateRandomSeed(uint64_t* no
 			}
 
 			advapi32Module = LoadLibraryW(L"Advapi32.dll");
+			BOOL(WINAPI * allocateLocallyUniqueIdProcedure)(LUID* Luid);
 			BOOL(WINAPI * openProcessTokenProcedure)(HANDLE ProcessHandle, DWORD DesiredAccess, PHANDLE TokenHandle) = 0;
 			BOOL(WINAPI * getTokenInformationProcedure)(HANDLE TokenHandle, TOKEN_INFORMATION_CLASS TokenInformationClass, LPVOID TokenInformation, DWORD TokenInformationLength, PDWORD ReturnLength) = 0;
 			DWORD(WINAPI * getLengthSidProcedure)(PSID pSid) = 0;
@@ -309,11 +319,19 @@ __declspec(noinline) static void FlRandomInternalGenerateRandomSeed(uint64_t* no
 			BOOL(WINAPI * getCurrentHwProfileWProcedure)(LPHW_PROFILE_INFOW lpHwProfileInfo) = 0;
 			if (advapi32Module)
 			{
+				allocateLocallyUniqueIdProcedure = (BOOL(WINAPI*)(LUID*))GetProcAddress(advapi32Module, "AllocateLocallyUniqueId");
 				openProcessTokenProcedure = (BOOL(WINAPI*)(HANDLE, DWORD, PHANDLE))GetProcAddress(advapi32Module, "OpenProcessToken");
 				getTokenInformationProcedure = (BOOL(WINAPI*)(HANDLE, TOKEN_INFORMATION_CLASS, LPVOID, DWORD, PDWORD))GetProcAddress(advapi32Module, "GetTokenInformation");
 				getLengthSidProcedure = (DWORD(WINAPI*)(PSID))GetProcAddress(advapi32Module, "GetLengthSid");
 				getUserNameWProcedure = (BOOL(WINAPI*)(LPWSTR, LPDWORD))GetProcAddress(advapi32Module, "GetUserNameW");
 				getCurrentHwProfileWProcedure = (BOOL(WINAPI*)(LPHW_PROFILE_INFOW))GetProcAddress(advapi32Module, "GetCurrentHwProfileW");
+
+				if (allocateLocallyUniqueIdProcedure)
+				{
+					LUID locallyUniqueId = { 0, 0 };
+					allocateLocallyUniqueIdProcedure(&locallyUniqueId);
+					FlSha256HashData(&sha256Context, sizeof(LUID), &locallyUniqueId);
+				}
 
 				if (openProcessTokenProcedure && getTokenInformationProcedure && getLengthSidProcedure)
 				{
@@ -364,6 +382,81 @@ __declspec(noinline) static void FlRandomInternalGenerateRandomSeed(uint64_t* no
 
 				FreeLibrary(advapi32Module);
 			}
+			
+			iphlpapiModule = LoadLibraryW(L"Iphlpapi.dll");
+			if (iphlpapiModule)
+			{
+				ULONG (WINAPI* getAdaptersAddressesProcedure)(ULONG Family, ULONG Flags, PVOID Reserved, IP_ADAPTER_ADDRESSES* AdapterAddresses, PULONG SizePointer) = (ULONG (WINAPI*)(ULONG, ULONG, PVOID, IP_ADAPTER_ADDRESSES*, PULONG))GetProcAddress(iphlpapiModule, "GetAdaptersAddresses");
+				if (getAdaptersAddressesProcedure)
+				{
+					memset(buffer, 0, bufferSize);
+					ULONG adapterAddressesBufferSize = bufferSize <= (ULONG)ULONG_MAX ? (ULONG)bufferSize : (ULONG)ULONG_MAX;
+					IP_ADAPTER_ADDRESSES* adapterAddresses = (IP_ADAPTER_ADDRESSES*)buffer;
+					ULONG getAdaptersAddressesResult = getAdaptersAddressesProcedure(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX | GAA_FLAG_INCLUDE_GATEWAYS | GAA_FLAG_INCLUDE_ALL_INTERFACES, NULL, adapterAddresses, &adapterAddressesBufferSize);
+					if (getAdaptersAddressesResult == ERROR_SUCCESS)
+					{
+						for (IP_ADAPTER_ADDRESSES* i = adapterAddresses; i; i = i->Next)
+						{
+							size_t adapterStructureLength = (size_t)i->Length;
+							if (adapterStructureLength < (((size_t)(&((const IP_ADAPTER_ADDRESSES*)0)->FirstDnsSuffix)) + sizeof(((const IP_ADAPTER_ADDRESSES*)0)->FirstDnsSuffix)))
+							{
+								adapterStructureLength = (((size_t)(&((const IP_ADAPTER_ADDRESSES*)0)->FirstDnsSuffix)) + sizeof(((const IP_ADAPTER_ADDRESSES*)0)->FirstDnsSuffix));
+							}
+							CHAR* adapterName = i->AdapterName;
+							WCHAR* dnsSuffix = i->DnsSuffix;
+							WCHAR* description = i->Description;
+							WCHAR* friendlyName = i->FriendlyName;
+							IP_ADAPTER_UNICAST_ADDRESS* unicastAddress = i->FirstUnicastAddress;
+							IP_ADAPTER_ANYCAST_ADDRESS* anycastAddress = i->FirstAnycastAddress;
+							IP_ADAPTER_MULTICAST_ADDRESS* multicastAddress = i->FirstMulticastAddress;
+							IP_ADAPTER_DNS_SERVER_ADDRESS* dnsServerAddress = i->FirstDnsServerAddress;
+							IP_ADAPTER_PREFIX* prefix = i->FirstPrefix;
+							IP_ADAPTER_GATEWAY_ADDRESS* gatewayAddress = i->FirstGatewayAddress;
+							FlSha256HashData(&sha256Context, adapterStructureLength, i);
+							FlSha256HashData(&sha256Context, strlen(adapterName) * sizeof(char), adapterName);
+							FlSha256HashData(&sha256Context, wcslen(dnsSuffix) * sizeof(WCHAR), dnsSuffix);
+							FlSha256HashData(&sha256Context, wcslen(description) * sizeof(WCHAR), description);
+							FlSha256HashData(&sha256Context, wcslen(friendlyName) * sizeof(WCHAR), friendlyName);
+							for (IP_ADAPTER_UNICAST_ADDRESS* j = unicastAddress; j; j = j->Next)
+							{
+								FlSha256HashData(&sha256Context, (size_t)j->Length, j);
+								FlSha256HashData(&sha256Context, (size_t)j->Address.iSockaddrLength, j->Address.lpSockaddr);
+							}
+							for (IP_ADAPTER_ANYCAST_ADDRESS* j = anycastAddress; j; j = j->Next)
+							{
+								FlSha256HashData(&sha256Context, (size_t)j->Length, j);
+								FlSha256HashData(&sha256Context, (size_t)j->Address.iSockaddrLength, j->Address.lpSockaddr);
+							}
+							for (IP_ADAPTER_MULTICAST_ADDRESS* j = multicastAddress; j; j = j->Next)
+							{
+								FlSha256HashData(&sha256Context, (size_t)j->Length, j);
+								FlSha256HashData(&sha256Context, (size_t)j->Address.iSockaddrLength, j->Address.lpSockaddr);
+							}
+							for (IP_ADAPTER_DNS_SERVER_ADDRESS* j = dnsServerAddress; j; j = j->Next)
+							{
+								FlSha256HashData(&sha256Context, (size_t)j->Length, j);
+								FlSha256HashData(&sha256Context, (size_t)j->Address.iSockaddrLength, j->Address.lpSockaddr);
+							}
+							for (IP_ADAPTER_PREFIX* j = prefix; j; j = j->Next)
+							{
+								FlSha256HashData(&sha256Context, (size_t)j->Length, j);
+								FlSha256HashData(&sha256Context, (size_t)j->Address.iSockaddrLength, j->Address.lpSockaddr);
+							}
+							for (IP_ADAPTER_GATEWAY_ADDRESS* j = gatewayAddress; j; j = j->Next)
+							{
+								FlSha256HashData(&sha256Context, (size_t)j->Length, j);
+								FlSha256HashData(&sha256Context, (size_t)j->Address.iSockaddrLength, j->Address.lpSockaddr);
+							}
+						}
+					}
+					else if (getAdaptersAddressesResult == ERROR_BUFFER_OVERFLOW && bufferSize < (size_t)adapterAddressesBufferSize)
+					{
+						requiredBufferSize = (size_t)adapterAddressesBufferSize;
+					}
+				}
+
+				FreeLibrary(iphlpapiModule);
+			}
 
 			VirtualFree(buffer, 0, MEM_RELEASE);
 
@@ -385,6 +478,41 @@ __declspec(noinline) static void FlRandomInternalGenerateRandomSeed(uint64_t* no
 				break;
 			}
 		}
+	}
+
+	int (WINAPI* getUserDefaultGeoNameProcedure)(LPWSTR geoName, int geoNameCount) = (int (WINAPI*)(LPWSTR, int))GetProcAddress(kernel32Module, "GetUserDefaultGeoName");
+	if (getUserDefaultGeoNameProcedure)
+	{
+		WCHAR userGeoName[4];
+		int userGeoNameLength = getUserDefaultGeoNameProcedure(&userGeoName[0], (int)(sizeof(userGeoName) / sizeof(userGeoName[0])));
+		if (userGeoNameLength > 0 && userGeoNameLength <= (int)(sizeof(userGeoName) / sizeof(userGeoName[0])))
+		{
+			FlSha256HashData(&sha256Context, (size_t)userGeoNameLength * sizeof(WCHAR), &userGeoName[0]);
+		}
+	}
+
+	POINT cursorPosition = { 0, 0 };
+	HKL keybordLayout = NULL;
+	int isRemoteSession = 0;
+	HMODULE user32Module = LoadLibraryW(L"User32.dll");
+	if (user32Module)
+	{
+		BOOL (WINAPI* getCursorPosProcedure)(HANDLE lpPoint) = (BOOL(WINAPI*)(POINT*))GetProcAddress(user32Module, "GetCursorPos");
+		HKL (WINAPI* getKeyboardLayoutProcedure)(DWORD idThread) = (HKL(WINAPI*)(DWORD))GetProcAddress(user32Module, "GetKeyboardLayout");
+		int (WINAPI* getSystemMetricsProcedure)(int nIndex) = (int(WINAPI*)(int))GetProcAddress(user32Module, "GetSystemMetrics");
+		if (getCursorPosProcedure)
+		{
+			getCursorPosProcedure(&cursorPosition);
+		}
+		if (getKeyboardLayoutProcedure)
+		{
+			keybordLayout = getKeyboardLayoutProcedure(0);
+		}
+		if (getSystemMetricsProcedure)
+		{
+			isRemoteSession = getSystemMetricsProcedure(SM_REMOTESESSION);
+		}
+		FreeLibrary(user32Module);
 	}
 
 	WCHAR* environmentBlock = GetEnvironmentStringsW();
@@ -431,6 +559,8 @@ __declspec(noinline) static void FlRandomInternalGenerateRandomSeed(uint64_t* no
 	data.imageBase = (HMODULE)&__ImageBase;
 	data.kernel32 = kernel32Module;
 	data.advapi32 = advapi32Module;
+	data.iphlpapi = iphlpapiModule;
+	data.user32 = user32Module;
 	data.currentProcess = currentProcess;
 	data.currentThread = currentThread;
 	data.currentProcessToken = currentProcessTokenHandle;
@@ -457,6 +587,9 @@ __declspec(noinline) static void FlRandomInternalGenerateRandomSeed(uint64_t* no
 	data.currentThreadPriority = GetThreadPriority(currentThread);
 	data.currentProcessClass = GetPriorityClass(currentProcess);
 	GetProcessHandleCount(currentProcess, &data.currentProcessHandleCount);
+	memcpy(&data.cursorPosition, &cursorPosition, sizeof(POINT));
+	data.keybordLayout = keybordLayout;
+	data.isRemoteSession = isRemoteSession;
 	GetLocalTime(&data.localTime);
 	GetProcessIoCounters(currentProcess, &data.currentProcessIoCounters);
 	GetProcessTimes(currentProcess, &data.currentProcessCreationTime, &data.currentProcessExitTime, &data.currentProcessKernelTime, &data.currentProcessUserTime);
