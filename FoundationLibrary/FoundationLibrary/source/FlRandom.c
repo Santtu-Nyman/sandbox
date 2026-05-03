@@ -1,5 +1,5 @@
 /*
-	Santtu S. Nyman's random file name generation library
+	Santtu S. Nyman's random byte generator library
 
 	License:
 

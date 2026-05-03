@@ -1,5 +1,5 @@
 /*
-	Win32 command line parsing utility by by Santtu Nyman.
+	Win32 command line parsing utility by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/sandbox
 
 	License
@@ -35,7 +35,7 @@ extern "C" {
 
 #define WIN32_LEAN_AND_MEAN
 #include "FlWin32CommandLine.h"
-#include "FlUtf8Utf16Converter.h"
+#include "FlUnicode.h"
 
 #define FL_LOCAL_IS_POSITIVE_POWER_OF_2(N)  (((N) - 1) < ((N) ^ ((N) - 1)))
 
@@ -411,7 +411,7 @@ HRESULT FlWin32CommandLineToArgumentsUtf8(_In_ _Null_terminated_ const WCHAR* wi
 		}
 
 		char* utf8ExecutableName = (char*)((uintptr_t)argumentBuffer + (2 * sizeof(char*)));
-		size_t utf8ExecutableNameLength = FlConvertUtf16LeToUtf8(utf16ExecutableNameLength, utf16ExecutableName, (bufferSize > (2 * sizeof(char*))) ? (bufferSize - (2 * sizeof(char*))) : 0, (bufferSize > (2 * sizeof(char*))) ? utf8ExecutableName : NULL);
+		size_t utf8ExecutableNameLength = FlConvertUtf16ToUtf8(utf16ExecutableNameLength, utf16ExecutableName, (bufferSize > (2 * sizeof(char*))) ? (bufferSize - (2 * sizeof(char*))) : 0, (bufferSize > (2 * sizeof(char*))) ? utf8ExecutableName : NULL);
 		_Analysis_assume_(utf8ExecutableNameLength);
 		size_t requiredBufferSize = ((size_t)2 * sizeof(char*)) + (utf8ExecutableNameLength + 1);
 		_Analysis_assume_(requiredBufferSize > ((size_t)2 * sizeof(char*)) && requiredBufferSize > (utf8ExecutableNameLength + 1));
@@ -430,7 +430,7 @@ HRESULT FlWin32CommandLineToArgumentsUtf8(_In_ _Null_terminated_ const WCHAR* wi
 		return S_OK;
 	}
 
-	size_t commandLength = FlConvertUtf16LeToUtf8(win32CommandLength, win32CommandLine, 0, 0);
+	size_t commandLength = FlConvertUtf16ToUtf8(win32CommandLength, win32CommandLine, 0, 0);
 	_Analysis_assume_(commandLength);
 	size_t commandSize = ((commandLength + 1) + (pageSize - 1)) & ~(pageSize - 1);
 	if (commandSize < commandLength)
@@ -446,7 +446,7 @@ HRESULT FlWin32CommandLineToArgumentsUtf8(_In_ _Null_terminated_ const WCHAR* wi
 		*argumentCountAddress = 0;
 		return HRESULT_FROM_WIN32(ERROR_OUTOFMEMORY);
 	}
-	FlConvertUtf16LeToUtf8(win32CommandLength, win32CommandLine, commandLength, command);
+	FlConvertUtf16ToUtf8(win32CommandLength, win32CommandLine, commandLength, command);
 	command[commandLength] = 0;
 
 	size_t argumentCount = 0;

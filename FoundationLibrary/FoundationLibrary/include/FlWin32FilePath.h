@@ -1,17 +1,10 @@
 /*
-	Win32 file path manipulation library version 1.0.0 2023-02-25 by Santtu S. Nyman.
-
-	Description
-		Win32 file path manipulation library for creating qualified paths from
-		different types of relative paths and for extractig volume directory path
-		from file path. All the functionality is implemented both in Win32 native UTF-16
-		or UTF-8 encoding. However the UTF-8 versions of the functionality use UTF-16 length 
-		for MAX_PATH logic and in determining when to use extended path prefix.
-
-		This library does depend on the "FlUtf8Utf16Converter.c".
+	Win32 file path manipulation library by Santtu S. Nyman.
 
 	Version history
-		version 1.0.0 2024-04-01
+		version 1.0.2 2026-05-01
+			Bug fixes.
+		version 1.0.1 2024-04-01
 			Bug fixes.
 		version 1.0.0 2023-02-25
 			First publicly available version.

@@ -1,5 +1,5 @@
 /*
-	Santtu S. Nyman's 2024 public domain UUID utilities.
+	Santtu S. Nyman's public domain UUID utilities.
 
 	License:
 

@@ -1,5 +1,5 @@
 /*
-	Santtu S. Nyman's 2026 public domain 64 bit fraction encode and decode procedures.
+	Santtu S. Nyman's public domain 64 bit fraction encode and decode procedures.
 
 	License:
 

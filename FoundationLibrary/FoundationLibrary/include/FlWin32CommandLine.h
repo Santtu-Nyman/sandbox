@@ -1,12 +1,17 @@
 /*
-	Win32 command line parsing utility by by Santtu Nyman.
+	Win32 command line parsing utility by Santtu Nyman.
 	git repository https://github.com/Santtu-Nyman/sandbox
 
 	Description
-		This file provides an API for Windows command line parsing with both wide char (UTF-16) and UTF-8
+		This file provides an API for Windows command line parsing with both wide char (UTF-16) and UTF-8.
 
-		FlCommandLineToArgvW is an alternative implementation of Win32 function CommandLineToArgvW.
-		The point of this is to be able to do the normal command line parsing wihtout needing to link Shell32.dll.
+	Version history
+		version 1.1.0 2026-05-02
+			New cleaner interface.
+		version 1.0.0 2020-11-08
+			Added UTF-8 support.
+		version 1.0.0 2020-11-07
+			First version.
 
 	License
 		This is free and unencumbered software released into the public domain.

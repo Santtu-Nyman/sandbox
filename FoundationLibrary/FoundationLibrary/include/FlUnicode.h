@@ -1,14 +1,15 @@
 /*
-	Unicode case processing library version 1.1.0 2026-04-12 by Santtu S. Nyman.
-
-	Description
-		Simple unicode case processing library.
+	Unicode string library by Santtu S. Nyman.
 
 	Version history
-		version 1.1.0 2026-04-12
-			Added UTF-8 support.
-		version 1.0.0 2024-04-01
-			Initial UTF-16 only version.
+		version 1.2.0 2026-05-03
+			Removed big endian UTF-16 support and added UTF-32 support.
+		version 1.1.1 2026-04-12
+			Added UTF-8 support for string comparison.
+		version 1.1.0 2024-04-01
+			Initial UTF-16 only string comparison version.
+		version 1.0.0 2023-02-25
+			First publicly available version.
 
 	License
 		This is free and unencumbered software released into the public domain.
@@ -33,8 +34,8 @@
 		For more information, please refer to <https://unlicense.org>
 */
 
-#ifndef FL_UNICODE_CASE_PROCESSING_H
-#define FL_UNICODE_CASE_PROCESSING_H
+#ifndef FL_UNICODE_H
+#define FL_UNICODE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,6 +44,19 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 #include <Windows.h>
+#include "FlSAL.h"
+
+size_t FlConvertUtf8ToUtf16(_In_ size_t utf8Length, _In_reads_(utf8Length) const char* utf8Data, _In_ size_t utf16BufferLength, _Out_writes_to_(utf16BufferLength, return) WCHAR* utf16Buffer);
+
+size_t FlConvertUtf16ToUtf8(_In_ size_t utf16Length, _In_reads_(utf16Length) const WCHAR* utf16Data, _In_ size_t utf8BufferLength, _Out_writes_to_(utf8BufferLength, return) char* utf8Buffer);
+
+size_t FlConvertUtf8ToUtf32(_In_ size_t utf8Length, _In_reads_(utf8Length) const char* utf8Data, _In_ size_t utf32BufferLength, _Out_writes_to_(utf32BufferLength, return) int* utf32Buffer);
+
+size_t FlConvertUtf32ToUtf8(_In_ size_t utf32Length, _In_reads_(utf32Length) const int* utf32Data, _In_ size_t utf8BufferLength, _Out_writes_to_(utf8BufferLength, return) char* utf8Buffer);
+
+size_t FlConvertUtf32ToUtf16(_In_ size_t utf32Length, _In_reads_(utf32Length) const int* utf32Data, _In_ size_t utf16BufferLength, _Out_writes_to_(utf16BufferLength, return) WCHAR* utf16Buffer);
+
+size_t FlConvertUtf16ToUtf32(_In_ size_t utf16Length, _In_reads_(utf16Length) const WCHAR * utf16Data, _In_ size_t utf32BufferLength, _Out_writes_to_(utf32BufferLength, return) int* utf32Buffer);
 
 int FlCodepointToUpperCase(_In_ int codepoint);
 /*
@@ -182,8 +196,54 @@ int FlCompareStringOrdinalUtf16(_In_NLS_string_(string1Length) const WCHAR* stri
 		the value 2 can be subtracted from a return value. Then, the meaning of <0, ==0, and >0 is consistent with the C runtime.
 */
 
+int FlCompareStringOrdinalUtf32(_In_NLS_string_(string1Length) const int* string1, _In_ size_t string1Length, _In_NLS_string_(string2Length) const int* string2, _In_ size_t string2Length, _In_ BOOL ignoreCase);
+/*
+	Function:
+		FlCompareStringOrdinalUtf32
+
+	Description:
+		Compares two UTF-32 strings strings lexicographically.
+		This function is the UTF-32 equivalent of the Win32 API CompareStringOrdinal.
+
+		When an input string is invalid the function can't order the strings,
+		but if the input strings are not identical the return value will never be CSTR_LESS_THAN.
+
+	Parameters:
+		string1:
+			Pointer to the first non-null-terminated UTF-32 string.
+			If string1Length is (size_t)-1 the string must be null terminated and
+			its length is computed automatically.
+
+		string1Length:
+			Length of string1 in bytes (UTF-32 code units), not including any null
+			terminator.  Pass (size_t)-1 to indicate that string1 is null
+			terminated.
+
+		string2:
+			Pointer to the second non-null-terminated UTF-32 string.
+			If string2Length is (size_t)-1 the string must be null terminated and
+			its length is computed automatically.
+
+		string2Length:
+			Length of string2 in bytes (UTF-32 code units), not including any null
+			terminator.  Pass (size_t)-1 to indicate that string2 is null
+			terminated.
+
+		ignoreCase:
+			If TRUE the function is to perform a case-insensitive comparison,
+			using hard-coded locale invariant casing table information.
+
+	Return:
+		Returns one of the following constants:
+		  CSTR_LESS_THAN    (1) if string1 appears before string2 in lexicographical order.
+		  CSTR_EQUAL        (2) if string1 and string2 compare equal.
+		  CSTR_GREATER_THAN (3) if string1 appears after string2 in lexicographical order.
+		To maintain the C runtime convention of comparing strings,
+		the value 2 can be subtracted from a return value. Then, the meaning of <0, ==0, and >0 is consistent with the C runtime.
+*/
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
 
-#endif // FL_UNICODE_CASE_PROCESSING_H
+#endif // FL_UNICODE_H

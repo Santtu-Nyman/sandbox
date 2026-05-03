@@ -1,5 +1,11 @@
 /*
-	Santtu S. Nyman's 2026 public domain AES-256 implementation.
+	Santtu S. Nyman's public domain AES-256 implementation.
+
+	Version history
+		version 1.0.0 2026-04-26
+			First public version.
+		version 0.9.0 2024-09-08
+			Initial version.
 
 	License:
 
@@ -41,7 +47,7 @@ extern "C" {
 #define FL_AES256_BLOCK_SIZE 16
 #define FL_AES256_KEY_SIZE 32
 #define FL_AES256_ROUND_KEY_SIZE 240
-#define FL_AES256_GCM_NONCE_SIZE 12 // recommended 96-bit nonce length
+#define FL_AES256_GCM_NONCE_SIZE 12
 #define FL_AES256_GCM_TAG_SIZE 16
 
 void FlAes256KeyExpansion(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _Out_writes_bytes_all_(FL_AES256_ROUND_KEY_SIZE) void* roundKey);

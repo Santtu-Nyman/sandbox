@@ -60,10 +60,7 @@
     <ClInclude Include="include\FlSha256Hmac.h">
       <Filter>Header Files\include</Filter>
     </ClInclude>
-    <ClInclude Include="include\FlUnicodeCaseProcessing.h">
-      <Filter>Header Files\include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\FlUtf8Utf16Converter.h">
+    <ClInclude Include="include\FlUnicode.h">
       <Filter>Header Files\include</Filter>
     </ClInclude>
     <ClInclude Include="include\FlUuid.h">
@@ -110,10 +107,7 @@
     <ClCompile Include="source\FlSha256Hmac.c">
       <Filter>Source Files\source</Filter>
     </ClCompile>
-    <ClCompile Include="source\FlUnicodeCaseProcessing.c">
-      <Filter>Source Files\source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\FlUtf8Utf16Converter.c">
+    <ClCompile Include="source\FlUnicode.c">
       <Filter>Source Files\source</Filter>
     </ClCompile>
     <ClCompile Include="source\FlUuid.c">
@@ -158,10 +152,7 @@
     <ClCompile Include="ut\FlUuidUt.c">
       <Filter>Source Files\ut</Filter>
     </ClCompile>
-    <ClCompile Include="ut\FlUtf8Utf16ConverterUt.c">
-      <Filter>Source Files\ut</Filter>
-    </ClCompile>
-    <ClCompile Include="ut\FlUnicodeCaseProcessingUt.c">
+    <ClCompile Include="ut\FlUnicodeUt.c">
       <Filter>Source Files\ut</Filter>
     </ClCompile>
     <ClCompile Include="source\FlAes256.c">

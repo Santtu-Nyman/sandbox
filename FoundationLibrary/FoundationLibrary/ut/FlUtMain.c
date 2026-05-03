@@ -55,8 +55,7 @@ void FlPbkdf2Sha256HmacUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCoun
 void FlRandomFileNameUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount);
 void FlRandomUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount);
 void FlUuidUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount);
-void FlUtf8Utf16ConverterUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount);
-void FlUnicodeCaseProcessingUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount);
+void FlUnicodeUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount);
 void FlAes256UtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount);
 void FlWin32FilePathUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount);
 void FlWin32CommandLineUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount);
@@ -81,21 +80,20 @@ int main(void)
 	size_t testCount = 0;
 	size_t failCount = 0;
 
-	FL_UT_RUN_CATEGORY("CRC32",      FlCrc32UtRun,      &testCount, &failCount);
-	FL_UT_RUN_CATEGORY("Fraction64", FlFraction64UtRun, &testCount, &failCount);
-	FL_UT_RUN_CATEGORY("MD5",        FlMd5UtRun,        &testCount, &failCount);
-	FL_UT_RUN_CATEGORY("SHA1",       FlSha1UtRun,       &testCount, &failCount);
-	FL_UT_RUN_CATEGORY("SHA256",     FlSha256UtRun,     &testCount, &failCount);
-	FL_UT_RUN_CATEGORY("SHA256-HMAC", FlSha256HmacUtRun, &testCount, &failCount);
+	FL_UT_RUN_CATEGORY("CRC32",              FlCrc32UtRun,            &testCount, &failCount);
+	FL_UT_RUN_CATEGORY("Fraction64",         FlFraction64UtRun,       &testCount, &failCount);
+	FL_UT_RUN_CATEGORY("MD5",                FlMd5UtRun,              &testCount, &failCount);
+	FL_UT_RUN_CATEGORY("SHA1",               FlSha1UtRun,             &testCount, &failCount);
+	FL_UT_RUN_CATEGORY("SHA256",             FlSha256UtRun,           &testCount, &failCount);
+	FL_UT_RUN_CATEGORY("SHA256-HMAC",        FlSha256HmacUtRun,       &testCount, &failCount);
 	FL_UT_RUN_CATEGORY("PBKDF2-HMAC-SHA256", FlPbkdf2Sha256HmacUtRun, &testCount, &failCount);
-	FL_UT_RUN_CATEGORY("RandomFileName",     FlRandomFileNameUtRun,     &testCount, &failCount);
-	FL_UT_RUN_CATEGORY("Random",             FlRandomUtRun,             &testCount, &failCount);
-	FL_UT_RUN_CATEGORY("UUID",               FlUuidUtRun,               &testCount, &failCount);
-	FL_UT_RUN_CATEGORY("Utf8Utf16Converter", FlUtf8Utf16ConverterUtRun, &testCount, &failCount);
-	FL_UT_RUN_CATEGORY("UnicodeCaseProcessing", FlUnicodeCaseProcessingUtRun, &testCount, &failCount);
-	FL_UT_RUN_CATEGORY("AES-256",               FlAes256UtRun,               &testCount, &failCount);
-	FL_UT_RUN_CATEGORY("Win32FilePath",         FlWin32FilePathUtRun,        &testCount, &failCount);
-	FL_UT_RUN_CATEGORY("Win32CommandLine",      FlWin32CommandLineUtRun,     &testCount, &failCount);
+	FL_UT_RUN_CATEGORY("RandomFileName",     FlRandomFileNameUtRun,   &testCount, &failCount);
+	FL_UT_RUN_CATEGORY("Random",             FlRandomUtRun,           &testCount, &failCount);
+	FL_UT_RUN_CATEGORY("UUID",               FlUuidUtRun,             &testCount, &failCount);
+	FL_UT_RUN_CATEGORY("Unicode",            FlUnicodeUtRun,          &testCount, &failCount);
+	FL_UT_RUN_CATEGORY("AES-256",            FlAes256UtRun,           &testCount, &failCount);
+	FL_UT_RUN_CATEGORY("Win32FilePath",      FlWin32FilePathUtRun,    &testCount, &failCount);
+	FL_UT_RUN_CATEGORY("Win32CommandLine",   FlWin32CommandLineUtRun, &testCount, &failCount);
 
 	printf("--------------------------------------------------\n");
 	if (failCount == 0)

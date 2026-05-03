@@ -156,8 +156,7 @@
     <ClInclude Include="include\FlSha1.h" />
     <ClInclude Include="include\FlSha256.h" />
     <ClInclude Include="include\FlSha256Hmac.h" />
-    <ClInclude Include="include\FlUnicodeCaseProcessing.h" />
-    <ClInclude Include="include\FlUtf8Utf16Converter.h" />
+    <ClInclude Include="include\FlUnicode.h" />
     <ClInclude Include="include\FlUuid.h" />
     <ClInclude Include="include\FlWin32CommandLine.h" />
     <ClInclude Include="include\FlWin32FilePath.h" />
@@ -174,8 +173,7 @@
     <ClCompile Include="source\FlSha1.c" />
     <ClCompile Include="source\FlSha256.c" />
     <ClCompile Include="source\FlSha256Hmac.c" />
-    <ClCompile Include="source\FlUnicodeCaseProcessing.c" />
-    <ClCompile Include="source\FlUtf8Utf16Converter.c" />
+    <ClCompile Include="source\FlUnicode.c" />
     <ClCompile Include="source\FlUuid.c" />
     <ClCompile Include="source\FlWin32CommandLine.c" />
     <ClCompile Include="source\FlWin32FilePath.c" />
@@ -189,8 +187,7 @@
     <ClCompile Include="ut\FlSha1Ut.c" />
     <ClCompile Include="ut\FlSha256HmacUt.c" />
     <ClCompile Include="ut\FlSha256Ut.c" />
-    <ClCompile Include="ut\FlUnicodeCaseProcessingUt.c" />
-    <ClCompile Include="ut\FlUtf8Utf16ConverterUt.c" />
+    <ClCompile Include="ut\FlUnicodeUt.c" />
     <ClCompile Include="ut\FlUtMain.c" />
     <ClCompile Include="ut\FlUuidUt.c" />
     <ClCompile Include="ut\FlWin32CommandLineUt.c" />

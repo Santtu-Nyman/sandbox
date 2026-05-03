@@ -1,5 +1,5 @@
 /*
-	Santtu S. Nyman's 2024 version of Bryce Wilson's public domain MD5 implementation ( https://github.com/Zunawe/md5-c Tuesday, 5 March 2024 ).
+	Santtu S. Nyman's version of Bryce Wilson's public domain MD5 implementation ( https://github.com/Zunawe/md5-c Tuesday, 5 March 2024 ).
 	This modified implementation is released to public domain as well.
 
 	License:

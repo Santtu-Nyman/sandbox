@@ -1,5 +1,5 @@
 /*
-	Win32 file path manipulation library version 1.0.0 2023-02-25 by Santtu S. Nyman.
+	Win32 file path manipulation library by Santtu S. Nyman.
 
 	License
 		This is free and unencumbered software released into the public domain.
@@ -30,7 +30,7 @@ extern "C" {
 
 #define WIN32_LEAN_AND_MEAN
 #include "FlWin32FilePath.h"
-#include "FlUtf8Utf16Converter.h"
+#include "FlUnicode.h"
 
 #define FL_IS_HEX_WCHAR(C) (((int)(C) >= (int)L'0' && (int)(C) <= (int)L'9') || ((int)(C) >= (int)L'A' && (int)(C) <= (int)L'F') || ((int)(C) >= (int)L'a' && (int)(C) <= (int)L'f'))
 #define FL_IS_HEX_CHAR(C) (((int)(C) >= (int)'0' && (int)(C) <= (int)'9') || ((int)(C) >= (int)'A' && (int)(C) <= (int)'F') || ((int)(C) >= (int)'a' && (int)(C) <= (int)'f'))
@@ -998,7 +998,7 @@ BOOL FlWin32IsPathFullyQualifiedUtf8(_In_ SIZE_T pathLength, _In_reads_(pathLeng
 		return FALSE;
 	}
 
-	size_t utf16FullyQualifiedLength = FlConvertUtf8ToUtf16Le(pathLength, path, 0, 0);
+	size_t utf16FullyQualifiedLength = FlConvertUtf8ToUtf16(pathLength, path, 0, 0);
 	BOOL extendedPrefix = ((pathLength > 4 && path[0] == '\\' && path[1] == '?' && path[2] == '?' && path[3] == '\\') || (pathLength > 4 && path[0] == '\\' && path[1] == '\\' && path[2] == '?' && path[3] == '\\'));
 	if ((utf16FullyQualifiedLength > (MAX_PATH - 1)) && !extendedPrefix)
 	{
@@ -1061,7 +1061,7 @@ SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathL
 		}
 
 		size_t fullyQualifiedLength = pathVolumePartLength;
-		size_t fullyQualifiedUtf16Length = FlConvertUtf8ToUtf16Le(pathVolumePartLength, path, 0, 0);
+		size_t fullyQualifiedUtf16Length = FlConvertUtf8ToUtf16(pathVolumePartLength, path, 0, 0);
 		for (size_t offset = pathLength, componentCount = 0, componentEraseCount = 0; offset != pathVolumePartLength;)
 		{
 			size_t componentLength = 0;
@@ -1083,7 +1083,7 @@ SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathL
 				if (!componentEraseCount)
 				{
 					fullyQualifiedLength += componentLength + 1;
-					fullyQualifiedUtf16Length += FlConvertUtf8ToUtf16Le(componentLength, path + componentOffset, 0, 0) + 1;
+					fullyQualifiedUtf16Length += FlConvertUtf8ToUtf16(componentLength, path + componentOffset, 0, 0) + 1;
 					componentCount++;
 				}
 				else
@@ -1264,7 +1264,7 @@ SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathL
 				if (!relativePathComponentEraseCount)
 				{
 					relativePathLength += componentLength + 1;
-					relativePathUtf16Length += FlConvertUtf8ToUtf16Le(componentLength, path + componentOffset, 0, 0) + 1;
+					relativePathUtf16Length += FlConvertUtf8ToUtf16(componentLength, path + componentOffset, 0, 0) + 1;
 					relativePathComponentCount++;
 				}
 				else
@@ -1290,7 +1290,7 @@ SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathL
 		// Get the base Path component count and length after making it fully qualified. Also erase components as required from the relative sub Path
 		size_t basePathComponentCount = 0;
 		size_t basePathFullyQualifiedLength = basePathVolumePartLength;
-		size_t basePathFullyQualifiedUtf16Length = FlConvertUtf8ToUtf16Le(basePathVolumePartLength, basePath, 0, 0);
+		size_t basePathFullyQualifiedUtf16Length = FlConvertUtf8ToUtf16(basePathVolumePartLength, basePath, 0, 0);
 		if (basePathLength == basePathVolumePartLength && relativePathComponentEraseCount)
 		{
 			return 0;
@@ -1316,7 +1316,7 @@ SIZE_T FlWin32GetFullyQualifiedPathUtf8(_In_ SIZE_T pathLength, _In_reads_(pathL
 				if (!componentEraseCount)
 				{
 					basePathFullyQualifiedLength += componentLength + 1;
-					basePathFullyQualifiedUtf16Length += FlConvertUtf8ToUtf16Le(componentLength, basePath + componentOffset, 0, 0) + 1;
+					basePathFullyQualifiedUtf16Length += FlConvertUtf8ToUtf16(componentLength, basePath + componentOffset, 0, 0) + 1;
 					basePathComponentCount++;
 				}
 				else
@@ -1609,7 +1609,7 @@ SIZE_T FlWin32GetVolumeDirectoryPathUtf8(_In_ SIZE_T pathLength, _In_reads_(path
 	}
 
 	size_t fullyQualifiedLength = pathVolumePartLength;
-	size_t utf16FullyQualifiedLength = FlConvertUtf8ToUtf16Le(fullyQualifiedLength, path, 0, 0);
+	size_t utf16FullyQualifiedLength = FlConvertUtf8ToUtf16(fullyQualifiedLength, path, 0, 0);
 	BOOL addExtendedPrefix = FALSE;
 	BOOL removeExtendedPrefix = FALSE;
 	BOOL volumeGuidPath = extendedPrefix && !networkPath && pathVolumePartLength == 49;

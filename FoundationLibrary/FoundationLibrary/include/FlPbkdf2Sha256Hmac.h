@@ -1,6 +1,10 @@
 /*
 	Santtu S. Nyman's public domain PBKDF2-HMAC-SHA256 implementation.
 
+	Version history
+		version 1.0.0 2024-07-15
+			Initial version.
+
 	License:
 
 		This is free and unencumbered software released into the public domain.

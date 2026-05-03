@@ -1,5 +1,9 @@
 /*
-	Santtu S. Nyman's 2026 public domain Foundation Library SAL header.
+	Santtu S. Nyman's public domain Foundation Library SAL header.
+
+	Version history
+		version 1.0.0 2026-04-26
+			First public version.
 
 	License:
 

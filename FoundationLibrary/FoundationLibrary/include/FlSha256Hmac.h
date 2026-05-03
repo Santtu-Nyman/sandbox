@@ -1,6 +1,10 @@
 /*
 	Santtu S. Nyman's public domain SHA-256 HMAC implementation.
 
+	Version history
+		version 1.0.0 2024-05-17
+			First public version.
+
 	License:
 
 		This is free and unencumbered software released into the public domain.

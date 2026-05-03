@@ -1,5 +1,9 @@
 /*
-	Santtu S. Nyman's random data generation library
+	Santtu S. Nyman's random byte generator library.
+
+	Version history
+		version 1.0.0 2024-05-17
+			First public version.
 
 	License:
 

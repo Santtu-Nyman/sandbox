@@ -1,12 +1,5 @@
 /*
-	Unicode case processing library version 1.0.0 2024-04-01 by Santtu S. Nyman.
-
-	Description
-		Simple unicode case processing library.
-
-	Version history
-		version 1.0.0 2024-04-01
-			Initial version.
+	Unicode string library by Santtu S. Nyman.
 
 	License
 		This is free and unencumbered software released into the public domain.
@@ -31,18 +24,449 @@
 		For more information, please refer to <https://unlicense.org>
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 #define WIN32_LEAN_AND_MEAN
-#include "FlUnicodeCaseProcessing.h"
-#include <Windows.h>
-#include <stdint.h>
+#include "FlUnicode.h"
 
 #if defined(_M_IX86) || defined(_M_X64) || defined(_M_AMD64) || defined(__x86_64__) || defined(__x86_64) || defined(__i386__) || defined(__i386)
 #define FL_LOAD_U16LE(P) (*((const uint16_t*)(P)))
+#define FL_LOAD_U32LE(P) (*((const uint32_t*)(P)))
 #define FL_STORE_U16LE(P,D) *((uint16_t*)(P)) = (uint16_t)(D)
+#define FL_STORE_U32LE(P,D) *((uint32_t*)(P)) = (uint32_t)(D)
 #else
 #define FL_LOAD_U16LE(P) (((uint16_t)(*((const uint8_t*)(P)))) | ((uint16_t)(*((const uint8_t*)((uintptr_t)(P) + 1))) << 8))
 #define FL_STORE_U16LE(P,D) *((uint8_t*)(P)) = (uint8_t)((uint16_t)(D)); *((uint8_t*)((uintptr_t)(P) + 1)) = (uint8_t)((uint16_t)(D) >> 8)
+#define FL_STORE_U32LE(P,D) *((uint8_t*)(P)) = (uint8_t)((uint32_t)(D)); *((uint8_t*)((uintptr_t)(P) + 1)) = (uint8_t)((uint32_t)(D) >> 8); *((uint8_t*)((uintptr_t)(P) + 2)) = (uint8_t)((uint32_t)(D) >> 16); *((uint8_t*)((uintptr_t)(P) + 3)) = (uint8_t)((uint32_t)(D) >> 24)
 #endif
+
+#if defined(_MSC_VER)
+#define FL_UNREACHABLE() __assume(0)
+#elif defined(__clang__)
+#define FL_UNREACHABLE() __builtin_unreachable()
+#elif defined(__GNUC__) || defined(__GNUG__)
+#define FL_UNREACHABLE() __builtin_unreachable()
+#else
+#define FL_UNREACHABLE() do {} while (0)
+#endif
+
+size_t FlConvertUtf8ToUtf16(_In_ size_t utf8Length, _In_reads_(utf8Length) const char* utf8Data, _In_ size_t utf16BufferLength, _Out_writes_to_(utf16BufferLength,return) WCHAR* utf16Buffer)
+{
+	// WARNING BE VERY CAREFUL WHEN MODIFYING THIS PROCEDURE! IT IS EXTREMELY FINICKY AND IT HAS BEEN WELL TESTED
+	const uint8_t* utf8 = (const uint8_t*)utf8Data;
+	uint16_t* utf16 = (uint16_t*)utf16Buffer;
+	size_t utf16Length = 0;
+	for (size_t utf8Index = 0; utf8Index < utf8Length;)
+	{
+		size_t codeUnitDataSizeLimit = utf8Length - utf8Index;
+		uint32_t codeUnitData;
+		if (codeUnitDataSizeLimit > 3)
+		{
+			codeUnitData = ((uint32_t)utf8[utf8Index]) | (((uint32_t)utf8[utf8Index + 1]) << 8) | (((uint32_t)utf8[utf8Index + 2]) << 16) | (((uint32_t)utf8[utf8Index + 3]) << 24);
+		}
+		else if (codeUnitDataSizeLimit == 3)
+		{
+			codeUnitData = ((uint32_t)utf8[utf8Index]) | (((uint32_t)utf8[utf8Index + 1]) << 8) | (((uint32_t)utf8[utf8Index + 2]) << 16);
+		}
+		else if (codeUnitDataSizeLimit == 2)
+		{
+			codeUnitData = ((uint32_t)utf8[utf8Index]) | (((uint32_t)utf8[utf8Index + 1]) << 8);
+		}
+		else
+		{
+			codeUnitData = ((uint32_t)utf8[utf8Index]);
+		}
+		int codeUnitByteCount;
+		uint32_t utfCodePoint;
+		if (!(codeUnitData & 0x80))
+		{
+			codeUnitByteCount = 1;
+			utfCodePoint = codeUnitData & 0x7F;
+		}
+		else if ((codeUnitData & (uint32_t)0xC0E0) == (uint32_t)0x80C0)
+		{
+			codeUnitByteCount = 2;
+			utfCodePoint = ((codeUnitData & 0x1F) << 6) | ((codeUnitData >> 8) & 0x3F);
+		}
+		else if ((codeUnitData & (uint32_t)0xC0C0F0) == (uint32_t)0x8080E0)
+		{
+			codeUnitByteCount = 3;
+			utfCodePoint = ((codeUnitData & 0x0F) << 12) | (((codeUnitData >> 8) & 0x3F) << 6) | ((codeUnitData >> 16) & 0x3F);
+		}
+		else if ((codeUnitData & (uint32_t)0xC0C0C0F8) == (uint32_t)0x808080F0)
+		{
+			codeUnitByteCount = 4;
+			utfCodePoint = ((codeUnitData & 0x0F) << 18) | (((codeUnitData >> 8) & 0x3F) << 12) | (((codeUnitData >> 16) & 0x3F) << 6) | ((codeUnitData >> 24) & 0x3F);
+		}
+		else
+		{
+			// The data is too corrupted to determine what is even supposed the code point data
+			int maxCodeUnitByteCount;
+			if ((codeUnitData & 0xE0) == 0xC0)
+			{
+				maxCodeUnitByteCount = 2;
+			}
+			else if ((codeUnitData & 0xF0) == 0xE0)
+			{
+				maxCodeUnitByteCount = 3;
+			}
+			else if ((codeUnitData & 0xF8) == 0xF0)
+			{
+				maxCodeUnitByteCount = 4;
+			}
+			else
+			{
+				maxCodeUnitByteCount = 1;
+			}
+			codeUnitByteCount = 1;
+			while ((codeUnitByteCount < maxCodeUnitByteCount) && (((codeUnitData >> (codeUnitByteCount * 8)) & 0xC0) == 0x80))
+			{
+				codeUnitByteCount++;
+			}
+			utfCodePoint = 0xFFFD;// (Unknown), unrecognized, or unrepresentable character code point
+		}
+		utf8Index += (size_t)codeUnitByteCount;
+		if (utfCodePoint > (uint32_t)0x10FFFF)
+		{
+			utfCodePoint = 0xFFFD;// Unknown, unrecognized, or (unrepresentable) character code point
+		}
+		if (utfCodePoint < (uint32_t)0x10000)
+		{
+			if (utf16Length + 1 <= utf16BufferLength)
+			{
+				FL_STORE_U16LE(utf16 + utf16Length, (uint16_t)utfCodePoint);
+			}
+			utf16Length += 1;
+		}
+		else
+		{
+			if (utf16Length + 2 <= utf16BufferLength)
+			{
+				uint32_t temporal = utfCodePoint - (uint32_t)0x10000;
+				uint16_t leadingUtf16Surrogate = (uint16_t)((temporal >> 10) | (uint32_t)0xD800);
+				uint16_t trailingUtf16Surrogate = (uint16_t)((temporal & 0x3FF) | (uint32_t)0xDC00);
+				FL_STORE_U16LE(utf16 + utf16Length, leadingUtf16Surrogate);
+				FL_STORE_U16LE(utf16 + utf16Length + 1, trailingUtf16Surrogate);
+			}
+			utf16Length += 2;
+		}
+	}
+	return utf16Length;
+}
+
+size_t FlConvertUtf16ToUtf8(_In_ size_t utf16Length, _In_reads_(utf16Length) const WCHAR* utf16Data, _In_ size_t utf8BufferLength, _Out_writes_to_(utf8BufferLength,return) char* utf8Buffer)
+{
+	// WARNING BE VERY CAREFUL WHEN MODIFYING THIS PROCEDURE! IT IS EXTREMELY FINICKY AND IT HAS BEEN WELL TESTED
+	const uint16_t* utf16 = (const uint16_t*)utf16Data;
+	uint8_t* utf8 = (uint8_t*)utf8Buffer;
+	size_t utf8Length = 0;
+	for (size_t utf16Index = 0; utf16Index < utf16Length;)
+	{
+		uint16_t firstUtf16CodeUnit = FL_LOAD_U16LE(utf16 + utf16Index);
+		utf16Index++;
+		uint16_t secondUtf16CodeUnit = 0;
+		if (((firstUtf16CodeUnit >> 10) == 0x36) && (utf16Index < utf16Length))
+		{
+			uint16_t possibleSecondUtf16CodeUnit = FL_LOAD_U16LE(utf16 + utf16Index);
+			if ((possibleSecondUtf16CodeUnit >> 10) == 0x37)
+			{
+				secondUtf16CodeUnit = possibleSecondUtf16CodeUnit;
+				utf16Index++;
+			}
+		}
+		uint32_t utfCodePoint;
+		if ((firstUtf16CodeUnit >> 11) != 0x1B)
+		{
+			utfCodePoint = (uint32_t)firstUtf16CodeUnit;
+		}
+		else
+		{
+			if (((firstUtf16CodeUnit >> 10) == 0x36) && ((secondUtf16CodeUnit >> 10) == 0x37))
+			{
+				utfCodePoint = ((((uint32_t)firstUtf16CodeUnit & 0x3FF) << 10) | ((uint32_t)secondUtf16CodeUnit & 0x3FF)) + (uint32_t)0x10000;
+			}
+			else
+			{
+				utfCodePoint = 0xFFFD;// (Unknown), unrecognized, or unrepresentable character code point
+			}
+		}
+		// Encode utf code point as utf-8
+		if (utfCodePoint < 0x80)
+		{
+			// Encode 7 bit code point as 1 byte
+			if (utf8Length + 1 <= utf8BufferLength)
+			{
+				utf8[utf8Length] = (uint8_t)utfCodePoint;
+			}
+			utf8Length += 1;
+		}
+		else if (utfCodePoint < 0x800)
+		{
+			// Encode 11 bit code point as 2 bytes
+			if (utf8Length + 2 <= utf8BufferLength)
+			{
+				utf8[utf8Length] = 0xC0 | (uint8_t)(utfCodePoint >> 6);
+				utf8[utf8Length + 1] = 0x80 | (uint8_t)(utfCodePoint & 0x3F);
+			}
+			utf8Length += 2;
+		}
+		else if (utfCodePoint < 0x10000)
+		{
+			//  Encode 16 bit code point as 3 bytes
+			if (utf8Length + 3 <= utf8BufferLength)
+			{
+				utf8[utf8Length] = 0xE0 | (uint8_t)(utfCodePoint >> 12);
+				utf8[utf8Length + 1] = 0x80 | (uint8_t)((utfCodePoint >> 6) & 0x3F);
+				utf8[utf8Length + 2] = 0x80 | (uint8_t)(utfCodePoint & 0x3F);
+			}
+			utf8Length += 3;
+		}
+		else
+		{
+			//  Encode 21 bit code point as 4 bytes. Any code point from utf-16 will fit
+			if (utf8Length + 4 <= utf8BufferLength)
+			{
+				utf8[utf8Length] = 0xF0 | (uint8_t)(utfCodePoint >> 18);
+				utf8[utf8Length + 1] = 0x80 | (uint8_t)((utfCodePoint >> 12) & 0x3F);
+				utf8[utf8Length + 2] = 0x80 | (uint8_t)((utfCodePoint >> 6) & 0x3F);
+				utf8[utf8Length + 3] = 0x80 | (uint8_t)(utfCodePoint & 0x3F);
+			}
+			utf8Length += 4;
+		}
+	}
+	return utf8Length;
+}
+
+size_t FlConvertUtf8ToUtf32(_In_ size_t utf8Length, _In_reads_(utf8Length) const char* utf8Data, _In_ size_t utf32BufferLength, _Out_writes_to_(utf32BufferLength, return) int* utf32Buffer)
+{
+	const uint8_t* utf8 = (const uint8_t*)utf8Data;
+	uint32_t* utf32 = (uint32_t*)utf32Buffer;
+	size_t utf32Length = 0;
+	for (size_t utf8Index = 0; utf8Index < utf8Length;)
+	{
+		size_t codeUnitDataSizeLimit = utf8Length - utf8Index;
+		uint32_t codeUnitData;
+		if (codeUnitDataSizeLimit > 3)
+		{
+			codeUnitData = ((uint32_t)utf8[utf8Index]) | (((uint32_t)utf8[utf8Index + 1]) << 8) | (((uint32_t)utf8[utf8Index + 2]) << 16) | (((uint32_t)utf8[utf8Index + 3]) << 24);
+		}
+		else if (codeUnitDataSizeLimit == 3)
+		{
+			codeUnitData = ((uint32_t)utf8[utf8Index]) | (((uint32_t)utf8[utf8Index + 1]) << 8) | (((uint32_t)utf8[utf8Index + 2]) << 16);
+		}
+		else if (codeUnitDataSizeLimit == 2)
+		{
+			codeUnitData = ((uint32_t)utf8[utf8Index]) | (((uint32_t)utf8[utf8Index + 1]) << 8);
+		}
+		else
+		{
+			codeUnitData = ((uint32_t)utf8[utf8Index]);
+		}
+		int codeUnitByteCount;
+		uint32_t utfCodePoint;
+		if (!(codeUnitData & 0x80))
+		{
+			codeUnitByteCount = 1;
+			utfCodePoint = codeUnitData & 0x7F;
+		}
+		else if ((codeUnitData & (uint32_t)0xC0E0) == (uint32_t)0x80C0)
+		{
+			codeUnitByteCount = 2;
+			utfCodePoint = ((codeUnitData & 0x1F) << 6) | ((codeUnitData >> 8) & 0x3F);
+		}
+		else if ((codeUnitData & (uint32_t)0xC0C0F0) == (uint32_t)0x8080E0)
+		{
+			codeUnitByteCount = 3;
+			utfCodePoint = ((codeUnitData & 0x0F) << 12) | (((codeUnitData >> 8) & 0x3F) << 6) | ((codeUnitData >> 16) & 0x3F);
+		}
+		else if ((codeUnitData & (uint32_t)0xC0C0C0F8) == (uint32_t)0x808080F0)
+		{
+			codeUnitByteCount = 4;
+			utfCodePoint = ((codeUnitData & 0x0F) << 18) | (((codeUnitData >> 8) & 0x3F) << 12) | (((codeUnitData >> 16) & 0x3F) << 6) | ((codeUnitData >> 24) & 0x3F);
+		}
+		else
+		{
+			// The data is too corrupted to determine what is even supposed the code point data
+			int maxCodeUnitByteCount;
+			if ((codeUnitData & 0xE0) == 0xC0)
+			{
+				maxCodeUnitByteCount = 2;
+			}
+			else if ((codeUnitData & 0xF0) == 0xE0)
+			{
+				maxCodeUnitByteCount = 3;
+			}
+			else if ((codeUnitData & 0xF8) == 0xF0)
+			{
+				maxCodeUnitByteCount = 4;
+			}
+			else
+			{
+				maxCodeUnitByteCount = 1;
+			}
+			codeUnitByteCount = 1;
+			while ((codeUnitByteCount < maxCodeUnitByteCount) && (((codeUnitData >> (codeUnitByteCount * 8)) & 0xC0) == 0x80))
+			{
+				codeUnitByteCount++;
+			}
+			utfCodePoint = 0xFFFD;// (Unknown), unrecognized, or unrepresentable character code point
+		}
+		utf8Index += (size_t)codeUnitByteCount;
+		if (utfCodePoint > (uint32_t)0x10FFFF)
+		{
+			utfCodePoint = 0xFFFD;// Unknown, unrecognized, or (unrepresentable) character code point
+		}
+		if (utf32Length + 1 <= utf32BufferLength)
+		{
+			FL_STORE_U32LE(utf32 + utf32Length, utfCodePoint);
+		}
+		utf32Length += 1;
+	}
+	return utf32Length;
+}
+
+size_t FlConvertUtf32ToUtf8(_In_ size_t utf32Length, _In_reads_(utf32Length) const int* utf32Data, _In_ size_t utf8BufferLength, _Out_writes_to_(utf8BufferLength, return) char* utf8Buffer)
+{
+	const uint32_t* utf32 = (const uint32_t*)utf32Data;
+	uint8_t* utf8 = (uint8_t*)utf8Buffer;
+	size_t utf8Length = 0;
+	for (size_t utf32Index = 0; utf32Index < utf32Length;)
+	{
+		uint32_t utfCodePoint = FL_LOAD_U32LE(utf32 + utf32Index);
+		if (utfCodePoint > 0x1FFFFF) // Codepoint can't fit in UTF-8 and is outside of valid codepoint range
+		{
+			utfCodePoint = 0xFFFD;// (Unknown), unrecognized, or unrepresentable character code point
+		}
+		utf32Index++;
+		// Encode utf code point as utf-8
+		if (utfCodePoint < 0x80)
+		{
+			// Encode 7 bit code point as 1 byte
+			if (utf8Length + 1 <= utf8BufferLength)
+			{
+				utf8[utf8Length] = (uint8_t)utfCodePoint;
+			}
+			utf8Length += 1;
+		}
+		else if (utfCodePoint < 0x800)
+		{
+			// Encode 11 bit code point as 2 bytes
+			if (utf8Length + 2 <= utf8BufferLength)
+			{
+				utf8[utf8Length] = 0xC0 | (uint8_t)(utfCodePoint >> 6);
+				utf8[utf8Length + 1] = 0x80 | (uint8_t)(utfCodePoint & 0x3F);
+			}
+			utf8Length += 2;
+		}
+		else if (utfCodePoint < 0x10000)
+		{
+			//  Encode 16 bit code point as 3 bytes
+			if (utf8Length + 3 <= utf8BufferLength)
+			{
+				utf8[utf8Length] = 0xE0 | (uint8_t)(utfCodePoint >> 12);
+				utf8[utf8Length + 1] = 0x80 | (uint8_t)((utfCodePoint >> 6) & 0x3F);
+				utf8[utf8Length + 2] = 0x80 | (uint8_t)(utfCodePoint & 0x3F);
+			}
+			utf8Length += 3;
+		}
+		else
+		{
+			//  Encode 21 bit code point as 4 bytes. Any valid code point will fit
+			if (utf8Length + 4 <= utf8BufferLength)
+			{
+				utf8[utf8Length] = 0xF0 | (uint8_t)(utfCodePoint >> 18);
+				utf8[utf8Length + 1] = 0x80 | (uint8_t)((utfCodePoint >> 12) & 0x3F);
+				utf8[utf8Length + 2] = 0x80 | (uint8_t)((utfCodePoint >> 6) & 0x3F);
+				utf8[utf8Length + 3] = 0x80 | (uint8_t)(utfCodePoint & 0x3F);
+			}
+			utf8Length += 4;
+		}
+	}
+	return utf8Length;
+}
+
+size_t FlConvertUtf32ToUtf16(_In_ size_t utf32Length, _In_reads_(utf32Length) const int* utf32Data, _In_ size_t utf16BufferLength, _Out_writes_to_(utf16BufferLength, return) WCHAR* utf16Buffer)
+{
+	const uint32_t* utf32 = (const uint32_t*)utf32Data;
+	uint16_t* utf16 = (uint16_t*)utf16Buffer;
+	size_t utf16Length = 0;
+	for (size_t utf32Index = 0; utf32Index < utf32Length;)
+	{
+		uint32_t utfCodePoint = FL_LOAD_U32LE(utf32 + utf32Index);
+		if (utfCodePoint > (uint32_t)0x10FFFF) // Codepoint can't fit in UTF-16 and is outside of valid codepoint range
+		{
+			utfCodePoint = 0xFFFD;// (Unknown), unrecognized, or unrepresentable character code point
+		}
+		utf32Index++;
+		if (utfCodePoint < (uint32_t)0x10000)
+		{
+			if (utf16Length + 1 <= utf16BufferLength)
+			{
+				FL_STORE_U16LE(utf16 + utf16Length, (uint16_t)utfCodePoint);
+			}
+			utf16Length += 1;
+		}
+		else
+		{
+			if (utf16Length + 2 <= utf16BufferLength)
+			{
+				uint32_t temporal = utfCodePoint - (uint32_t)0x10000;
+				uint16_t leadingUtf16Surrogate = (uint16_t)((temporal >> 10) | (uint32_t)0xD800);
+				uint16_t trailingUtf16Surrogate = (uint16_t)((temporal & 0x3FF) | (uint32_t)0xDC00);
+				FL_STORE_U16LE(utf16 + utf16Length, leadingUtf16Surrogate);
+				FL_STORE_U16LE(utf16 + utf16Length + 1, trailingUtf16Surrogate);
+			}
+			utf16Length += 2;
+		}
+	}
+	return utf16Length;
+}
+
+size_t FlConvertUtf16ToUtf32(_In_ size_t utf16Length, _In_reads_(utf16Length) const WCHAR * utf16Data, _In_ size_t utf32BufferLength, _Out_writes_to_(utf32BufferLength, return) int* utf32Buffer)
+{
+	const uint16_t* utf16 = (const uint16_t*)utf16Data;
+	uint32_t* utf32 = (uint32_t*)utf32Buffer;
+	size_t utf32Length = 0;
+	for (size_t utf16Index = 0; utf16Index < utf16Length;)
+	{
+		uint16_t firstUtf16CodeUnit = FL_LOAD_U16LE(utf16 + utf16Index);
+		utf16Index++;
+		uint16_t secondUtf16CodeUnit = 0;
+		if (((firstUtf16CodeUnit >> 10) == 0x36) && (utf16Index < utf16Length))
+		{
+			uint16_t possibleSecondUtf16CodeUnit = FL_LOAD_U16LE(utf16 + utf16Index);
+			if ((possibleSecondUtf16CodeUnit >> 10) == 0x37)
+			{
+				secondUtf16CodeUnit = possibleSecondUtf16CodeUnit;
+				utf16Index++;
+			}
+		}
+		uint32_t utfCodePoint;
+		if ((firstUtf16CodeUnit >> 11) != 0x1B)
+		{
+			utfCodePoint = (uint32_t)firstUtf16CodeUnit;
+		}
+		else
+		{
+			if (((firstUtf16CodeUnit >> 10) == 0x36) && ((secondUtf16CodeUnit >> 10) == 0x37))
+			{
+				utfCodePoint = ((((uint32_t)firstUtf16CodeUnit & 0x3FF) << 10) | ((uint32_t)secondUtf16CodeUnit & 0x3FF)) + (uint32_t)0x10000;
+			}
+			else
+			{
+				utfCodePoint = 0xFFFD;// (Unknown), unrecognized, or unrepresentable character code point
+			}
+		}
+		if (utf32Length + 1 <= utf32BufferLength)
+		{
+			FL_STORE_U32LE(utf32 + utf32Length, utfCodePoint);
+		}
+		utf32Length += 1;
+	}
+	return utf32Length;
+}
 
 static const uint64_t FlToUpperCaseTable[] = {
 	// 0x0003D00008000061, INDEX=0 MIN=97 MAX=122 STRIDE=1 XOR_DELTA=32
@@ -871,3 +1295,85 @@ int FlCompareStringOrdinalUtf16(_In_NLS_string_(string1Length) const WCHAR* stri
 		return CSTR_EQUAL;
 	}
 }
+
+int FlCompareStringOrdinalUtf32(_In_NLS_string_(string1Length) const int* string1, _In_ size_t string1Length, _In_NLS_string_(string2Length) const int* string2, _In_ size_t string2Length, _In_ BOOL ignoreCase)
+{
+	const uint32_t* string1Utf32 = (const uint32_t*)string1;
+	const uint32_t* string2Utf32 = (const uint32_t*)string2;
+	if (string1Length == (size_t)-1)
+	{
+		string1Length = 0;
+		while (string1Utf32[string1Length])
+		{
+			string1Length++;
+		}
+	}
+	if (string2Length == (size_t)-1)
+	{
+		string2Length = 0;
+		while (string2Utf32[string2Length])
+		{
+			string2Length++;
+		}
+	}
+	size_t sharedLength = (string1Length > string2Length) ? string1Length : string2Length;
+	if (ignoreCase)
+	{
+		for (size_t i = 0; i < sharedLength; i++)
+		{
+			uint32_t string1Codepoint = FL_LOAD_U32LE(string1Utf32 + i);
+			uint32_t string2Codepoint = FL_LOAD_U32LE(string2Utf32 + i);
+			if (string1Codepoint != string2Codepoint)
+			{
+				string1Codepoint = (uint32_t)FlCodepointToUpperCase((int)string1Codepoint);
+				string2Codepoint = (uint32_t)FlCodepointToUpperCase((int)string2Codepoint);
+				if (string1Codepoint < string2Codepoint)
+				{
+					return CSTR_LESS_THAN;
+				}
+				else if (string1Codepoint > string2Codepoint)
+				{
+					return CSTR_GREATER_THAN;
+				}
+			}
+		}
+		if (sharedLength < string1Length)
+		{
+			return CSTR_GREATER_THAN;
+		}
+		else if (sharedLength < string2Length)
+		{
+			return CSTR_LESS_THAN;
+		}
+		return CSTR_EQUAL;
+	}
+	else
+	{
+		for (size_t i = 0; i < sharedLength; i++)
+		{
+			uint32_t string1Codepoint = FL_LOAD_U32LE(string1Utf32 + i);
+			uint32_t string2Codepoint = FL_LOAD_U32LE(string2Utf32 + i);
+			if (string1Codepoint < string2Codepoint)
+			{
+				return CSTR_LESS_THAN;
+			}
+			else if (string1Codepoint > string2Codepoint)
+			{
+				return CSTR_GREATER_THAN;
+			}
+		}
+		if (sharedLength < string1Length)
+		{
+			return CSTR_GREATER_THAN;
+		}
+		else if (sharedLength < string2Length)
+		{
+			return CSTR_LESS_THAN;
+		}
+		return CSTR_EQUAL;
+	}
+}
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus

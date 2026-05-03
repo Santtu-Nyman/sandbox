@@ -1,5 +1,9 @@
 /*
-	Santtu S. Nyman's random file name generation library
+	Santtu S. Nyman's random file name generator library.
+
+	Version history
+		version 1.0.0 2024-05-17
+			First public version.
 
 	License:
 

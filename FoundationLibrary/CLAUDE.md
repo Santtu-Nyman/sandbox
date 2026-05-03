@@ -85,7 +85,6 @@ Documentation:
  - Always document header file function declarations in detail similar to Linux manual pages or the official Win32 API documentation.
  - Along with the function documentation annotate function parameters and return values with SAL.
  - Always verify that that documenatation you write is consistent with SAL.
- - Always mark the source code author as "Santtu S. Nyman" and the file creation year as the current year "2026" when creating new files.
 
 Testing:
  - Code should be tested with UTs.

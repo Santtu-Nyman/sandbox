@@ -1,5 +1,5 @@
 /*
-	Santtu S. Nyman's 2024 version of Alain Mosnier's public domain SHA-256 implementation ( https://github.com/amosnier/sha-2 Sunday, 10 March 2024 ).
+	Santtu S. Nyman's version of Alain Mosnier's public domain SHA-256 implementation ( https://github.com/amosnier/sha-2 Sunday, 10 March 2024 ).
 	This modified implementation is released to public domain as well.
 
 	License:

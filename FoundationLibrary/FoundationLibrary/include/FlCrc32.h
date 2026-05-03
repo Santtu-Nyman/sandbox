@@ -1,5 +1,9 @@
 /*
-	Simple CRC-32/ISO-HDLC implementation by Santtu S. Nyman.
+	Public domain CRC-32/ISO-HDLC implementation by Santtu S. Nyman.
+
+	Version history
+		version 1.0.0 2024-04-01
+			First public version.
 
 	License:
 

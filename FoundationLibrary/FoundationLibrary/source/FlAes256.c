@@ -1,5 +1,5 @@
 /*
-	Santtu S. Nyman's 2024 public domain AES256 implementation.
+	Santtu S. Nyman's public domain AES256 implementation.
 
 	License:
 

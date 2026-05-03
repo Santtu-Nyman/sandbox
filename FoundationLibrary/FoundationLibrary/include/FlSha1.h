@@ -1,6 +1,10 @@
 /*
-	Santtu S. Nyman's 2024 version of r10nw7fd3's public domain SHA1 implementation ( https://github.com/clibs/sha1/ Friday, 26 April 2024 ).
+	Santtu S. Nyman's version of r10nw7fd3's public domain SHA1 implementation ( https://github.com/clibs/sha1/ Friday, 26 April 2024 ).
 	This modified implementation is released to public domain as well.
+
+	Version history
+		version 1.0.0 2024-04-26
+			First public version.
 
 	License:
 
