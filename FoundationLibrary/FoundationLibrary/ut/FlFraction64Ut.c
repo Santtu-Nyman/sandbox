@@ -215,13 +215,17 @@ static void FlFraction64UtEncodeLengthBounded(_Inout_ size_t* testCount, _Inout_
 		0xFFFFFFFFFFFFFFFFull   // maximum value
 	};
 	char text[FL_FRACTION_64_MAX_LENGTH];
+	int allBounded = 1;
 	for (size_t n = sizeof(testValues) / sizeof(testValues[0]), i = 0; i < n; i++)
 	{
 		size_t length = FlEncodeFraction64(testValues[i], FL_FRACTION_64_FULL_PRECISION, text);
-		FL_UT_CHECK(
-			length <= FL_FRACTION_64_MAX_LENGTH || length == 0,
-			"FlFraction64UtEncodeLengthBounded");
+		if (!(length <= FL_FRACTION_64_MAX_LENGTH || length == 0))
+		{
+			allBounded = 0;
+			break;
+		}
 	}
+	FL_UT_CHECK(allBounded, "FlFraction64UtEncodeLengthBounded");
 }
 
 // All characters written to the output buffer must be decimal digit characters.
@@ -238,14 +242,22 @@ static void FlFraction64UtEncodeOutputDigitsValid(_Inout_ size_t* testCount, _In
 		0xCCCCCCCCCCCCCCCCull
 	};
 	char text[FL_FRACTION_64_MAX_LENGTH];
-	for (size_t n = sizeof(testValues) / sizeof(testValues[0]), i = 0; i < n; i++)
+	int allDigitsValid = 1;
+	for (size_t n = sizeof(testValues) / sizeof(testValues[0]), i = 0; i < n && allDigitsValid; i++)
 	{
 		size_t length = FlEncodeFraction64(testValues[i], FL_FRACTION_64_FULL_PRECISION, text);
 		if (length == 0)
 			continue;
 		for (size_t j = 0; j < length; j++)
-			FL_UT_CHECK(text[j] >= '0' && text[j] <= '9', "FlFraction64UtEncodeOutputDigitsValid");
+		{
+			if (!(text[j] >= '0' && text[j] <= '9'))
+			{
+				allDigitsValid = 0;
+				break;
+			}
+		}
 	}
+	FL_UT_CHECK(allDigitsValid, "FlFraction64UtEncodeOutputDigitsValid");
 }
 
 // Encoding is deterministic: the same input always produces the same output.
@@ -358,14 +370,18 @@ static void FlFraction64UtDecodeEncodeRoundTrip(_Inout_ size_t* testCount, _Inou
 		{ "0625", 4 },
 	};
 	char encodedText[FL_FRACTION_64_MAX_LENGTH];
+	int allRoundTripsMatch = 1;
 	for (size_t n = sizeof(cases) / sizeof(cases[0]), i = 0; i < n; i++)
 	{
 		uint64_t decoded = FlDecodeFraction64(cases[i].length, cases[i].text);
 		size_t encodedLength = FlEncodeFraction64(decoded, FL_FRACTION_64_FULL_PRECISION, encodedText);
-		FL_UT_CHECK(
-			FlFraction64UtTextEqual(encodedLength, encodedText, cases[i].text),
-			"FlFraction64UtDecodeEncodeRoundTrip");
+		if (!FlFraction64UtTextEqual(encodedLength, encodedText, cases[i].text))
+		{
+			allRoundTripsMatch = 0;
+			break;
+		}
 	}
+	FL_UT_CHECK(allRoundTripsMatch, "FlFraction64UtDecodeEncodeRoundTrip");
 }
 
 // Encoding a known value and then decoding the result must recover the
@@ -380,12 +396,18 @@ static void FlFraction64UtEncodeDecodeRoundTrip(_Inout_ size_t* testCount, _Inou
 		FL_FRACTION64_UT_SIXTEENTH,
 	};
 	char text[FL_FRACTION_64_MAX_LENGTH];
+	int allRoundTripsMatch = 1;
 	for (size_t n = sizeof(testValues) / sizeof(testValues[0]), i = 0; i < n; i++)
 	{
 		size_t length = FlEncodeFraction64(testValues[i], FL_FRACTION_64_FULL_PRECISION, text);
 		uint64_t decoded = FlDecodeFraction64(length, text);
-		FL_UT_CHECK(decoded == testValues[i], "FlFraction64UtEncodeDecodeRoundTrip");
+		if (decoded != testValues[i])
+		{
+			allRoundTripsMatch = 0;
+			break;
+		}
 	}
+	FL_UT_CHECK(allRoundTripsMatch, "FlFraction64UtEncodeDecodeRoundTrip");
 }
 
 // Encoding 0x0000000000000001 and 0xFFFFFFFFFFFFFFFF with full precision must

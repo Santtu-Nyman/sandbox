@@ -274,6 +274,7 @@ static void FlMd5UtStreamingEquality(_Inout_ size_t* testCount, _Inout_ size_t* 
 		static const uint8_t shortData[] = "abcd";
 		uint8_t expectedShort[FL_MD5_DIGEST_SIZE];
 		FlMd5Compute(sizeof(shortData) - 1, shortData, expectedShort);
+		int allSplitsMatch = 1;
 		for (size_t n = sizeof(shortData) - 1, splitAt = 1; splitAt < n; splitAt++)
 		{
 			FlMd5Context hashContext;
@@ -282,8 +283,13 @@ static void FlMd5UtStreamingEquality(_Inout_ size_t* testCount, _Inout_ size_t* 
 			FlMd5HashData(&hashContext, n - splitAt, shortData + splitAt);
 			uint8_t digest[FL_MD5_DIGEST_SIZE];
 			FlMd5FinishHash(&hashContext, digest);
-			FL_UT_CHECK(memcmp(digest, expectedShort, FL_MD5_DIGEST_SIZE) == 0, "FlMd5UtStreamingEquality_AllSplits");
+			if (memcmp(digest, expectedShort, FL_MD5_DIGEST_SIZE) != 0)
+			{
+				allSplitsMatch = 0;
+				break;
+			}
 		}
+		FL_UT_CHECK(allSplitsMatch, "FlMd5UtStreamingEquality_AllSplits");
 	}
 }
 

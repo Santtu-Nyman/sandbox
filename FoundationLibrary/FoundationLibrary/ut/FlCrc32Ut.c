@@ -135,13 +135,19 @@ static void FlCrc32UtStreamingEquality(_Inout_ size_t* testCount, _Inout_ size_t
 	{
 		static const uint8_t shortData[] = { 'a', 'b', 'c', 'd' };
 		uint32_t expectedShort = FlCrc32Compute(sizeof shortData, shortData);
+		int allSplitsMatch = 1;
 		for (size_t n = sizeof shortData, splitAt = 1; splitAt < n; splitAt++)
 		{
 			uint32_t crc32State = FlCrc32Create();
 			crc32State = FlCrc32Data(crc32State, splitAt, shortData);
 			crc32State = FlCrc32Data(crc32State, n - splitAt, shortData + splitAt);
-			FL_UT_CHECK(FlCrc32Finish(crc32State) == expectedShort, "FlCrc32UtStreamingEquality_AllSplits");
+			if (FlCrc32Finish(crc32State) != expectedShort)
+			{
+				allSplitsMatch = 0;
+				break;
+			}
 		}
+		FL_UT_CHECK(allSplitsMatch, "FlCrc32UtStreamingEquality_AllSplits");
 	}
 }
 
@@ -229,22 +235,31 @@ static void FlCrc32UtAllByteValues(_Inout_ size_t* testCount, _Inout_ size_t* fa
 {
 	uint32_t singleByteResults[256];
 
+	// CRC32 of any single byte is non-zero under this polynomial.
+	int allNonZero = 1;
 	for (size_t i = 0; i < 256; i++)
 	{
 		uint8_t byte = (uint8_t)i;
 		singleByteResults[i] = FlCrc32Compute(1, &byte);
-		// CRC32 of any single byte is non-zero under this polynomial.
-		FL_UT_CHECK(singleByteResults[i] != 0x00000000ul, "FlCrc32UtAllByteValues_NonZero");
+		if (singleByteResults[i] == 0x00000000ul)
+			allNonZero = 0;
 	}
+	FL_UT_CHECK(allNonZero, "FlCrc32UtAllByteValues_NonZero");
 
 	// Each distinct single byte must produce a distinct CRC32 value.
-	for (size_t i = 0; i < 256; i++)
+	int allUnique = 1;
+	for (size_t i = 0; i < 256 && allUnique; i++)
 	{
 		for (size_t j = i + 1; j < 256; j++)
 		{
-			FL_UT_CHECK(singleByteResults[i] != singleByteResults[j], "FlCrc32UtAllByteValues_Unique");
+			if (singleByteResults[i] == singleByteResults[j])
+			{
+				allUnique = 0;
+				break;
+			}
 		}
 	}
+	FL_UT_CHECK(allUnique, "FlCrc32UtAllByteValues_Unique");
 }
 
 // CRC32 of "Hello world" must be 0x8BD69E52.

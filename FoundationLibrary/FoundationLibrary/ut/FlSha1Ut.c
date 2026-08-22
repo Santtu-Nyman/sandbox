@@ -285,6 +285,7 @@ static void FlSha1UtStreamingEquality(_Inout_ size_t* testCount, _Inout_ size_t*
 		static const uint8_t shortData[] = "abcd";
 		uint8_t expectedShort[FL_SHA1_DIGEST_SIZE];
 		FlSha1Compute(sizeof(shortData) - 1, shortData, expectedShort);
+		int allSplitsMatch = 1;
 		for (size_t n = sizeof(shortData) - 1, splitAt = 1; splitAt < n; splitAt++)
 		{
 			FlSha1Context hashContext;
@@ -293,8 +294,13 @@ static void FlSha1UtStreamingEquality(_Inout_ size_t* testCount, _Inout_ size_t*
 			FlSha1HashData(&hashContext, n - splitAt, shortData + splitAt);
 			uint8_t digest[FL_SHA1_DIGEST_SIZE];
 			FlSha1FinishHash(&hashContext, digest);
-			FL_UT_CHECK(memcmp(digest, expectedShort, FL_SHA1_DIGEST_SIZE) == 0, "FlSha1UtStreamingEquality_AllSplits");
+			if (memcmp(digest, expectedShort, FL_SHA1_DIGEST_SIZE) != 0)
+			{
+				allSplitsMatch = 0;
+				break;
+			}
 		}
+		FL_UT_CHECK(allSplitsMatch, "FlSha1UtStreamingEquality_AllSplits");
 	}
 }
 
