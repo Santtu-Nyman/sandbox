@@ -610,7 +610,7 @@ void FlAes256CbcDecrypt(_In_reads_bytes_(FL_AES256_KEY_SIZE) const void* key, _I
 	}
 }
 
-static void FlAes256GcmPrecomputeGHASHLookupTable(_In_reads_bytes_(16) const uint8_t* hashKey, _Out_writes_(32) uint64_t* hashKeyLookupTable)
+static void FlAes256GcmPrecomputeGHASHLookupTable(_In_reads_bytes_(16) const uint8_t* hashKey, _Out_writes_all_(32) uint64_t* hashKeyLookupTable)
 {
 	uint64_t hashKeyBlock[2] = {
 		((uint64_t)hashKey[0] << 56) | ((uint64_t)hashKey[1] << 48) |

@@ -59,12 +59,12 @@ uint32_t FlInternalBoundedRandom(uint32_t upper_bound, uint64_t random_bits)
 
 static char FlInternalGetRandomFileNameCharacter(WORD randomBits)
 {
-	BYTE r0 = (BYTE)(randomBits & 0xFF);
-	BYTE r1 = (BYTE)(randomBits >> 8);
-	WORD r0Bits = (WORD)r0 * (WORD)FL_INTERNAL_RANDOM_FILE_NAME_CHARACTER_COUNT;
-	WORD r1Bits = (WORD)r1 * (WORD)FL_INTERNAL_RANDOM_FILE_NAME_CHARACTER_COUNT;
-	WORD sumBits = (r0Bits & 0xFF) + (r1Bits >> 8);
-	BYTE randomNumber = (BYTE)(r0Bits >> 8) + (BYTE)(sumBits >> 8);
+	BYTE randomBits0 = (BYTE)(randomBits & 0xFF);
+	BYTE randomBits1 = (BYTE)(randomBits >> 8);
+	WORD fixedPoint0 = (WORD)randomBits0 * (WORD)FL_INTERNAL_RANDOM_FILE_NAME_CHARACTER_COUNT;
+	WORD fixedPoint1 = (WORD)randomBits1 * (WORD)FL_INTERNAL_RANDOM_FILE_NAME_CHARACTER_COUNT;
+	WORD sum = (fixedPoint0 & 0xFF) + (fixedPoint1 >> 8);
+	BYTE randomNumber = (BYTE)(fixedPoint0 >> 8) + (BYTE)(sum >> 8);
 	char randomCharacter = FlInternalRandomFileNameCharacterTable[randomNumber];
 	return randomCharacter;
 }

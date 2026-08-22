@@ -57,7 +57,7 @@
 
 #define FL_UUID_UT_VECTOR_COUNT 6
 
-static const uint8_t FlUuidUtBytes[FL_UUID_UT_VECTOR_COUNT][FL_UUID_SIZE] =
+static const uint8_t flUuidUtBytes[FL_UUID_UT_VECTOR_COUNT][FL_UUID_SIZE] =
 {
 	{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
 	{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
@@ -67,7 +67,7 @@ static const uint8_t FlUuidUtBytes[FL_UUID_UT_VECTOR_COUNT][FL_UUID_SIZE] =
 	{ 0x0A, 0x96, 0xE4, 0x58, 0xEB, 0xCA, 0xDB, 0x4F, 0xB6, 0xA5, 0x7C, 0xA6, 0x65, 0x30, 0xB5, 0xB2 }
 };
 
-static const char FlUuidUtStrings[FL_UUID_UT_VECTOR_COUNT][39] =
+static const char flUuidUtStrings[FL_UUID_UT_VECTOR_COUNT][39] =
 {
 	"{00000000-0000-0000-0000-000000000000}",
 	"{00000000-0000-4000-8000-000000000000}",
@@ -86,10 +86,10 @@ static const char FlUuidUtStrings[FL_UUID_UT_VECTOR_COUNT][39] =
 // P(either match) is (2 / 2^128) ~= 5.9e-39.
 static void FlUuidUtNotNil(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	uint8_t id[FL_UUID_SIZE];
-	FlUuidCreateRandomId(id);
-	int notNil = (memcmp(id, FlUuidUtBytes[0], FL_UUID_SIZE) != 0) &&
-	             (memcmp(id, FlUuidUtBytes[1], FL_UUID_SIZE) != 0);
+	uint8_t uniqueIdentifier[FL_UUID_SIZE];
+	FlUuidCreateRandomId(uniqueIdentifier);
+	int notNil = (memcmp(uniqueIdentifier, flUuidUtBytes[0], FL_UUID_SIZE) != 0) &&
+	             (memcmp(uniqueIdentifier, flUuidUtBytes[1], FL_UUID_SIZE) != 0);
 	FL_UT_CHECK(notNil, "FlUuidUtNotNil");
 }
 
@@ -97,14 +97,14 @@ static void FlUuidUtNotNil(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 // P(any collision among 256 128-bit values) ~= 256^2 / (2 * 2^128) ~= 2.4e-34.
 static void FlUuidUtCreateRandomUnique(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	static uint8_t ids[256][FL_UUID_SIZE];
+	static uint8_t uniqueIdentifiers[256][FL_UUID_SIZE];
 	for (int i = 0; i < 256; i++)
-		FlUuidCreateRandomId(ids[i]);
+		FlUuidCreateRandomId(uniqueIdentifiers[i]);
 
 	int allUnique = 1;
 	for (int i = 0; i < 256 && allUnique; i++)
 		for (int j = i + 1; j < 256 && allUnique; j++)
-			if (memcmp(ids[i], ids[j], FL_UUID_SIZE) == 0)
+			if (memcmp(uniqueIdentifiers[i], uniqueIdentifiers[j], FL_UUID_SIZE) == 0)
 				allUnique = 0;
 
 	FL_UT_CHECK(allUnique, "FlUuidUtCreateRandomUnique");
@@ -120,9 +120,9 @@ static void FlUuidUtEncodeUtf8Length(_Inout_ size_t* testCount, _Inout_ size_t* 
 	int allCorrect = 1;
 	for (int i = 0; i < FL_UUID_UT_VECTOR_COUNT; i++)
 	{
-		char buf[38];
-		size_t len = FlUuidEncodeStringUtf8(FlUuidUtBytes[i], buf);
-		if (len != 38)
+		char encodedString[38];
+		size_t encodedLength = FlUuidEncodeStringUtf8(flUuidUtBytes[i], encodedString);
+		if (encodedLength != 38)
 		{
 			allCorrect = 0;
 			break;
@@ -137,9 +137,9 @@ static void FlUuidUtEncodeUtf8(_Inout_ size_t* testCount, _Inout_ size_t* failCo
 	int allCorrect = 1;
 	for (int i = 0; i < FL_UUID_UT_VECTOR_COUNT; i++)
 	{
-		char buf[38];
-		FlUuidEncodeStringUtf8(FlUuidUtBytes[i], buf);
-		if (memcmp(buf, FlUuidUtStrings[i], 38) != 0)
+		char encodedString[38];
+		FlUuidEncodeStringUtf8(flUuidUtBytes[i], encodedString);
+		if (memcmp(encodedString, flUuidUtStrings[i], 38) != 0)
 		{
 			allCorrect = 0;
 			break;
@@ -158,9 +158,9 @@ static void FlUuidUtEncodeUtf16Length(_Inout_ size_t* testCount, _Inout_ size_t*
 	int allCorrect = 1;
 	for (int i = 0; i < FL_UUID_UT_VECTOR_COUNT; i++)
 	{
-		WCHAR buf[38];
-		size_t len = FlUuidEncodeStringUtf16(FlUuidUtBytes[i], buf);
-		if (len != 38)
+		WCHAR encodedString[38];
+		size_t encodedLength = FlUuidEncodeStringUtf16(flUuidUtBytes[i], encodedString);
+		if (encodedLength != 38)
 		{
 			allCorrect = 0;
 			break;
@@ -175,12 +175,12 @@ static void FlUuidUtEncodeUtf16(_Inout_ size_t* testCount, _Inout_ size_t* failC
 	int allCorrect = 1;
 	for (int i = 0; i < FL_UUID_UT_VECTOR_COUNT; i++)
 	{
-		WCHAR buf[38];
-		FlUuidEncodeStringUtf16(FlUuidUtBytes[i], buf);
+		WCHAR encodedString[38];
+		FlUuidEncodeStringUtf16(flUuidUtBytes[i], encodedString);
 		// All expected characters are ASCII so each WCHAR equals the char value.
 		for (int j = 0; j < 38; j++)
 		{
-			if (buf[j] != (WCHAR)(unsigned char)FlUuidUtStrings[i][j])
+			if (encodedString[j] != (WCHAR)(unsigned char)flUuidUtStrings[i][j])
 			{
 				allCorrect = 0;
 				break;
@@ -203,9 +203,9 @@ static void FlUuidUtDecodeUtf8(_Inout_ size_t* testCount, _Inout_ size_t* failCo
 	int allCorrect = 1;
 	for (int i = 0; i < FL_UUID_UT_VECTOR_COUNT; i++)
 	{
-		uint8_t id[FL_UUID_SIZE];
-		size_t result = FlUuidDecodeStringUtf8(id, 38, FlUuidUtStrings[i]);
-		if (result != 38 || memcmp(id, FlUuidUtBytes[i], FL_UUID_SIZE) != 0)
+		uint8_t uniqueIdentifier[FL_UUID_SIZE];
+		size_t result = FlUuidDecodeStringUtf8(uniqueIdentifier, 38, flUuidUtStrings[i]);
+		if (result != 38 || memcmp(uniqueIdentifier, flUuidUtBytes[i], FL_UUID_SIZE) != 0)
 		{
 			allCorrect = 0;
 			break;
@@ -236,9 +236,9 @@ static void FlUuidUtDecodeUtf16(_Inout_ size_t* testCount, _Inout_ size_t* failC
 	int allCorrect = 1;
 	for (int i = 0; i < FL_UUID_UT_VECTOR_COUNT; i++)
 	{
-		uint8_t id[FL_UUID_SIZE];
-		size_t result = FlUuidDecodeStringUtf16(id, 38, wideStrings[i]);
-		if (result != 38 || memcmp(id, FlUuidUtBytes[i], FL_UUID_SIZE) != 0)
+		uint8_t uniqueIdentifier[FL_UUID_SIZE];
+		size_t result = FlUuidDecodeStringUtf16(uniqueIdentifier, 38, wideStrings[i]);
+		if (result != 38 || memcmp(uniqueIdentifier, flUuidUtBytes[i], FL_UUID_SIZE) != 0)
 		{
 			allCorrect = 0;
 			break;

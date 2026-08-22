@@ -120,10 +120,10 @@ static const uint8_t FL_MD5_UT_EXPECTED_64KIB_FF_BYTES[FL_MD5_DIGEST_SIZE] =
 // ---------------------------------------------------------------------------
 static void FlMd5Compute(_In_ size_t dataSize, _In_reads_bytes_(dataSize) const void* data, _Out_writes_bytes_all_(FL_MD5_DIGEST_SIZE) uint8_t* digest)
 {
-	FlMd5Context ctx;
-	FlMd5CreateHash(&ctx);
-	FlMd5HashData(&ctx, dataSize, data);
-	FlMd5FinishHash(&ctx, digest);
+	FlMd5Context hashContext;
+	FlMd5CreateHash(&hashContext);
+	FlMd5HashData(&hashContext, dataSize, data);
+	FlMd5FinishHash(&hashContext, digest);
 }
 
 // ---------------------------------------------------------------------------
@@ -206,12 +206,12 @@ static void FlMd5UtSanttuTestData(_Inout_ size_t* testCount, _Inout_ size_t* fai
 static void FlMd5Ut64KiBZeroBytes(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const uint8_t zeroByte = 0x00;
-	FlMd5Context ctx;
-	FlMd5CreateHash(&ctx);
+	FlMd5Context hashContext;
+	FlMd5CreateHash(&hashContext);
 	for (size_t i = 0; i < 65536; i++)
-		FlMd5HashData(&ctx, 1, &zeroByte);
+		FlMd5HashData(&hashContext, 1, &zeroByte);
 	uint8_t digest[FL_MD5_DIGEST_SIZE];
-	FlMd5FinishHash(&ctx, digest);
+	FlMd5FinishHash(&hashContext, digest);
 	FL_UT_CHECK(memcmp(digest, FL_MD5_UT_EXPECTED_64KIB_ZERO_BYTES, FL_MD5_DIGEST_SIZE) == 0, "FlMd5Ut64KiBZeroBytes");
 }
 
@@ -219,12 +219,12 @@ static void FlMd5Ut64KiBZeroBytes(_Inout_ size_t* testCount, _Inout_ size_t* fai
 static void FlMd5Ut64KiBFfBytes(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const uint8_t ffByte = 0xFF;
-	FlMd5Context ctx;
-	FlMd5CreateHash(&ctx);
+	FlMd5Context hashContext;
+	FlMd5CreateHash(&hashContext);
 	for (size_t i = 0; i < 65536; i++)
-		FlMd5HashData(&ctx, 1, &ffByte);
+		FlMd5HashData(&hashContext, 1, &ffByte);
 	uint8_t digest[FL_MD5_DIGEST_SIZE];
-	FlMd5FinishHash(&ctx, digest);
+	FlMd5FinishHash(&hashContext, digest);
 	FL_UT_CHECK(memcmp(digest, FL_MD5_UT_EXPECTED_64KIB_FF_BYTES, FL_MD5_DIGEST_SIZE) == 0, "FlMd5Ut64KiBFfBytes");
 }
 
@@ -237,35 +237,35 @@ static void FlMd5UtStreamingEquality(_Inout_ size_t* testCount, _Inout_ size_t* 
 
 	// Split 1 + remainder.
 	{
-		FlMd5Context ctx;
-		FlMd5CreateHash(&ctx);
-		FlMd5HashData(&ctx, 1, data);
-		FlMd5HashData(&ctx, sizeof(data) - 2, data + 1);
+		FlMd5Context hashContext;
+		FlMd5CreateHash(&hashContext);
+		FlMd5HashData(&hashContext, 1, data);
+		FlMd5HashData(&hashContext, sizeof(data) - 2, data + 1);
 		uint8_t digest[FL_MD5_DIGEST_SIZE];
-		FlMd5FinishHash(&ctx, digest);
+		FlMd5FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, wholeDigest, FL_MD5_DIGEST_SIZE) == 0, "FlMd5UtStreamingEquality_1_rest");
 	}
 
 	// Split at midpoint.
 	{
-		size_t mid = (sizeof(data) - 1) / 2;
-		FlMd5Context ctx;
-		FlMd5CreateHash(&ctx);
-		FlMd5HashData(&ctx, mid, data);
-		FlMd5HashData(&ctx, sizeof(data) - 1 - mid, data + mid);
+		size_t midpoint = (sizeof(data) - 1) / 2;
+		FlMd5Context hashContext;
+		FlMd5CreateHash(&hashContext);
+		FlMd5HashData(&hashContext, midpoint, data);
+		FlMd5HashData(&hashContext, sizeof(data) - 1 - midpoint, data + midpoint);
 		uint8_t digest[FL_MD5_DIGEST_SIZE];
-		FlMd5FinishHash(&ctx, digest);
+		FlMd5FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, wholeDigest, FL_MD5_DIGEST_SIZE) == 0, "FlMd5UtStreamingEquality_mid");
 	}
 
 	// One byte at a time.
 	{
-		FlMd5Context ctx;
-		FlMd5CreateHash(&ctx);
+		FlMd5Context hashContext;
+		FlMd5CreateHash(&hashContext);
 		for (size_t n = sizeof(data) - 1, i = 0; i < n; i++)
-			FlMd5HashData(&ctx, 1, data + i);
+			FlMd5HashData(&hashContext, 1, data + i);
 		uint8_t digest[FL_MD5_DIGEST_SIZE];
-		FlMd5FinishHash(&ctx, digest);
+		FlMd5FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, wholeDigest, FL_MD5_DIGEST_SIZE) == 0, "FlMd5UtStreamingEquality_1x43");
 	}
 
@@ -276,12 +276,12 @@ static void FlMd5UtStreamingEquality(_Inout_ size_t* testCount, _Inout_ size_t* 
 		FlMd5Compute(sizeof(shortData) - 1, shortData, expectedShort);
 		for (size_t n = sizeof(shortData) - 1, splitAt = 1; splitAt < n; splitAt++)
 		{
-			FlMd5Context ctx;
-			FlMd5CreateHash(&ctx);
-			FlMd5HashData(&ctx, splitAt, shortData);
-			FlMd5HashData(&ctx, n - splitAt, shortData + splitAt);
+			FlMd5Context hashContext;
+			FlMd5CreateHash(&hashContext);
+			FlMd5HashData(&hashContext, splitAt, shortData);
+			FlMd5HashData(&hashContext, n - splitAt, shortData + splitAt);
 			uint8_t digest[FL_MD5_DIGEST_SIZE];
-			FlMd5FinishHash(&ctx, digest);
+			FlMd5FinishHash(&hashContext, digest);
 			FL_UT_CHECK(memcmp(digest, expectedShort, FL_MD5_DIGEST_SIZE) == 0, "FlMd5UtStreamingEquality_AllSplits");
 		}
 	}
@@ -296,35 +296,35 @@ static void FlMd5UtZeroLengthChunkNoEffect(_Inout_ size_t* testCount, _Inout_ si
 
 	// Zero-length call before actual data.
 	{
-		FlMd5Context ctx;
-		FlMd5CreateHash(&ctx);
-		FlMd5HashData(&ctx, 0, data);
-		FlMd5HashData(&ctx, sizeof(data) - 1, data);
+		FlMd5Context hashContext;
+		FlMd5CreateHash(&hashContext);
+		FlMd5HashData(&hashContext, 0, data);
+		FlMd5HashData(&hashContext, sizeof(data) - 1, data);
 		uint8_t digest[FL_MD5_DIGEST_SIZE];
-		FlMd5FinishHash(&ctx, digest);
+		FlMd5FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, expected, FL_MD5_DIGEST_SIZE) == 0, "FlMd5UtZeroLengthChunkNoEffect_Before");
 	}
 
 	// Zero-length call after actual data.
 	{
-		FlMd5Context ctx;
-		FlMd5CreateHash(&ctx);
-		FlMd5HashData(&ctx, sizeof(data) - 1, data);
-		FlMd5HashData(&ctx, 0, data);
+		FlMd5Context hashContext;
+		FlMd5CreateHash(&hashContext);
+		FlMd5HashData(&hashContext, sizeof(data) - 1, data);
+		FlMd5HashData(&hashContext, 0, data);
 		uint8_t digest[FL_MD5_DIGEST_SIZE];
-		FlMd5FinishHash(&ctx, digest);
+		FlMd5FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, expected, FL_MD5_DIGEST_SIZE) == 0, "FlMd5UtZeroLengthChunkNoEffect_After");
 	}
 
 	// Zero-length call in the middle of actual data.
 	{
-		FlMd5Context ctx;
-		FlMd5CreateHash(&ctx);
-		FlMd5HashData(&ctx, 1, data);
-		FlMd5HashData(&ctx, 0, data);
-		FlMd5HashData(&ctx, sizeof(data) - 2, data + 1);
+		FlMd5Context hashContext;
+		FlMd5CreateHash(&hashContext);
+		FlMd5HashData(&hashContext, 1, data);
+		FlMd5HashData(&hashContext, 0, data);
+		FlMd5HashData(&hashContext, sizeof(data) - 2, data + 1);
 		uint8_t digest[FL_MD5_DIGEST_SIZE];
-		FlMd5FinishHash(&ctx, digest);
+		FlMd5FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, expected, FL_MD5_DIGEST_SIZE) == 0, "FlMd5UtZeroLengthChunkNoEffect_Middle");
 	}
 }
@@ -371,20 +371,20 @@ static void FlMd5UtContextIsolation(_Inout_ size_t* testCount, _Inout_ size_t* f
 	FlMd5Compute(sizeof(dataB) - 1, dataB, expectedB);
 
 	// Interleave byte-by-byte updates to both contexts.
-	FlMd5Context ctxA;
-	FlMd5Context ctxB;
-	FlMd5CreateHash(&ctxA);
-	FlMd5CreateHash(&ctxB);
+	FlMd5Context hashContextA;
+	FlMd5Context hashContextB;
+	FlMd5CreateHash(&hashContextA);
+	FlMd5CreateHash(&hashContextB);
 	for (size_t n = sizeof(dataA) - 1, i = 0; i < n; i++)
 	{
-		FlMd5HashData(&ctxA, 1, dataA + i);
-		FlMd5HashData(&ctxB, 1, dataB + i);
+		FlMd5HashData(&hashContextA, 1, dataA + i);
+		FlMd5HashData(&hashContextB, 1, dataB + i);
 	}
 
 	uint8_t digestA[FL_MD5_DIGEST_SIZE];
 	uint8_t digestB[FL_MD5_DIGEST_SIZE];
-	FlMd5FinishHash(&ctxA, digestA);
-	FlMd5FinishHash(&ctxB, digestB);
+	FlMd5FinishHash(&hashContextA, digestA);
+	FlMd5FinishHash(&hashContextB, digestB);
 	FL_UT_CHECK(memcmp(digestA, expectedA, FL_MD5_DIGEST_SIZE) == 0, "FlMd5UtContextIsolation_A");
 	FL_UT_CHECK(memcmp(digestB, expectedB, FL_MD5_DIGEST_SIZE) == 0, "FlMd5UtContextIsolation_B");
 }

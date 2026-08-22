@@ -43,20 +43,20 @@
 #define FL_WSTR_LEN(s) ((sizeof(s) / sizeof(WCHAR)) - 1)
 #define FL_STR_LEN(s)  (sizeof(s) - 1)
 
-static BOOL flFilePathEqW(SIZE_T len, const WCHAR* a, const WCHAR* expected)
+static BOOL FlFilePathEqW(SIZE_T pathLength, const WCHAR* actualPath, const WCHAR* expected)
 {
-	SIZE_T expectedLen = wcslen(expected);
-	if (len != expectedLen)
+	SIZE_T expectedLength = wcslen(expected);
+	if (pathLength != expectedLength)
 		return FALSE;
-	return len == 0 || memcmp(a, expected, len * sizeof(WCHAR)) == 0;
+	return pathLength == 0 || memcmp(actualPath, expected, pathLength * sizeof(WCHAR)) == 0;
 }
 
-static BOOL flFilePathEq8(SIZE_T len, const char* a, const char* expected)
+static BOOL FlFilePathEq8(SIZE_T pathLength, const char* actualPath, const char* expected)
 {
-	SIZE_T expectedLen = strlen(expected);
-	if (len != expectedLen)
+	SIZE_T expectedLength = strlen(expected);
+	if (pathLength != expectedLength)
 		return FALSE;
-	return len == 0 || memcmp(a, expected, len) == 0;
+	return pathLength == 0 || memcmp(actualPath, expected, pathLength) == 0;
 }
 
 // ============================================================================
@@ -481,72 +481,72 @@ static void FlWin32FilePathUtIsNotFullyQualifiedUtf8MultiByteOverMaxPath(_Inout_
 static void FlWin32FilePathUtGetFullyQualifiedClean(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"C:\\foo\\bar";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\foo\\bar"), "GetFullyQualified_Clean");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\foo\\bar"), "GetFullyQualified_Clean");
 }
 
 // A trailing separator is stripped from an absolute path.
 static void FlWin32FilePathUtGetFullyQualifiedTrailingSep(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"C:\\foo\\bar\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\foo\\bar"), "GetFullyQualified_TrailingSep");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\foo\\bar"), "GetFullyQualified_TrailingSep");
 }
 
 // A "." component in an absolute path is removed.
 static void FlWin32FilePathUtGetFullyQualifiedDotComponent(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"C:\\foo\\.\\bar";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\foo\\bar"), "GetFullyQualified_DotComponent");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\foo\\bar"), "GetFullyQualified_DotComponent");
 }
 
 // A ".." component in an absolute path consumes the preceding component.
 static void FlWin32FilePathUtGetFullyQualifiedDotDotComponent(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"C:\\foo\\..\\bar";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\bar"), "GetFullyQualified_DotDotComponent");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\bar"), "GetFullyQualified_DotDotComponent");
 }
 
 // Forward slashes are accepted as separators and normalized to backslashes.
 static void FlWin32FilePathUtGetFullyQualifiedForwardSlash(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"C:/foo/bar";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\foo\\bar"), "GetFullyQualified_ForwardSlash");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\foo\\bar"), "GetFullyQualified_ForwardSlash");
 }
 
 // A UNC absolute path is returned with normalized separators.
 static void FlWin32FilePathUtGetFullyQualifiedUnc(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\server\\share\\foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"\\\\server\\share\\foo"), "GetFullyQualified_Unc");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"\\\\server\\share\\foo"), "GetFullyQualified_Unc");
 }
 
 // An extended prefix "\\?\" is removed when the result fits within MAX_PATH - 1 characters.
 static void FlWin32FilePathUtGetFullyQualifiedRemoveExtendedPrefix(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\C:\\foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\foo"), "GetFullyQualified_RemoveExtendedPrefix");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\foo"), "GetFullyQualified_RemoveExtendedPrefix");
 }
 
 // The NT namespace prefix "\??\" is removed when the result fits within MAX_PATH - 1 characters.
 static void FlWin32FilePathUtGetFullyQualifiedRemoveNtPrefix(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\??\\C:\\foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\foo"), "GetFullyQualified_RemoveNtPrefix");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\foo"), "GetFullyQualified_RemoveNtPrefix");
 }
 
 // When path is absolute, basePath is ignored.
@@ -554,9 +554,9 @@ static void FlWin32FilePathUtGetFullyQualifiedAbsoluteIgnoresBase(_Inout_ size_t
 {
 	static const WCHAR path[] = L"D:\\foo";
 	static const WCHAR base[] = L"C:\\bar";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"D:\\foo"), "GetFullyQualified_AbsoluteIgnoresBase");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"D:\\foo"), "GetFullyQualified_AbsoluteIgnoresBase");
 }
 
 // A relative path is appended to the base path.
@@ -564,9 +564,9 @@ static void FlWin32FilePathUtGetFullyQualifiedRelativeToBase(_Inout_ size_t* tes
 {
 	static const WCHAR path[] = L"foo\\bar";
 	static const WCHAR base[] = L"C:\\baz";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\baz\\foo\\bar"), "GetFullyQualified_RelativeToBase");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\baz\\foo\\bar"), "GetFullyQualified_RelativeToBase");
 }
 
 // ".." in a relative path consumes a component from the base path.
@@ -574,9 +574,9 @@ static void FlWin32FilePathUtGetFullyQualifiedRelativeDotDot(_Inout_ size_t* tes
 {
 	static const WCHAR path[] = L"..\\foo";
 	static const WCHAR base[] = L"C:\\baz\\qux";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\baz\\foo"), "GetFullyQualified_RelativeDotDot");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\baz\\foo"), "GetFullyQualified_RelativeDotDot");
 }
 
 // A lone "." relative path resolves to the base path itself.
@@ -584,9 +584,9 @@ static void FlWin32FilePathUtGetFullyQualifiedRelativeDotOnly(_Inout_ size_t* te
 {
 	static const WCHAR path[] = L".";
 	static const WCHAR base[] = L"C:\\foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\foo"), "GetFullyQualified_RelativeDotOnly");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\foo"), "GetFullyQualified_RelativeDotOnly");
 }
 
 // When the buffer is too small no data is written and the required size is returned.
@@ -594,18 +594,18 @@ static void FlWin32FilePathUtGetFullyQualifiedRelativeDotOnly(_Inout_ size_t* te
 static void FlWin32FilePathUtGetFullyQualifiedBufferSizing(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"C:\\foo\\bar";
-	WCHAR buf[MAX_PATH];
-	SIZE_T needed = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", 0, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T needed = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", 0, pathBuffer);
 	FL_UT_CHECK(needed > 0, "GetFullyQualified_BufferSizing_NeededSize");
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(result == needed && flFilePathEqW(result, buf, L"C:\\foo\\bar"), "GetFullyQualified_BufferSizing_Success");
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(result == needed && FlFilePathEqW(result, pathBuffer, L"C:\\foo\\bar"), "GetFullyQualified_BufferSizing_Success");
 }
 
 // Both path and basePath empty returns 0.
 static void FlWin32FilePathUtGetFullyQualifiedBothEmpty(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(0, L"", 0, L"", MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(0, L"", 0, L"", MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualified_BothEmpty");
 }
 
@@ -613,8 +613,8 @@ static void FlWin32FilePathUtGetFullyQualifiedBothEmpty(_Inout_ size_t* testCoun
 static void FlWin32FilePathUtGetFullyQualifiedRelativeEmptyBase(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualified_RelativeEmptyBase");
 }
 
@@ -622,8 +622,8 @@ static void FlWin32FilePathUtGetFullyQualifiedRelativeEmptyBase(_Inout_ size_t* 
 static void FlWin32FilePathUtGetFullyQualifiedDotDotAboveRoot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"C:\\..";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualified_DotDotAboveRoot");
 }
 
@@ -631,9 +631,9 @@ static void FlWin32FilePathUtGetFullyQualifiedDotDotAboveRoot(_Inout_ size_t* te
 static void FlWin32FilePathUtGetFullyQualifiedRemoveExtraExtendedPrefix(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\C:\\aaa";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\aaa"), "GetFullyQualified_RemoveExtraExtendedPrefix");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\aaa"), "GetFullyQualified_RemoveExtraExtendedPrefix");
 }
 
 // Navigating five levels above a deep extended-prefix basePath produces a result short enough to drop the prefix.
@@ -641,9 +641,9 @@ static void FlWin32FilePathUtGetFullyQualifiedRemoveExtendedPrefixRelative(_Inou
 {
 	static const WCHAR path[] = L"..\\..\\..\\..\\..";
 	static const WCHAR base[] = L"\\\\?\\C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\ddddddddddddddddddddddddddddddddddddddddddddd\\eeeeeeeeeeeee\\fffffffff";
-	WCHAR buf[512];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, 512, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), "GetFullyQualified_RemoveExtendedPrefixRelative");
+	WCHAR pathBuffer[512];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, 512, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), "GetFullyQualified_RemoveExtendedPrefixRelative");
 }
 
 // A long absolute path that exceeds MAX_PATH - 1 characters receives the extended prefix "\\?\".
@@ -651,9 +651,9 @@ static void FlWin32FilePathUtGetFullyQualifiedAddExtendedPrefix(_Inout_ size_t* 
 {
 	static const WCHAR path[] = L"C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\ddddddddddddddddddddddddddddddddddddddddddddd";
 	static const WCHAR expected[] = L"\\\\?\\C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\ddddddddddddddddddddddddddddddddddddddddddddd";
-	WCHAR buf[512];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", 512, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_AddExtendedPrefix");
+	WCHAR pathBuffer[512];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", 512, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_AddExtendedPrefix");
 }
 
 // A relative path that, when appended to basePath, exceeds MAX_PATH - 1 characters receives the extended prefix "\\?\".
@@ -662,9 +662,9 @@ static void FlWin32FilePathUtGetFullyQualifiedAddExtendedPrefixRelative(_Inout_ 
 	static const WCHAR path[] = L"ddddddddddddddddddddddddddddddddddddddddddddd";
 	static const WCHAR base[] = L"C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
 	static const WCHAR expected[] = L"\\\\?\\C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\ddddddddddddddddddddddddddddddddddddddddddddd";
-	WCHAR buf[512];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, 512, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_AddExtendedPrefixRelative");
+	WCHAR pathBuffer[512];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, 512, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_AddExtendedPrefixRelative");
 }
 
 // A relative path that, when appended to a UNC basePath, exceeds MAX_PATH - 1 characters receives the "\\?\UNC\" extended prefix.
@@ -673,9 +673,9 @@ static void FlWin32FilePathUtGetFullyQualifiedAddExtendedPrefixUncRelative(_Inou
 	static const WCHAR path[] = L"ddddddddddddddddddddddddddddddddddddddddddddddddddddddd\\eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\ffffffffffffffffffffffff";
 	static const WCHAR base[] = L"\\\\server name\\share name\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccc";
 	static const WCHAR expected[] = L"\\\\?\\UNC\\server name\\share name\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccc\\ddddddddddddddddddddddddddddddddddddddddddddddddddddddd\\eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\ffffffffffffffffffffffff";
-	WCHAR buf[512];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, 512, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_AddExtendedPrefixUncRelative");
+	WCHAR pathBuffer[512];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, 512, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_AddExtendedPrefixUncRelative");
 }
 
 // A bare file name relative to a non-C drive base resolves to base\file.
@@ -683,9 +683,9 @@ static void FlWin32FilePathUtGetFullyQualifiedNonCDriveRelativeFileName(_Inout_ 
 {
 	static const WCHAR path[] = L"file.dat";
 	static const WCHAR base[] = L"E:\\directory";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"E:\\directory\\file.dat"), "GetFullyQualified_NonCDriveRelativeFileName");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"E:\\directory\\file.dat"), "GetFullyQualified_NonCDriveRelativeFileName");
 }
 
 // A bare file name relative to a deep UNC base resolves to base\file, preserving spaces.
@@ -693,9 +693,9 @@ static void FlWin32FilePathUtGetFullyQualifiedServerRelativeFileName(_Inout_ siz
 {
 	static const WCHAR path[] = L"file name.dat";
 	static const WCHAR base[] = L"\\\\example.com\\share name\\directory name\\01234567801234567890123456780123456789";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"\\\\example.com\\share name\\directory name\\01234567801234567890123456780123456789\\file name.dat"), "GetFullyQualified_ServerRelativeFileName");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"\\\\example.com\\share name\\directory name\\01234567801234567890123456780123456789\\file name.dat"), "GetFullyQualified_ServerRelativeFileName");
 }
 
 // A relative path combined with a base path that has a trailing separator resolves correctly.
@@ -703,9 +703,9 @@ static void FlWin32FilePathUtGetFullyQualifiedBaseTrailingSep(_Inout_ size_t* te
 {
 	static const WCHAR path[] = L"directory B\\file.dat";
 	static const WCHAR base[] = L"D:\\directory A\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"D:\\directory A\\directory B\\file.dat"), "GetFullyQualified_BaseTrailingSep");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"D:\\directory A\\directory B\\file.dat"), "GetFullyQualified_BaseTrailingSep");
 }
 
 // ".." in a relative path navigates one level above the base directory.
@@ -713,9 +713,9 @@ static void FlWin32FilePathUtGetFullyQualifiedBackFromBase(_Inout_ size_t* testC
 {
 	static const WCHAR path[] = L"..\\file.dat";
 	static const WCHAR base[] = L"E:\\directory";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"E:\\file.dat"), "GetFullyQualified_BackFromBase");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"E:\\file.dat"), "GetFullyQualified_BackFromBase");
 }
 
 // ".." in a relative path navigates one level above the base directory when basePath ends with a "." component.
@@ -723,9 +723,9 @@ static void FlWin32FilePathUtGetFullyQualifiedBackFromBaseDotSuffix(_Inout_ size
 {
 	static const WCHAR path[] = L"..\\file.dat";
 	static const WCHAR base[] = L"E:\\directory\\.";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"E:\\file.dat"), "GetFullyQualified_BackFromBaseDotSuffix");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"E:\\file.dat"), "GetFullyQualified_BackFromBaseDotSuffix");
 }
 
 // A bare file name relative to a base directory resolves to base\file.
@@ -733,18 +733,18 @@ static void FlWin32FilePathUtGetFullyQualifiedSimpleRelativeFileName(_Inout_ siz
 {
 	static const WCHAR path[] = L"file.dat";
 	static const WCHAR base[] = L"C:\\directory";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\directory\\file.dat"), "GetFullyQualified_SimpleRelativeFileName");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\directory\\file.dat"), "GetFullyQualified_SimpleRelativeFileName");
 }
 
 // The drive root "C:\" resolves to itself.
 static void FlWin32FilePathUtGetFullyQualifiedDriveRootAsPath(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"C:\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\"), "GetFullyQualified_DriveRootAsPath");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\"), "GetFullyQualified_DriveRootAsPath");
 }
 
 // A lone ".." relative to a one-level-deep base resolves to the drive root.
@@ -752,9 +752,9 @@ static void FlWin32FilePathUtGetFullyQualifiedDotDotToDriveRoot(_Inout_ size_t* 
 {
 	static const WCHAR path[] = L"..";
 	static const WCHAR base[] = L"C:\\foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\"), "GetFullyQualified_DotDotToDriveRoot");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\"), "GetFullyQualified_DotDotToDriveRoot");
 }
 
 // A ".." relative to the drive root itself navigates above the root and returns 0.
@@ -762,8 +762,8 @@ static void FlWin32FilePathUtGetFullyQualifiedDotDotAboveDriveRootRelative(_Inou
 {
 	static const WCHAR path[] = L"..";
 	static const WCHAR base[] = L"C:\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualified_DotDotAboveDriveRootRelative");
 }
 
@@ -771,18 +771,18 @@ static void FlWin32FilePathUtGetFullyQualifiedDotDotAboveDriveRootRelative(_Inou
 static void FlWin32FilePathUtGetFullyQualifiedMultipleDotDot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"C:\\foo\\bar\\..\\..";;
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\"), "GetFullyQualified_MultipleDotDot");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\"), "GetFullyQualified_MultipleDotDot");
 }
 
 // An extended-prefix UNC path short enough to fit within MAX_PATH - 1 has "\\?\UNC\" replaced by "\\".
 static void FlWin32FilePathUtGetFullyQualifiedRemoveExtendedPrefixUnc(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\UNC\\server\\share\\foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"\\\\server\\share\\foo"), "GetFullyQualified_RemoveExtendedPrefixUnc");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"\\\\server\\share\\foo"), "GetFullyQualified_RemoveExtendedPrefixUnc");
 }
 
 // A volume GUID path is returned with its "\\?\" prefix intact because the GUID form requires it.
@@ -790,9 +790,9 @@ static void FlWin32FilePathUtGetFullyQualifiedVolumeGuid(_Inout_ size_t* testCou
 {
 	static const WCHAR path[]     = L"\\\\?\\Volume{12345678-1234-1234-1234-123456789abc}\\foo";
 	static const WCHAR expected[] = L"\\\\?\\Volume{12345678-1234-1234-1234-123456789abc}\\foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_VolumeGuid");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_VolumeGuid");
 }
 
 // A relative path with a base that uses forward slashes resolves correctly.
@@ -800,9 +800,9 @@ static void FlWin32FilePathUtGetFullyQualifiedForwardSlashBase(_Inout_ size_t* t
 {
 	static const WCHAR path[] = L"file.dat";
 	static const WCHAR base[] = L"C:/directory";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\directory\\file.dat"), "GetFullyQualified_ForwardSlashBase");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\directory\\file.dat"), "GetFullyQualified_ForwardSlashBase");
 }
 
 // A relative path starting with ".\" resolves the "." to base and appends the child component.
@@ -810,9 +810,9 @@ static void FlWin32FilePathUtGetFullyQualifiedRelativeDotSlash(_Inout_ size_t* t
 {
 	static const WCHAR path[] = L".\\foo";
 	static const WCHAR base[] = L"C:\\base";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\base\\foo"), "GetFullyQualified_RelativeDotSlash");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\base\\foo"), "GetFullyQualified_RelativeDotSlash");
 }
 
 // A result of exactly MAX_PATH - 1 characters (259) is returned without the "\\?\" extended prefix.
@@ -828,9 +828,9 @@ static void FlWin32FilePathUtGetFullyQualifiedExactlyMaxPathMinus1(_Inout_ size_
 		expected[i] = L'a';
 	}
 	expected[259] = L'\0';
-	WCHAR buf[520];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(259, path, 0, L"", 520, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_ExactlyMaxPathMinus1");
+	WCHAR pathBuffer[520];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(259, path, 0, L"", 520, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_ExactlyMaxPathMinus1");
 }
 
 // A result of exactly MAX_PATH characters (260) is returned with the "\\?\" extended prefix prepended.
@@ -846,9 +846,9 @@ static void FlWin32FilePathUtGetFullyQualifiedExactlyMaxPath(_Inout_ size_t* tes
 	for (size_t i = 7; i < 264; i++)
 		expected[i] = L'a';
 	expected[264] = L'\0';
-	WCHAR buf[520];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(260, path, 0, L"", 520, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_ExactlyMaxPath");
+	WCHAR pathBuffer[520];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(260, path, 0, L"", 520, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_ExactlyMaxPath");
 }
 
 // ============================================================================
@@ -858,160 +858,160 @@ static void FlWin32FilePathUtGetFullyQualifiedExactlyMaxPath(_Inout_ size_t* tes
 static void FlWin32FilePathUtGetFullyQualifiedUtf8Clean(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "C:\\foo\\bar";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\foo\\bar"), "GetFullyQualifiedUtf8_Clean");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\foo\\bar"), "GetFullyQualifiedUtf8_Clean");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8TrailingSep(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "C:\\foo\\bar\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\foo\\bar"), "GetFullyQualifiedUtf8_TrailingSep");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\foo\\bar"), "GetFullyQualifiedUtf8_TrailingSep");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8DotComponent(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "C:\\foo\\.\\bar";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\foo\\bar"), "GetFullyQualifiedUtf8_DotComponent");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\foo\\bar"), "GetFullyQualifiedUtf8_DotComponent");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8DotDotComponent(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "C:\\foo\\..\\bar";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\bar"), "GetFullyQualifiedUtf8_DotDotComponent");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\bar"), "GetFullyQualifiedUtf8_DotDotComponent");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8ForwardSlash(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "C:/foo/bar";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\foo\\bar"), "GetFullyQualifiedUtf8_ForwardSlash");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\foo\\bar"), "GetFullyQualifiedUtf8_ForwardSlash");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RemoveExtendedPrefix(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "\\\\?\\C:\\foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\foo"), "GetFullyQualifiedUtf8_RemoveExtendedPrefix");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\foo"), "GetFullyQualifiedUtf8_RemoveExtendedPrefix");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RemoveNtPrefix(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "\\??\\C:\\foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\foo"), "GetFullyQualifiedUtf8_RemoveNtPrefix");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\foo"), "GetFullyQualifiedUtf8_RemoveNtPrefix");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8Unc(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "\\\\server\\share\\foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "\\\\server\\share\\foo"), "GetFullyQualifiedUtf8_Unc");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "\\\\server\\share\\foo"), "GetFullyQualifiedUtf8_Unc");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8AbsoluteIgnoresBase(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "D:\\foo";
 	static const char base[] = "C:\\bar";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "D:\\foo"), "GetFullyQualifiedUtf8_AbsoluteIgnoresBase");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "D:\\foo"), "GetFullyQualifiedUtf8_AbsoluteIgnoresBase");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeToBase(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "foo\\bar";
 	static const char base[] = "C:\\baz";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\baz\\foo\\bar"), "GetFullyQualifiedUtf8_RelativeToBase");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\baz\\foo\\bar"), "GetFullyQualifiedUtf8_RelativeToBase");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeDotDot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "..\\foo";
 	static const char base[] = "C:\\baz\\qux";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\baz\\foo"), "GetFullyQualifiedUtf8_RelativeDotDot");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\baz\\foo"), "GetFullyQualifiedUtf8_RelativeDotDot");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeDotOnly(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = ".";
 	static const char base[] = "C:\\foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\foo"), "GetFullyQualifiedUtf8_RelativeDotOnly");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\foo"), "GetFullyQualifiedUtf8_RelativeDotOnly");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8BufferSizing(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "C:\\foo\\bar";
-	char buf[MAX_PATH];
-	SIZE_T needed = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", 0, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T needed = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", 0, pathBuffer);
 	FL_UT_CHECK(needed > 0, "GetFullyQualifiedUtf8_BufferSizing_NeededSize");
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(result == needed && flFilePathEq8(result, buf, "C:\\foo\\bar"), "GetFullyQualifiedUtf8_BufferSizing_Success");
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(result == needed && FlFilePathEq8(result, pathBuffer, "C:\\foo\\bar"), "GetFullyQualifiedUtf8_BufferSizing_Success");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8BothEmpty(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(0, "", 0, "", MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(0, "", 0, "", MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualifiedUtf8_BothEmpty");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeEmptyBase(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualifiedUtf8_RelativeEmptyBase");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8DotDotAboveRoot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "C:\\..";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualifiedUtf8_DotDotAboveRoot");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RemoveExtraExtendedPrefix(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "\\\\?\\C:\\aaa";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\aaa"), "GetFullyQualifiedUtf8_RemoveExtraExtendedPrefix");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\aaa"), "GetFullyQualifiedUtf8_RemoveExtraExtendedPrefix");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RemoveExtendedPrefixRelative(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "..\\..\\..\\..\\..";
 	static const char base[] = "\\\\?\\C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\ddddddddddddddddddddddddddddddddddddddddddddd\\eeeeeeeeeeeee\\fffffffff";
-	char buf[512];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, 512, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), "GetFullyQualifiedUtf8_RemoveExtendedPrefixRelative");
+	char pathBuffer[512];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, 512, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), "GetFullyQualifiedUtf8_RemoveExtendedPrefixRelative");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8AddExtendedPrefix(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\ddddddddddddddddddddddddddddddddddddddddddddd";
 	static const char expected[] = "\\\\?\\C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\ddddddddddddddddddddddddddddddddddddddddddddd";
-	char buf[512];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", 512, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_AddExtendedPrefix");
+	char pathBuffer[512];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", 512, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_AddExtendedPrefix");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8AddExtendedPrefixRelative(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
@@ -1019,9 +1019,9 @@ static void FlWin32FilePathUtGetFullyQualifiedUtf8AddExtendedPrefixRelative(_Ino
 	static const char path[] = "ddddddddddddddddddddddddddddddddddddddddddddd";
 	static const char base[] = "C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
 	static const char expected[] = "\\\\?\\C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\ddddddddddddddddddddddddddddddddddddddddddddd";
-	char buf[512];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, 512, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_AddExtendedPrefixRelative");
+	char pathBuffer[512];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, 512, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_AddExtendedPrefixRelative");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8AddExtendedPrefixUncRelative(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
@@ -1029,132 +1029,132 @@ static void FlWin32FilePathUtGetFullyQualifiedUtf8AddExtendedPrefixUncRelative(_
 	static const char path[] = "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd\\eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\ffffffffffffffffffffffff";
 	static const char base[] = "\\\\server name\\share name\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccc";
 	static const char expected[] = "\\\\?\\UNC\\server name\\share name\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccc\\ddddddddddddddddddddddddddddddddddddddddddddddddddddddd\\eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\\ffffffffffffffffffffffff";
-	char buf[512];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, 512, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_AddExtendedPrefixUncRelative");
+	char pathBuffer[512];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, 512, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_AddExtendedPrefixUncRelative");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8NonCDriveRelativeFileName(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "file.dat";
 	static const char base[] = "E:\\directory";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "E:\\directory\\file.dat"), "GetFullyQualifiedUtf8_NonCDriveRelativeFileName");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "E:\\directory\\file.dat"), "GetFullyQualifiedUtf8_NonCDriveRelativeFileName");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8ServerRelativeFileName(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "file name.dat";
 	static const char base[] = "\\\\example.com\\share name\\directory name\\01234567801234567890123456780123456789";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "\\\\example.com\\share name\\directory name\\01234567801234567890123456780123456789\\file name.dat"), "GetFullyQualifiedUtf8_ServerRelativeFileName");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "\\\\example.com\\share name\\directory name\\01234567801234567890123456780123456789\\file name.dat"), "GetFullyQualifiedUtf8_ServerRelativeFileName");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8BaseTrailingSep(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "directory B\\file.dat";
 	static const char base[] = "D:\\directory A\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "D:\\directory A\\directory B\\file.dat"), "GetFullyQualifiedUtf8_BaseTrailingSep");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "D:\\directory A\\directory B\\file.dat"), "GetFullyQualifiedUtf8_BaseTrailingSep");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8BackFromBase(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "..\\file.dat";
 	static const char base[] = "E:\\directory";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "E:\\file.dat"), "GetFullyQualifiedUtf8_BackFromBase");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "E:\\file.dat"), "GetFullyQualifiedUtf8_BackFromBase");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8BackFromBaseDotSuffix(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "..\\file.dat";
 	static const char base[] = "E:\\directory\\.";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "E:\\file.dat"), "GetFullyQualifiedUtf8_BackFromBaseDotSuffix");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "E:\\file.dat"), "GetFullyQualifiedUtf8_BackFromBaseDotSuffix");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8SimpleRelativeFileName(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "file.dat";
 	static const char base[] = "C:\\directory";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\directory\\file.dat"), "GetFullyQualifiedUtf8_SimpleRelativeFileName");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\directory\\file.dat"), "GetFullyQualifiedUtf8_SimpleRelativeFileName");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8DriveRootAsPath(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "C:\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\"), "GetFullyQualifiedUtf8_DriveRootAsPath");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\"), "GetFullyQualifiedUtf8_DriveRootAsPath");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8DotDotToDriveRoot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "..";
 	static const char base[] = "C:\\foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\"), "GetFullyQualifiedUtf8_DotDotToDriveRoot");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\"), "GetFullyQualifiedUtf8_DotDotToDriveRoot");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8DotDotAboveDriveRootRelative(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "..";
 	static const char base[] = "C:\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualifiedUtf8_DotDotAboveDriveRootRelative");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8MultipleDotDot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "C:\\foo\\bar\\..\\..";;
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\"), "GetFullyQualifiedUtf8_MultipleDotDot");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\"), "GetFullyQualifiedUtf8_MultipleDotDot");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RemoveExtendedPrefixUnc(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "\\\\?\\UNC\\server\\share\\foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "\\\\server\\share\\foo"), "GetFullyQualifiedUtf8_RemoveExtendedPrefixUnc");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "\\\\server\\share\\foo"), "GetFullyQualifiedUtf8_RemoveExtendedPrefixUnc");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8VolumeGuid(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[]     = "\\\\?\\Volume{12345678-1234-1234-1234-123456789abc}\\foo";
 	static const char expected[] = "\\\\?\\Volume{12345678-1234-1234-1234-123456789abc}\\foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_VolumeGuid");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_VolumeGuid");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8ForwardSlashBase(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "file.dat";
 	static const char base[] = "C:/directory";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\directory\\file.dat"), "GetFullyQualifiedUtf8_ForwardSlashBase");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\directory\\file.dat"), "GetFullyQualifiedUtf8_ForwardSlashBase");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeDotSlash(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = ".\\foo";
 	static const char base[] = "C:\\base";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\base\\foo"), "GetFullyQualifiedUtf8_RelativeDotSlash");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\base\\foo"), "GetFullyQualifiedUtf8_RelativeDotSlash");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8ExactlyMaxPathMinus1(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
@@ -1169,9 +1169,9 @@ static void FlWin32FilePathUtGetFullyQualifiedUtf8ExactlyMaxPathMinus1(_Inout_ s
 		expected[i] = 'a';
 	}
 	expected[259] = '\0';
-	char buf[520];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(259, path, 0, "", 520, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_ExactlyMaxPathMinus1");
+	char pathBuffer[520];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(259, path, 0, "", 520, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_ExactlyMaxPathMinus1");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8ExactlyMaxPath(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
@@ -1186,9 +1186,9 @@ static void FlWin32FilePathUtGetFullyQualifiedUtf8ExactlyMaxPath(_Inout_ size_t*
 	for (size_t i = 7; i < 264; i++)
 		expected[i] = 'a';
 	expected[264] = '\0';
-	char buf[520];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(260, path, 0, "", 520, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_ExactlyMaxPath");
+	char pathBuffer[520];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(260, path, 0, "", 520, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_ExactlyMaxPath");
 }
 
 // ============================================================================
@@ -1199,45 +1199,45 @@ static void FlWin32FilePathUtGetFullyQualifiedUtf8ExactlyMaxPath(_Inout_ size_t*
 static void FlWin32FilePathUtGetVolumeDirectoryDrive(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"C:\\foo\\bar";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\"), "GetVolumeDirectory_Drive");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\"), "GetVolumeDirectory_Drive");
 }
 
 // Passing the drive root itself yields the same drive root.
 static void FlWin32FilePathUtGetVolumeDirectoryDriveRoot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"C:\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\"), "GetVolumeDirectory_DriveRoot");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\"), "GetVolumeDirectory_DriveRoot");
 }
 
 // A UNC path yields the share root "\\server\share\".
 static void FlWin32FilePathUtGetVolumeDirectoryUnc(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\server\\share\\foo\\bar";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"\\\\server\\share\\"), "GetVolumeDirectory_Unc");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"\\\\server\\share\\"), "GetVolumeDirectory_Unc");
 }
 
 // An extended-prefix UNC path yields the plain share root (prefix removed for short paths).
 static void FlWin32FilePathUtGetVolumeDirectoryExtendedUnc(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\UNC\\server\\share\\foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"\\\\server\\share\\"), "GetVolumeDirectory_ExtendedUnc");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"\\\\server\\share\\"), "GetVolumeDirectory_ExtendedUnc");
 }
 
 // The extended prefix "\\?\" is removed when the result fits within MAX_PATH - 1 characters.
 static void FlWin32FilePathUtGetVolumeDirectoryRemoveExtendedPrefix(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\C:\\foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\"), "GetVolumeDirectory_RemoveExtendedPrefix");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\"), "GetVolumeDirectory_RemoveExtendedPrefix");
 }
 
 // When path is relative the volume is taken from basePath.
@@ -1245,16 +1245,16 @@ static void FlWin32FilePathUtGetVolumeDirectoryFromBase(_Inout_ size_t* testCoun
 {
 	static const WCHAR path[] = L"foo\\bar";
 	static const WCHAR base[] = L"C:\\baz";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\"), "GetVolumeDirectory_FromBase");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\"), "GetVolumeDirectory_FromBase");
 }
 
 // Both path and basePath empty returns 0.
 static void FlWin32FilePathUtGetVolumeDirectoryBothEmpty(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(0, L"", 0, L"", MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(0, L"", 0, L"", MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectory_BothEmpty");
 }
 
@@ -1262,8 +1262,8 @@ static void FlWin32FilePathUtGetVolumeDirectoryBothEmpty(_Inout_ size_t* testCou
 static void FlWin32FilePathUtGetVolumeDirectoryRelativeNoBase(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"foo\\bar";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectory_RelativeNoBase");
 }
 
@@ -1271,11 +1271,11 @@ static void FlWin32FilePathUtGetVolumeDirectoryRelativeNoBase(_Inout_ size_t* te
 static void FlWin32FilePathUtGetVolumeDirectoryBufferSizing(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"C:\\foo\\bar";
-	WCHAR buf[MAX_PATH];
-	SIZE_T needed = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", 0, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T needed = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", 0, pathBuffer);
 	FL_UT_CHECK(needed > 0, "GetVolumeDirectory_BufferSizing_NeededSize");
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(result == needed && flFilePathEqW(result, buf, L"C:\\"), "GetVolumeDirectory_BufferSizing_Success");
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(result == needed && FlFilePathEqW(result, pathBuffer, L"C:\\"), "GetVolumeDirectory_BufferSizing_Success");
 }
 
 // A relative path appended to a long basePath yields the short volume root without an extended prefix.
@@ -1283,9 +1283,9 @@ static void FlWin32FilePathUtGetVolumeDirectoryExtendedPrefixRelative(_Inout_ si
 {
 	static const WCHAR path[] = L"ddddddddddddddddddddddddddddddddddddddddddddd";
 	static const WCHAR base[] = L"C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\"), "GetVolumeDirectory_ExtendedPrefixRelative");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\"), "GetVolumeDirectory_ExtendedPrefixRelative");
 }
 
 // A bare file name relative to a non-C drive base yields the volume root of the base.
@@ -1293,9 +1293,9 @@ static void FlWin32FilePathUtGetVolumeDirectoryNonCDriveRelativeFileName(_Inout_
 {
 	static const WCHAR path[] = L"file.dat";
 	static const WCHAR base[] = L"E:\\directory";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"E:\\"), "GetVolumeDirectory_NonCDriveRelativeFileName");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"E:\\"), "GetVolumeDirectory_NonCDriveRelativeFileName");
 }
 
 // An absolute path on a different drive than basePath yields the volume root of path, not basePath.
@@ -1303,9 +1303,9 @@ static void FlWin32FilePathUtGetVolumeDirectoryOtherDriveAbsolutePath(_Inout_ si
 {
 	static const WCHAR path[] = L"Z:\\file.dat";
 	static const WCHAR base[] = L"E:\\directory";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"Z:\\"), "GetVolumeDirectory_OtherDriveAbsolutePath");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"Z:\\"), "GetVolumeDirectory_OtherDriveAbsolutePath");
 }
 
 // A bare file name relative to a deep UNC base yields the UNC share root.
@@ -1313,9 +1313,9 @@ static void FlWin32FilePathUtGetVolumeDirectoryServerRelativeFileName(_Inout_ si
 {
 	static const WCHAR path[] = L"file name.dat";
 	static const WCHAR base[] = L"\\\\example.com\\share name\\directory name\\01234567801234567890123456780123456789";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"\\\\example.com\\share name\\"), "GetVolumeDirectory_ServerRelativeFileName");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"\\\\example.com\\share name\\"), "GetVolumeDirectory_ServerRelativeFileName");
 }
 
 // A relative path combined with a base path that has a trailing separator yields the correct volume root.
@@ -1323,9 +1323,9 @@ static void FlWin32FilePathUtGetVolumeDirectoryBaseTrailingSep(_Inout_ size_t* t
 {
 	static const WCHAR path[] = L"directory B\\file.dat";
 	static const WCHAR base[] = L"D:\\directory A\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"D:\\"), "GetVolumeDirectory_BaseTrailingSep");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"D:\\"), "GetVolumeDirectory_BaseTrailingSep");
 }
 
 // ".." in a relative path navigates above the base directory; volume root is still determined from basePath.
@@ -1333,9 +1333,9 @@ static void FlWin32FilePathUtGetVolumeDirectoryBackFromBase(_Inout_ size_t* test
 {
 	static const WCHAR path[] = L"..\\file.dat";
 	static const WCHAR base[] = L"E:\\directory";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"E:\\"), "GetVolumeDirectory_BackFromBase");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"E:\\"), "GetVolumeDirectory_BackFromBase");
 }
 
 // Same as above but basePath ends with a "." component.
@@ -1343,9 +1343,9 @@ static void FlWin32FilePathUtGetVolumeDirectoryBackFromBaseDotSuffix(_Inout_ siz
 {
 	static const WCHAR path[] = L"..\\file.dat";
 	static const WCHAR base[] = L"E:\\directory\\.";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"E:\\"), "GetVolumeDirectory_BackFromBaseDotSuffix");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"E:\\"), "GetVolumeDirectory_BackFromBaseDotSuffix");
 }
 
 // A bare file name relative to a base directory yields the volume root of the base.
@@ -1353,18 +1353,18 @@ static void FlWin32FilePathUtGetVolumeDirectorySimpleRelativeFileName(_Inout_ si
 {
 	static const WCHAR path[] = L"file.dat";
 	static const WCHAR base[] = L"C:\\directory";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\"), "GetVolumeDirectory_SimpleRelativeFileName");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\"), "GetVolumeDirectory_SimpleRelativeFileName");
 }
 
 // The NT namespace prefix "\??\" is stripped; the drive volume root is returned.
 static void FlWin32FilePathUtGetVolumeDirectoryNtNamespace(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\??\\C:\\foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\"), "GetVolumeDirectory_NtNamespace");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\"), "GetVolumeDirectory_NtNamespace");
 }
 
 // A volume GUID path yields the GUID volume root, which retains the "\\?\" prefix.
@@ -1372,17 +1372,17 @@ static void FlWin32FilePathUtGetVolumeDirectoryVolumeGuid(_Inout_ size_t* testCo
 {
 	static const WCHAR path[]     = L"\\\\?\\Volume{12345678-1234-1234-1234-123456789abc}\\foo";
 	static const WCHAR expected[] = L"\\\\?\\Volume{12345678-1234-1234-1234-123456789abc}\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetVolumeDirectory_VolumeGuid");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetVolumeDirectory_VolumeGuid");
 }
 
 // A drive-relative path such as "C:foo" has no recognized absolute volume root and returns 0.
 static void FlWin32FilePathUtGetVolumeDirectoryDriveRelative(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"C:foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectory_DriveRelative");
 }
 
@@ -1390,17 +1390,17 @@ static void FlWin32FilePathUtGetVolumeDirectoryDriveRelative(_Inout_ size_t* tes
 static void FlWin32FilePathUtGetVolumeDirectoryForwardSlash(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"C:/foo/bar";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, L"C:\\"), "GetVolumeDirectory_ForwardSlash");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, L"C:\\"), "GetVolumeDirectory_ForwardSlash");
 }
 
 // A UNC path with no trailing separator on the share has no recognizable volume root and returns 0.
 static void FlWin32FilePathUtGetVolumeDirectoryUncNoTrailingSlash(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\server\\share";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, L"", MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectory_UncNoTrailingSlash");
 }
 
@@ -1411,187 +1411,187 @@ static void FlWin32FilePathUtGetVolumeDirectoryUncNoTrailingSlash(_Inout_ size_t
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8Drive(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "C:\\foo\\bar";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\"), "GetVolumeDirectoryUtf8_Drive");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\"), "GetVolumeDirectoryUtf8_Drive");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8DriveRoot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "C:\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\"), "GetVolumeDirectoryUtf8_DriveRoot");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\"), "GetVolumeDirectoryUtf8_DriveRoot");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8Unc(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "\\\\server\\share\\foo\\bar";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "\\\\server\\share\\"), "GetVolumeDirectoryUtf8_Unc");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "\\\\server\\share\\"), "GetVolumeDirectoryUtf8_Unc");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8ExtendedUnc(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "\\\\?\\UNC\\server\\share\\foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "\\\\server\\share\\"), "GetVolumeDirectoryUtf8_ExtendedUnc");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "\\\\server\\share\\"), "GetVolumeDirectoryUtf8_ExtendedUnc");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8RemoveExtendedPrefix(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "\\\\?\\C:\\foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\"), "GetVolumeDirectoryUtf8_RemoveExtendedPrefix");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\"), "GetVolumeDirectoryUtf8_RemoveExtendedPrefix");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8FromBase(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "foo\\bar";
 	static const char base[] = "C:\\baz";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\"), "GetVolumeDirectoryUtf8_FromBase");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\"), "GetVolumeDirectoryUtf8_FromBase");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8BothEmpty(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(0, "", 0, "", MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(0, "", 0, "", MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectoryUtf8_BothEmpty");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8RelativeNoBase(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "foo\\bar";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectoryUtf8_RelativeNoBase");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8BufferSizing(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "C:\\foo\\bar";
-	char buf[MAX_PATH];
-	SIZE_T needed = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", 0, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T needed = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", 0, pathBuffer);
 	FL_UT_CHECK(needed > 0, "GetVolumeDirectoryUtf8_BufferSizing_NeededSize");
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(result == needed && flFilePathEq8(result, buf, "C:\\"), "GetVolumeDirectoryUtf8_BufferSizing_Success");
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(result == needed && FlFilePathEq8(result, pathBuffer, "C:\\"), "GetVolumeDirectoryUtf8_BufferSizing_Success");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8ExtendedPrefixRelative(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "ddddddddddddddddddddddddddddddddddddddddddddd";
 	static const char base[] = "C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\"), "GetVolumeDirectoryUtf8_ExtendedPrefixRelative");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\"), "GetVolumeDirectoryUtf8_ExtendedPrefixRelative");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8NonCDriveRelativeFileName(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "file.dat";
 	static const char base[] = "E:\\directory";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "E:\\"), "GetVolumeDirectoryUtf8_NonCDriveRelativeFileName");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "E:\\"), "GetVolumeDirectoryUtf8_NonCDriveRelativeFileName");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8OtherDriveAbsolutePath(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "Z:\\file.dat";
 	static const char base[] = "E:\\directory";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "Z:\\"), "GetVolumeDirectoryUtf8_OtherDriveAbsolutePath");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "Z:\\"), "GetVolumeDirectoryUtf8_OtherDriveAbsolutePath");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8ServerRelativeFileName(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "file name.dat";
 	static const char base[] = "\\\\example.com\\share name\\directory name\\01234567801234567890123456780123456789";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "\\\\example.com\\share name\\"), "GetVolumeDirectoryUtf8_ServerRelativeFileName");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "\\\\example.com\\share name\\"), "GetVolumeDirectoryUtf8_ServerRelativeFileName");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8BaseTrailingSep(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "directory B\\file.dat";
 	static const char base[] = "D:\\directory A\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "D:\\"), "GetVolumeDirectoryUtf8_BaseTrailingSep");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "D:\\"), "GetVolumeDirectoryUtf8_BaseTrailingSep");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8BackFromBase(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "..\\file.dat";
 	static const char base[] = "E:\\directory";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "E:\\"), "GetVolumeDirectoryUtf8_BackFromBase");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "E:\\"), "GetVolumeDirectoryUtf8_BackFromBase");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8BackFromBaseDotSuffix(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "..\\file.dat";
 	static const char base[] = "E:\\directory\\.";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "E:\\"), "GetVolumeDirectoryUtf8_BackFromBaseDotSuffix");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "E:\\"), "GetVolumeDirectoryUtf8_BackFromBaseDotSuffix");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8SimpleRelativeFileName(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "file.dat";
 	static const char base[] = "C:\\directory";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\"), "GetVolumeDirectoryUtf8_SimpleRelativeFileName");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\"), "GetVolumeDirectoryUtf8_SimpleRelativeFileName");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8NtNamespace(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "\\??\\C:\\foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\"), "GetVolumeDirectoryUtf8_NtNamespace");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\"), "GetVolumeDirectoryUtf8_NtNamespace");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8VolumeGuid(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[]     = "\\\\?\\Volume{12345678-1234-1234-1234-123456789abc}\\foo";
 	static const char expected[] = "\\\\?\\Volume{12345678-1234-1234-1234-123456789abc}\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetVolumeDirectoryUtf8_VolumeGuid");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetVolumeDirectoryUtf8_VolumeGuid");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8DriveRelative(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "C:foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectoryUtf8_DriveRelative");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8ForwardSlash(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "C:/foo/bar";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, "C:\\"), "GetVolumeDirectoryUtf8_ForwardSlash");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, "C:\\"), "GetVolumeDirectoryUtf8_ForwardSlash");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8UncNoTrailingSlash(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "\\\\server\\share";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, "", MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectoryUtf8_UncNoTrailingSlash");
 }
 
@@ -1603,144 +1603,144 @@ static void FlWin32FilePathUtGetVolumeDirectoryUtf8UncNoTrailingSlash(_Inout_ si
 static void FlWin32FilePathUtInvalidRootUncNoServer(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_UncNoServer");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_UncNoServer");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_UncNoServer");
 }
 
 // "CC:\": two-letter prefix before the colon is not a single drive letter.
 static void FlWin32FilePathUtInvalidRootTwoLetterDrive(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"CC:\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_TwoLetterDrive");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_TwoLetterDrive");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_TwoLetterDrive");
 }
 
 // "\\?\CC:\": extended prefix with two-letter drive is invalid.
 static void FlWin32FilePathUtInvalidRootExtendedTwoLetterDrive(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\CC:\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_ExtendedTwoLetterDrive");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_ExtendedTwoLetterDrive");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_ExtendedTwoLetterDrive");
 }
 
 // "\:\": backslash as drive letter is not a valid drive root.
 static void FlWin32FilePathUtInvalidRootBackslashAsDrive(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\:\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_BackslashAsDrive");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_BackslashAsDrive");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_BackslashAsDrive");
 }
 
 // "\\\\?:\": four backslashes followed by "?:\" are not an extended prefix; UNC server name is empty.
 static void FlWin32FilePathUtInvalidRootFourBackslashPrefix(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\\\\\?:\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_FourBackslashPrefix");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_FourBackslashPrefix");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_FourBackslashPrefix");
 }
 
 // "C\": drive letter with no colon is not a valid drive root.
 static void FlWin32FilePathUtInvalidRootDriveMissingColon(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"C\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_DriveMissingColon");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_DriveMissingColon");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_DriveMissingColon");
 }
 
 // "\\?\C\": extended-prefix drive root missing the colon.
 static void FlWin32FilePathUtInvalidRootExtendedDriveMissingColon(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\C\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_ExtendedDriveMissingColon");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_ExtendedDriveMissingColon");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_ExtendedDriveMissingColon");
 }
 
 // "\\?\UNX\server\share\": extended prefix with misspelled UNC keyword.
 static void FlWin32FilePathUtInvalidRootExtendedUncTypo(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\UNX\\server\\share\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_ExtendedUncTypo");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_ExtendedUncTypo");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_ExtendedUncTypo");
 }
 
 // "\\?\UNC\": extended UNC prefix with no server name.
 static void FlWin32FilePathUtInvalidRootExtendedUncNoServer(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\UNC\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_ExtendedUncNoServer");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_ExtendedUncNoServer");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_ExtendedUncNoServer");
 }
 
 // "\\?\V____e{...}\": extended prefix with "Volume" misspelled using underscores.
 static void FlWin32FilePathUtInvalidRootExtendedVolumeMisspelled(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\V____e{12345678-1234-1234-1234-123456789abc}\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_ExtendedVolumeMisspelled");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_ExtendedVolumeMisspelled");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_ExtendedVolumeMisspelled");
 }
 
 // "\\?\Volume_12345678-1234-1234-1234-123456789abc_\": volume GUID with underscores instead of braces.
 static void FlWin32FilePathUtInvalidRootExtendedVolumeGuidNoBraces(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\Volume_12345678-1234-1234-1234-123456789abc_\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_ExtendedVolumeGuidNoBraces");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_ExtendedVolumeGuidNoBraces");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_ExtendedVolumeGuidNoBraces");
 }
 
 // "\\?\Volume{...}_\": extra character after the closing brace of a volume GUID.
 static void FlWin32FilePathUtInvalidRootExtendedVolumeGuidExtraChar(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\Volume{12345678-1234-1234-1234-123456789abc}_\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_ExtendedVolumeGuidExtraChar");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_ExtendedVolumeGuidExtraChar");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_ExtendedVolumeGuidExtraChar");
 }
 
 // "\\?\VoluXe{...}\": typo in "Volume" (X instead of m).
 static void FlWin32FilePathUtInvalidRootExtendedVolumeTypo(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\VoluXe{12345678-1234-1234-1234-123456789abc}\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_ExtendedVolumeTypo");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_ExtendedVolumeTypo");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_ExtendedVolumeTypo");
 }
 
 // "\\?\Volume{...}*\": invalid character after the closing brace of a volume GUID.
 static void FlWin32FilePathUtInvalidRootExtendedVolumeGuidInvalidChar(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\Volume{12345678-1234-1234-1234-123456789abc}*\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_ExtendedVolumeGuidInvalidChar");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_ExtendedVolumeGuidInvalidChar");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_ExtendedVolumeGuidInvalidChar");
 }
 
 // "\\?\Volume{...*\": volume GUID with missing closing brace.
 static void FlWin32FilePathUtInvalidRootExtendedVolumeGuidMissingBrace(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\Volume{12345678-1234-1234-1234-123456789abc*\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_ExtendedVolumeGuidMissingBrace");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_ExtendedVolumeGuidMissingBrace");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_ExtendedVolumeGuidMissingBrace");
 }
 
 // "\\?\Volume*\": wildcard in the volume keyword prevents GUID parsing.
 static void FlWin32FilePathUtInvalidRootExtendedVolumeWildcard(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\Volume*\\";
-	WCHAR buf[MAX_PATH];
+	WCHAR pathBuffer[MAX_PATH];
 	FL_UT_CHECK(FlWin32IsPathFullyQualified(FL_WSTR_LEN(path), path) == FALSE, "InvalidRoot_IsFullyQualified_ExtendedVolumeWildcard");
-	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf) == 0, "InvalidRoot_GetFullyQualified_ExtendedVolumeWildcard");
+	FL_UT_CHECK(FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer) == 0, "InvalidRoot_GetFullyQualified_ExtendedVolumeWildcard");
 }
 
 // ============================================================================
@@ -1751,8 +1751,8 @@ static void FlWin32FilePathUtInvalidRootExtendedVolumeWildcard(_Inout_ size_t* t
 static void FlWin32FilePathUtGetFullyQualifiedUncRootDotDot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\server\\share\\..";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualified_UncRootDotDot");
 }
 
@@ -1760,8 +1760,8 @@ static void FlWin32FilePathUtGetFullyQualifiedUncRootDotDot(_Inout_ size_t* test
 static void FlWin32FilePathUtGetFullyQualifiedExtendedDriveDotDot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\C:\\..";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualified_ExtendedDriveDotDot");
 }
 
@@ -1769,8 +1769,8 @@ static void FlWin32FilePathUtGetFullyQualifiedExtendedDriveDotDot(_Inout_ size_t
 static void FlWin32FilePathUtGetFullyQualifiedExtendedUncDotDot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const WCHAR path[] = L"\\\\?\\UNC\\server\\share\\..";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualified_ExtendedUncDotDot");
 }
 
@@ -1779,8 +1779,8 @@ static void FlWin32FilePathUtGetFullyQualifiedDotDotAboveUncRoot(_Inout_ size_t*
 {
 	static const WCHAR path[] = L"..";
 	static const WCHAR base[] = L"\\\\server\\share\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualified_DotDotAboveUncRoot");
 }
 
@@ -1789,32 +1789,32 @@ static void FlWin32FilePathUtGetFullyQualifiedDotDotAboveExtendedDriveRoot(_Inou
 {
 	static const WCHAR path[] = L"..";
 	static const WCHAR base[] = L"\\\\?\\C:\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualified_DotDotAboveExtendedDriveRoot");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8UncRootDotDot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "\\\\server\\share\\..";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualifiedUtf8_UncRootDotDot");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8ExtendedDriveDotDot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "\\\\?\\C:\\..";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualifiedUtf8_ExtendedDriveDotDot");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8ExtendedUncDotDot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[] = "\\\\?\\UNC\\server\\share\\..";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualifiedUtf8_ExtendedUncDotDot");
 }
 
@@ -1822,8 +1822,8 @@ static void FlWin32FilePathUtGetFullyQualifiedUtf8DotDotAboveUncRoot(_Inout_ siz
 {
 	static const char path[] = "..";
 	static const char base[] = "\\\\server\\share\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualifiedUtf8_DotDotAboveUncRoot");
 }
 
@@ -1831,8 +1831,8 @@ static void FlWin32FilePathUtGetFullyQualifiedUtf8DotDotAboveExtendedDriveRoot(_
 {
 	static const char path[] = "..";
 	static const char base[] = "\\\\?\\C:\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualifiedUtf8_DotDotAboveExtendedDriveRoot");
 }
 
@@ -1841,8 +1841,8 @@ static void FlWin32FilePathUtGetVolumeDirectoryDotDotAboveDriveRoot(_Inout_ size
 {
 	static const WCHAR path[] = L"..";
 	static const WCHAR base[] = L"C:\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectory_DotDotAboveDriveRoot");
 }
 
@@ -1851,8 +1851,8 @@ static void FlWin32FilePathUtGetVolumeDirectoryDotDotAboveUncRoot(_Inout_ size_t
 {
 	static const WCHAR path[] = L"..";
 	static const WCHAR base[] = L"\\\\server\\share\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectory_DotDotAboveUncRoot");
 }
 
@@ -1861,8 +1861,8 @@ static void FlWin32FilePathUtGetVolumeDirectoryDotDotAboveExtendedDriveRoot(_Ino
 {
 	static const WCHAR path[] = L"..";
 	static const WCHAR base[] = L"\\\\?\\C:\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectory_DotDotAboveExtendedDriveRoot");
 }
 
@@ -1871,8 +1871,8 @@ static void FlWin32FilePathUtGetVolumeDirectoryTooManyDotDotDrive(_Inout_ size_t
 {
 	static const WCHAR path[] = L"..\\..\\..";;
 	static const WCHAR base[] = L"C:\\A\\B";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectory_TooManyDotDotDrive");
 }
 
@@ -1880,8 +1880,8 @@ static void FlWin32FilePathUtGetVolumeDirectoryUtf8DotDotAboveDriveRoot(_Inout_ 
 {
 	static const char path[] = "..";
 	static const char base[] = "C:\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectoryUtf8_DotDotAboveDriveRoot");
 }
 
@@ -1889,8 +1889,8 @@ static void FlWin32FilePathUtGetVolumeDirectoryUtf8DotDotAboveUncRoot(_Inout_ si
 {
 	static const char path[] = "..";
 	static const char base[] = "\\\\server\\share\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectoryUtf8_DotDotAboveUncRoot");
 }
 
@@ -1898,8 +1898,8 @@ static void FlWin32FilePathUtGetVolumeDirectoryUtf8DotDotAboveExtendedDriveRoot(
 {
 	static const char path[] = "..";
 	static const char base[] = "\\\\?\\C:\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectoryUtf8_DotDotAboveExtendedDriveRoot");
 }
 
@@ -1907,8 +1907,8 @@ static void FlWin32FilePathUtGetVolumeDirectoryUtf8TooManyDotDotDrive(_Inout_ si
 {
 	static const char path[] = "..\\..\\..";;
 	static const char base[] = "C:\\A\\B";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectoryUtf8_TooManyDotDotDrive");
 }
 
@@ -1921,9 +1921,9 @@ static void FlWin32FilePathUtGetFullyQualifiedAbsoluteDotMiddle(_Inout_ size_t* 
 {
 	static const WCHAR path[]     = L"C:\\A\\.\\B";
 	static const WCHAR expected[] = L"C:\\A\\B";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_AbsoluteDotMiddle");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_AbsoluteDotMiddle");
 }
 
 // A "." component immediately after the volume root separator is removed.
@@ -1931,9 +1931,9 @@ static void FlWin32FilePathUtGetFullyQualifiedAbsoluteDotAtRoot(_Inout_ size_t* 
 {
 	static const WCHAR path[]     = L"C:\\.\\foo";
 	static const WCHAR expected[] = L"C:\\foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_AbsoluteDotAtRoot");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_AbsoluteDotAtRoot");
 }
 
 // A "." component in a UNC absolute path is removed.
@@ -1941,36 +1941,36 @@ static void FlWin32FilePathUtGetFullyQualifiedAbsoluteUncDot(_Inout_ size_t* tes
 {
 	static const WCHAR path[]     = L"\\\\server\\share\\.\\foo";
 	static const WCHAR expected[] = L"\\\\server\\share\\foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_AbsoluteUncDot");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_AbsoluteUncDot");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8AbsoluteDotMiddle(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[]     = "C:\\A\\.\\B";
 	static const char expected[] = "C:\\A\\B";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_AbsoluteDotMiddle");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_AbsoluteDotMiddle");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8AbsoluteDotAtRoot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[]     = "C:\\.\\foo";
 	static const char expected[] = "C:\\foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_AbsoluteDotAtRoot");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_AbsoluteDotAtRoot");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8AbsoluteUncDot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[]     = "\\\\server\\share\\.\\foo";
 	static const char expected[] = "\\\\server\\share\\foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_AbsoluteUncDot");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_AbsoluteUncDot");
 }
 
 // ============================================================================
@@ -1983,9 +1983,9 @@ static void FlWin32FilePathUtGetFullyQualifiedRelativeDotPrefix(_Inout_ size_t* 
 	static const WCHAR path[]     = L".\\foo";
 	static const WCHAR base[]     = L"C:\\dir";
 	static const WCHAR expected[] = L"C:\\dir\\foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_RelativeDotPrefix");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_RelativeDotPrefix");
 }
 
 // A lone "." relative path resolves to the base directory itself.
@@ -1994,9 +1994,9 @@ static void FlWin32FilePathUtGetFullyQualifiedRelativeDotAlone(_Inout_ size_t* t
 	static const WCHAR path[]     = L".";
 	static const WCHAR base[]     = L"C:\\dir";
 	static const WCHAR expected[] = L"C:\\dir";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_RelativeDotAlone");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_RelativeDotAlone");
 }
 
 // A "foo\." relative path: the trailing "." is removed; result is base appended with "foo".
@@ -2005,9 +2005,9 @@ static void FlWin32FilePathUtGetFullyQualifiedRelativeDotSuffix(_Inout_ size_t* 
 	static const WCHAR path[]     = L"foo\\.";
 	static const WCHAR base[]     = L"C:\\dir";
 	static const WCHAR expected[] = L"C:\\dir\\foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_RelativeDotSuffix");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_RelativeDotSuffix");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeDotPrefix(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
@@ -2015,9 +2015,9 @@ static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeDotPrefix(_Inout_ size
 	static const char path[]     = ".\\foo";
 	static const char base[]     = "C:\\dir";
 	static const char expected[] = "C:\\dir\\foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_RelativeDotPrefix");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_RelativeDotPrefix");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeDotAlone(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
@@ -2025,9 +2025,9 @@ static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeDotAlone(_Inout_ size_
 	static const char path[]     = ".";
 	static const char base[]     = "C:\\dir";
 	static const char expected[] = "C:\\dir";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_RelativeDotAlone");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_RelativeDotAlone");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeDotSuffix(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
@@ -2035,9 +2035,9 @@ static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeDotSuffix(_Inout_ size
 	static const char path[]     = "foo\\.";
 	static const char base[]     = "C:\\dir";
 	static const char expected[] = "C:\\dir\\foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_RelativeDotSuffix");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_RelativeDotSuffix");
 }
 
 // ============================================================================
@@ -2049,9 +2049,9 @@ static void FlWin32FilePathUtGetFullyQualifiedAbsoluteDotAndDotDot(_Inout_ size_
 {
 	static const WCHAR path[]     = L"C:\\A\\.\\B\\..\\C";
 	static const WCHAR expected[] = L"C:\\A\\C";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_AbsoluteDotAndDotDot");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_AbsoluteDotAndDotDot");
 }
 
 // "C:\A\..\.\B" — ".." cancels "A" then "." is removed; result is "C:\B".
@@ -2059,9 +2059,9 @@ static void FlWin32FilePathUtGetFullyQualifiedAbsoluteDotDotAfterDot(_Inout_ siz
 {
 	static const WCHAR path[]     = L"C:\\A\\..\\.\\B";
 	static const WCHAR expected[] = L"C:\\B";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_AbsoluteDotDotAfterDot");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_AbsoluteDotDotAfterDot");
 }
 
 // "C:\A\B\..\.\C" — ".." cancels "B", "." is removed; result is "C:\A\C".
@@ -2069,36 +2069,36 @@ static void FlWin32FilePathUtGetFullyQualifiedAbsoluteMultipleDotAndDotDot(_Inou
 {
 	static const WCHAR path[]     = L"C:\\A\\B\\..\\.\\C";
 	static const WCHAR expected[] = L"C:\\A\\C";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_AbsoluteMultipleDotAndDotDot");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_AbsoluteMultipleDotAndDotDot");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8AbsoluteDotAndDotDot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[]     = "C:\\A\\.\\B\\..\\C";
 	static const char expected[] = "C:\\A\\C";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_AbsoluteDotAndDotDot");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_AbsoluteDotAndDotDot");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8AbsoluteDotDotAfterDot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[]     = "C:\\A\\..\\.\\B";
 	static const char expected[] = "C:\\B";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_AbsoluteDotDotAfterDot");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_AbsoluteDotDotAfterDot");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8AbsoluteMultipleDotAndDotDot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[]     = "C:\\A\\B\\..\\.\\C";
 	static const char expected[] = "C:\\A\\C";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_AbsoluteMultipleDotAndDotDot");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_AbsoluteMultipleDotAndDotDot");
 }
 
 // ============================================================================
@@ -2111,9 +2111,9 @@ static void FlWin32FilePathUtGetFullyQualifiedRelativeDotDotAndDot(_Inout_ size_
 	static const WCHAR path[]     = L".\\foo\\..\\bar";
 	static const WCHAR base[]     = L"C:\\dir";
 	static const WCHAR expected[] = L"C:\\dir\\bar";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_RelativeDotDotAndDot");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_RelativeDotDotAndDot");
 }
 
 // "..\.\foo" with base "C:\dir\sub" — ".." pops "sub", "." stripped; result is "C:\dir\foo".
@@ -2122,9 +2122,9 @@ static void FlWin32FilePathUtGetFullyQualifiedRelativeDotAfterDotDot(_Inout_ siz
 	static const WCHAR path[]     = L"..\\.\\foo";
 	static const WCHAR base[]     = L"C:\\dir\\sub";
 	static const WCHAR expected[] = L"C:\\dir\\foo";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_RelativeDotAfterDotDot");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_RelativeDotAfterDotDot");
 }
 
 // "foo\.\..\bar" with base "C:\dir" — "." stripped, "foo\.." cancelled; result is "C:\dir\bar".
@@ -2133,9 +2133,9 @@ static void FlWin32FilePathUtGetFullyQualifiedRelativeDotBetween(_Inout_ size_t*
 	static const WCHAR path[]     = L"foo\\.\\..\\bar";
 	static const WCHAR base[]     = L"C:\\dir";
 	static const WCHAR expected[] = L"C:\\dir\\bar";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetFullyQualified_RelativeDotBetween");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetFullyQualified_RelativeDotBetween");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeDotDotAndDot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
@@ -2143,9 +2143,9 @@ static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeDotDotAndDot(_Inout_ s
 	static const char path[]     = ".\\foo\\..\\bar";
 	static const char base[]     = "C:\\dir";
 	static const char expected[] = "C:\\dir\\bar";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_RelativeDotDotAndDot");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_RelativeDotDotAndDot");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeDotAfterDotDot(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
@@ -2153,9 +2153,9 @@ static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeDotAfterDotDot(_Inout_
 	static const char path[]     = "..\\.\\foo";
 	static const char base[]     = "C:\\dir\\sub";
 	static const char expected[] = "C:\\dir\\foo";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_RelativeDotAfterDotDot");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_RelativeDotAfterDotDot");
 }
 
 static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeDotBetween(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
@@ -2163,9 +2163,9 @@ static void FlWin32FilePathUtGetFullyQualifiedUtf8RelativeDotBetween(_Inout_ siz
 	static const char path[]     = "foo\\.\\..\\bar";
 	static const char base[]     = "C:\\dir";
 	static const char expected[] = "C:\\dir\\bar";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetFullyQualifiedUtf8_RelativeDotBetween");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetFullyQualifiedUtf8_RelativeDotBetween");
 }
 
 // ============================================================================
@@ -2177,8 +2177,8 @@ static void FlWin32FilePathUtGetFullyQualifiedSwitchServerShare(_Inout_ size_t* 
 {
 	static const WCHAR path[] = L"..\\..\\serverB\\shareB\\foo";
 	static const WCHAR base[] = L"\\\\serverA\\shareA\\folder";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualified_SwitchServerShare");
 }
 
@@ -2186,8 +2186,8 @@ static void FlWin32FilePathUtGetFullyQualifiedUtf8SwitchServerShare(_Inout_ size
 {
 	static const char path[] = "..\\..\\serverB\\shareB\\foo";
 	static const char base[] = "\\\\serverA\\shareA\\folder";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetFullyQualifiedPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetFullyQualifiedUtf8_SwitchServerShare");
 }
 
@@ -2196,8 +2196,8 @@ static void FlWin32FilePathUtGetVolumeDirectorySwitchServerShare(_Inout_ size_t*
 {
 	static const WCHAR path[] = L"..\\..\\serverB\\shareB\\foo";
 	static const WCHAR base[] = L"\\\\serverA\\shareA\\folder";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, buf);
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, FL_WSTR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectory_SwitchServerShare");
 }
 
@@ -2205,8 +2205,8 @@ static void FlWin32FilePathUtGetVolumeDirectoryUtf8SwitchServerShare(_Inout_ siz
 {
 	static const char path[] = "..\\..\\serverB\\shareB\\foo";
 	static const char base[] = "\\\\serverA\\shareA\\folder";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, buf);
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, FL_STR_LEN(base), base, MAX_PATH, pathBuffer);
 	FL_UT_CHECK(result == 0, "GetVolumeDirectoryUtf8_SwitchServerShare");
 }
 
@@ -2219,9 +2219,9 @@ static void FlWin32FilePathUtGetVolumeDirectoryWeirdServerDriveAsSvr(_Inout_ siz
 {
 	static const WCHAR path[]     = L"\\\\C:\\a\\b\\c";
 	static const WCHAR expected[] = L"\\\\C:\\a\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetVolumeDirectory_WeirdServerDriveAsSvr");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetVolumeDirectory_WeirdServerDriveAsSvr");
 }
 
 // "\\X\C:\a\b\c" — server="X", share="C:"; volume root is "\\X\C:\".
@@ -2229,9 +2229,9 @@ static void FlWin32FilePathUtGetVolumeDirectoryWeirdServerDriveAsShr(_Inout_ siz
 {
 	static const WCHAR path[]     = L"\\\\X\\C:\\a\\b\\c";
 	static const WCHAR expected[] = L"\\\\X\\C:\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetVolumeDirectory_WeirdServerDriveAsShr");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetVolumeDirectory_WeirdServerDriveAsShr");
 }
 
 // "\\X\UNC\a\b\c" — server="X", share="UNC"; volume root is "\\X\UNC\".
@@ -2239,9 +2239,9 @@ static void FlWin32FilePathUtGetVolumeDirectoryWeirdServerUncAsShr(_Inout_ size_
 {
 	static const WCHAR path[]     = L"\\\\X\\UNC\\a\\b\\c";
 	static const WCHAR expected[] = L"\\\\X\\UNC\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetVolumeDirectory_WeirdServerUncAsShr");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetVolumeDirectory_WeirdServerUncAsShr");
 }
 
 // "\\X\Volume{GUID}\a\b\c" — server="X", share is a GUID-like string; volume root parsed as plain UNC.
@@ -2249,45 +2249,45 @@ static void FlWin32FilePathUtGetVolumeDirectoryWeirdServerVolumeAsShr(_Inout_ si
 {
 	static const WCHAR path[]     = L"\\\\X\\Volume{12345678-1234-1234-1234-123456789abc}\\a\\b\\c";
 	static const WCHAR expected[] = L"\\\\X\\Volume{12345678-1234-1234-1234-123456789abc}\\";
-	WCHAR buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEqW(result, buf, expected), "GetVolumeDirectory_WeirdServerVolumeAsShr");
+	WCHAR pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPath(FL_WSTR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEqW(result, pathBuffer, expected), "GetVolumeDirectory_WeirdServerVolumeAsShr");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8WeirdServerDriveAsSvr(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[]     = "\\\\C:\\a\\b\\c";
 	static const char expected[] = "\\\\C:\\a\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetVolumeDirectoryUtf8_WeirdServerDriveAsSvr");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetVolumeDirectoryUtf8_WeirdServerDriveAsSvr");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8WeirdServerDriveAsShr(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[]     = "\\\\X\\C:\\a\\b\\c";
 	static const char expected[] = "\\\\X\\C:\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetVolumeDirectoryUtf8_WeirdServerDriveAsShr");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetVolumeDirectoryUtf8_WeirdServerDriveAsShr");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8WeirdServerUncAsShr(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[]     = "\\\\X\\UNC\\a\\b\\c";
 	static const char expected[] = "\\\\X\\UNC\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetVolumeDirectoryUtf8_WeirdServerUncAsShr");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetVolumeDirectoryUtf8_WeirdServerUncAsShr");
 }
 
 static void FlWin32FilePathUtGetVolumeDirectoryUtf8WeirdServerVolumeAsShr(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const char path[]     = "\\\\X\\Volume{12345678-1234-1234-1234-123456789abc}\\a\\b\\c";
 	static const char expected[] = "\\\\X\\Volume{12345678-1234-1234-1234-123456789abc}\\";
-	char buf[MAX_PATH];
-	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, buf);
-	FL_UT_CHECK(flFilePathEq8(result, buf, expected), "GetVolumeDirectoryUtf8_WeirdServerVolumeAsShr");
+	char pathBuffer[MAX_PATH];
+	SIZE_T result = FlWin32GetVolumeDirectoryPathUtf8(FL_STR_LEN(path), path, 0, NULL, MAX_PATH, pathBuffer);
+	FL_UT_CHECK(FlFilePathEq8(result, pathBuffer, expected), "GetVolumeDirectoryUtf8_WeirdServerVolumeAsShr");
 }
 
 // ============================================================================

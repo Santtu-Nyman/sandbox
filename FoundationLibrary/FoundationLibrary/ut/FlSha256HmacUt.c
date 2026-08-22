@@ -160,10 +160,10 @@ static void FlSha256HmacCompute(
 	_In_ size_t dataSize, _In_reads_bytes_(dataSize) const void* data,
 	_Out_writes_bytes_all_(FL_SHA256_DIGEST_SIZE) uint8_t* digest)
 {
-	FlSha256HmacContext ctx;
-	FlSha256HmacCreateHmac(&ctx, keySize, key);
-	FlSha256HmacHashData(&ctx, dataSize, data);
-	FlSha256Hmac256FinishHmac(&ctx, digest);
+	FlSha256HmacContext hmacContext;
+	FlSha256HmacCreateHmac(&hmacContext, keySize, key);
+	FlSha256HmacHashData(&hmacContext, dataSize, data);
+	FlSha256Hmac256FinishHmac(&hmacContext, digest);
 }
 
 // ---------------------------------------------------------------------------
@@ -325,23 +325,23 @@ static void FlSha256HmacUtStreamingEquality(_Inout_ size_t* testCount, _Inout_ s
 
 	// Split 1 + remainder.
 	{
-		FlSha256HmacContext ctx;
-		FlSha256HmacCreateHmac(&ctx, sizeof key, key);
-		FlSha256HmacHashData(&ctx, 1, data);
-		FlSha256HmacHashData(&ctx, sizeof(data) - 2, data + 1);
+		FlSha256HmacContext hmacContext;
+		FlSha256HmacCreateHmac(&hmacContext, sizeof key, key);
+		FlSha256HmacHashData(&hmacContext, 1, data);
+		FlSha256HmacHashData(&hmacContext, sizeof(data) - 2, data + 1);
 		uint8_t digest[FL_SHA256_DIGEST_SIZE];
-		FlSha256Hmac256FinishHmac(&ctx, digest);
+		FlSha256Hmac256FinishHmac(&hmacContext, digest);
 		FL_UT_CHECK(memcmp(digest, wholeDigest, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256HmacUtStreamingEquality_1_rest");
 	}
 
 	// One byte at a time.
 	{
-		FlSha256HmacContext ctx;
-		FlSha256HmacCreateHmac(&ctx, sizeof key, key);
+		FlSha256HmacContext hmacContext;
+		FlSha256HmacCreateHmac(&hmacContext, sizeof key, key);
 		for (size_t n = sizeof(data) - 1, i = 0; i < n; i++)
-			FlSha256HmacHashData(&ctx, 1, data + i);
+			FlSha256HmacHashData(&hmacContext, 1, data + i);
 		uint8_t digest[FL_SHA256_DIGEST_SIZE];
-		FlSha256Hmac256FinishHmac(&ctx, digest);
+		FlSha256Hmac256FinishHmac(&hmacContext, digest);
 		FL_UT_CHECK(memcmp(digest, wholeDigest, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256HmacUtStreamingEquality_1xN");
 	}
 
@@ -352,12 +352,12 @@ static void FlSha256HmacUtStreamingEquality(_Inout_ size_t* testCount, _Inout_ s
 		FlSha256HmacCompute(sizeof key, key, sizeof(shortData) - 1, shortData, expectedShort);
 		for (size_t n = sizeof(shortData) - 1, splitAt = 1; splitAt < n; splitAt++)
 		{
-			FlSha256HmacContext ctx;
-			FlSha256HmacCreateHmac(&ctx, sizeof key, key);
-			FlSha256HmacHashData(&ctx, splitAt, shortData);
-			FlSha256HmacHashData(&ctx, n - splitAt, shortData + splitAt);
+			FlSha256HmacContext hmacContext;
+			FlSha256HmacCreateHmac(&hmacContext, sizeof key, key);
+			FlSha256HmacHashData(&hmacContext, splitAt, shortData);
+			FlSha256HmacHashData(&hmacContext, n - splitAt, shortData + splitAt);
 			uint8_t digest[FL_SHA256_DIGEST_SIZE];
-			FlSha256Hmac256FinishHmac(&ctx, digest);
+			FlSha256Hmac256FinishHmac(&hmacContext, digest);
 			FL_UT_CHECK(memcmp(digest, expectedShort, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256HmacUtStreamingEquality_AllSplits");
 		}
 	}
@@ -373,35 +373,35 @@ static void FlSha256HmacUtZeroLengthChunkNoEffect(_Inout_ size_t* testCount, _In
 
 	// Zero-length call before actual data.
 	{
-		FlSha256HmacContext ctx;
-		FlSha256HmacCreateHmac(&ctx, sizeof(key) - 1, key);
-		FlSha256HmacHashData(&ctx, 0, data);
-		FlSha256HmacHashData(&ctx, sizeof(data) - 1, data);
+		FlSha256HmacContext hmacContext;
+		FlSha256HmacCreateHmac(&hmacContext, sizeof(key) - 1, key);
+		FlSha256HmacHashData(&hmacContext, 0, data);
+		FlSha256HmacHashData(&hmacContext, sizeof(data) - 1, data);
 		uint8_t digest[FL_SHA256_DIGEST_SIZE];
-		FlSha256Hmac256FinishHmac(&ctx, digest);
+		FlSha256Hmac256FinishHmac(&hmacContext, digest);
 		FL_UT_CHECK(memcmp(digest, expected, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256HmacUtZeroLengthChunkNoEffect_Before");
 	}
 
 	// Zero-length call after actual data.
 	{
-		FlSha256HmacContext ctx;
-		FlSha256HmacCreateHmac(&ctx, sizeof(key) - 1, key);
-		FlSha256HmacHashData(&ctx, sizeof(data) - 1, data);
-		FlSha256HmacHashData(&ctx, 0, data);
+		FlSha256HmacContext hmacContext;
+		FlSha256HmacCreateHmac(&hmacContext, sizeof(key) - 1, key);
+		FlSha256HmacHashData(&hmacContext, sizeof(data) - 1, data);
+		FlSha256HmacHashData(&hmacContext, 0, data);
 		uint8_t digest[FL_SHA256_DIGEST_SIZE];
-		FlSha256Hmac256FinishHmac(&ctx, digest);
+		FlSha256Hmac256FinishHmac(&hmacContext, digest);
 		FL_UT_CHECK(memcmp(digest, expected, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256HmacUtZeroLengthChunkNoEffect_After");
 	}
 
 	// Zero-length call in the middle of actual data.
 	{
-		FlSha256HmacContext ctx;
-		FlSha256HmacCreateHmac(&ctx, sizeof(key) - 1, key);
-		FlSha256HmacHashData(&ctx, 1, data);
-		FlSha256HmacHashData(&ctx, 0, data);
-		FlSha256HmacHashData(&ctx, sizeof(data) - 2, data + 1);
+		FlSha256HmacContext hmacContext;
+		FlSha256HmacCreateHmac(&hmacContext, sizeof(key) - 1, key);
+		FlSha256HmacHashData(&hmacContext, 1, data);
+		FlSha256HmacHashData(&hmacContext, 0, data);
+		FlSha256HmacHashData(&hmacContext, sizeof(data) - 2, data + 1);
 		uint8_t digest[FL_SHA256_DIGEST_SIZE];
-		FlSha256Hmac256FinishHmac(&ctx, digest);
+		FlSha256Hmac256FinishHmac(&hmacContext, digest);
 		FL_UT_CHECK(memcmp(digest, expected, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256HmacUtZeroLengthChunkNoEffect_Middle");
 	}
 }
@@ -457,20 +457,20 @@ static void FlSha256HmacUtContextIsolation(_Inout_ size_t* testCount, _Inout_ si
 	FlSha256HmacCompute(sizeof keyB,      keyB, sizeof(dataB) - 1, dataB, expectedB);
 
 	// Interleave byte-by-byte data updates on both contexts (keys are already set).
-	FlSha256HmacContext ctxA;
-	FlSha256HmacContext ctxB;
-	FlSha256HmacCreateHmac(&ctxA, sizeof(keyA) - 1, keyA);
-	FlSha256HmacCreateHmac(&ctxB, sizeof keyB,      keyB);
+	FlSha256HmacContext hmacContextA;
+	FlSha256HmacContext hmacContextB;
+	FlSha256HmacCreateHmac(&hmacContextA, sizeof(keyA) - 1, keyA);
+	FlSha256HmacCreateHmac(&hmacContextB, sizeof keyB,      keyB);
 	for (size_t n = sizeof(dataA) - 1, i = 0; i < n; i++)
 	{
-		FlSha256HmacHashData(&ctxA, 1, dataA + i);
-		FlSha256HmacHashData(&ctxB, 1, dataB + i);
+		FlSha256HmacHashData(&hmacContextA, 1, dataA + i);
+		FlSha256HmacHashData(&hmacContextB, 1, dataB + i);
 	}
 
 	uint8_t digestA[FL_SHA256_DIGEST_SIZE];
 	uint8_t digestB[FL_SHA256_DIGEST_SIZE];
-	FlSha256Hmac256FinishHmac(&ctxA, digestA);
-	FlSha256Hmac256FinishHmac(&ctxB, digestB);
+	FlSha256Hmac256FinishHmac(&hmacContextA, digestA);
+	FlSha256Hmac256FinishHmac(&hmacContextB, digestB);
 	FL_UT_CHECK(memcmp(digestA, expectedA, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256HmacUtContextIsolation_A");
 	FL_UT_CHECK(memcmp(digestB, expectedB, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256HmacUtContextIsolation_B");
 }

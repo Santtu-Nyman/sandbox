@@ -78,6 +78,9 @@
     <ClInclude Include="include\FlAes256.h">
       <Filter>Header Files\include</Filter>
     </ClInclude>
+    <ClInclude Include="include\FlVirtualHeap.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\FlCrc32.c">
@@ -166,6 +169,12 @@
     </ClCompile>
     <ClCompile Include="ut\FlWin32CommandLineUt.c">
       <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="ut\FlVirtualHeapUt.c">
+      <Filter>Source Files\ut</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FlVirtualHeap.c">
+      <Filter>Source Files\source</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

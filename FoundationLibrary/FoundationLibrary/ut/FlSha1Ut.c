@@ -131,10 +131,10 @@ static const uint8_t FL_SHA1_UT_EXPECTED_64KIB_FF_BYTES[FL_SHA1_DIGEST_SIZE] =
 // ---------------------------------------------------------------------------
 static void FlSha1Compute(_In_ size_t dataSize, _In_reads_bytes_(dataSize) const void* data, _Out_writes_bytes_all_(FL_SHA1_DIGEST_SIZE) uint8_t* digest)
 {
-	FlSha1Context ctx;
-	FlSha1CreateHash(&ctx);
-	FlSha1HashData(&ctx, dataSize, data);
-	FlSha1FinishHash(&ctx, digest);
+	FlSha1Context hashContext;
+	FlSha1CreateHash(&hashContext);
+	FlSha1HashData(&hashContext, dataSize, data);
+	FlSha1FinishHash(&hashContext, digest);
 }
 
 // ---------------------------------------------------------------------------
@@ -217,12 +217,12 @@ static void FlSha1UtSanttuTestData(_Inout_ size_t* testCount, _Inout_ size_t* fa
 static void FlSha1Ut64KiBZeroBytes(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const uint8_t zeroByte = 0x00;
-	FlSha1Context ctx;
-	FlSha1CreateHash(&ctx);
+	FlSha1Context hashContext;
+	FlSha1CreateHash(&hashContext);
 	for (size_t i = 0; i < 65536; i++)
-		FlSha1HashData(&ctx, 1, &zeroByte);
+		FlSha1HashData(&hashContext, 1, &zeroByte);
 	uint8_t digest[FL_SHA1_DIGEST_SIZE];
-	FlSha1FinishHash(&ctx, digest);
+	FlSha1FinishHash(&hashContext, digest);
 	FL_UT_CHECK(memcmp(digest, FL_SHA1_UT_EXPECTED_64KIB_ZERO_BYTES, FL_SHA1_DIGEST_SIZE) == 0, "FlSha1Ut64KiBZeroBytes");
 }
 
@@ -230,12 +230,12 @@ static void FlSha1Ut64KiBZeroBytes(_Inout_ size_t* testCount, _Inout_ size_t* fa
 static void FlSha1Ut64KiBFfBytes(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const uint8_t ffByte = 0xFF;
-	FlSha1Context ctx;
-	FlSha1CreateHash(&ctx);
+	FlSha1Context hashContext;
+	FlSha1CreateHash(&hashContext);
 	for (size_t i = 0; i < 65536; i++)
-		FlSha1HashData(&ctx, 1, &ffByte);
+		FlSha1HashData(&hashContext, 1, &ffByte);
 	uint8_t digest[FL_SHA1_DIGEST_SIZE];
-	FlSha1FinishHash(&ctx, digest);
+	FlSha1FinishHash(&hashContext, digest);
 	FL_UT_CHECK(memcmp(digest, FL_SHA1_UT_EXPECTED_64KIB_FF_BYTES, FL_SHA1_DIGEST_SIZE) == 0, "FlSha1Ut64KiBFfBytes");
 }
 
@@ -248,35 +248,35 @@ static void FlSha1UtStreamingEquality(_Inout_ size_t* testCount, _Inout_ size_t*
 
 	// Split 1 + remainder.
 	{
-		FlSha1Context ctx;
-		FlSha1CreateHash(&ctx);
-		FlSha1HashData(&ctx, 1, data);
-		FlSha1HashData(&ctx, sizeof(data) - 2, data + 1);
+		FlSha1Context hashContext;
+		FlSha1CreateHash(&hashContext);
+		FlSha1HashData(&hashContext, 1, data);
+		FlSha1HashData(&hashContext, sizeof(data) - 2, data + 1);
 		uint8_t digest[FL_SHA1_DIGEST_SIZE];
-		FlSha1FinishHash(&ctx, digest);
+		FlSha1FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, wholeDigest, FL_SHA1_DIGEST_SIZE) == 0, "FlSha1UtStreamingEquality_1_rest");
 	}
 
 	// Split at midpoint.
 	{
-		size_t mid = (sizeof(data) - 1) / 2;
-		FlSha1Context ctx;
-		FlSha1CreateHash(&ctx);
-		FlSha1HashData(&ctx, mid, data);
-		FlSha1HashData(&ctx, sizeof(data) - 1 - mid, data + mid);
+		size_t midpoint = (sizeof(data) - 1) / 2;
+		FlSha1Context hashContext;
+		FlSha1CreateHash(&hashContext);
+		FlSha1HashData(&hashContext, midpoint, data);
+		FlSha1HashData(&hashContext, sizeof(data) - 1 - midpoint, data + midpoint);
 		uint8_t digest[FL_SHA1_DIGEST_SIZE];
-		FlSha1FinishHash(&ctx, digest);
+		FlSha1FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, wholeDigest, FL_SHA1_DIGEST_SIZE) == 0, "FlSha1UtStreamingEquality_mid");
 	}
 
 	// One byte at a time.
 	{
-		FlSha1Context ctx;
-		FlSha1CreateHash(&ctx);
+		FlSha1Context hashContext;
+		FlSha1CreateHash(&hashContext);
 		for (size_t n = sizeof(data) - 1, i = 0; i < n; i++)
-			FlSha1HashData(&ctx, 1, data + i);
+			FlSha1HashData(&hashContext, 1, data + i);
 		uint8_t digest[FL_SHA1_DIGEST_SIZE];
-		FlSha1FinishHash(&ctx, digest);
+		FlSha1FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, wholeDigest, FL_SHA1_DIGEST_SIZE) == 0, "FlSha1UtStreamingEquality_1x43");
 	}
 
@@ -287,12 +287,12 @@ static void FlSha1UtStreamingEquality(_Inout_ size_t* testCount, _Inout_ size_t*
 		FlSha1Compute(sizeof(shortData) - 1, shortData, expectedShort);
 		for (size_t n = sizeof(shortData) - 1, splitAt = 1; splitAt < n; splitAt++)
 		{
-			FlSha1Context ctx;
-			FlSha1CreateHash(&ctx);
-			FlSha1HashData(&ctx, splitAt, shortData);
-			FlSha1HashData(&ctx, n - splitAt, shortData + splitAt);
+			FlSha1Context hashContext;
+			FlSha1CreateHash(&hashContext);
+			FlSha1HashData(&hashContext, splitAt, shortData);
+			FlSha1HashData(&hashContext, n - splitAt, shortData + splitAt);
 			uint8_t digest[FL_SHA1_DIGEST_SIZE];
-			FlSha1FinishHash(&ctx, digest);
+			FlSha1FinishHash(&hashContext, digest);
 			FL_UT_CHECK(memcmp(digest, expectedShort, FL_SHA1_DIGEST_SIZE) == 0, "FlSha1UtStreamingEquality_AllSplits");
 		}
 	}
@@ -307,35 +307,35 @@ static void FlSha1UtZeroLengthChunkNoEffect(_Inout_ size_t* testCount, _Inout_ s
 
 	// Zero-length call before actual data.
 	{
-		FlSha1Context ctx;
-		FlSha1CreateHash(&ctx);
-		FlSha1HashData(&ctx, 0, data);
-		FlSha1HashData(&ctx, sizeof(data) - 1, data);
+		FlSha1Context hashContext;
+		FlSha1CreateHash(&hashContext);
+		FlSha1HashData(&hashContext, 0, data);
+		FlSha1HashData(&hashContext, sizeof(data) - 1, data);
 		uint8_t digest[FL_SHA1_DIGEST_SIZE];
-		FlSha1FinishHash(&ctx, digest);
+		FlSha1FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, expected, FL_SHA1_DIGEST_SIZE) == 0, "FlSha1UtZeroLengthChunkNoEffect_Before");
 	}
 
 	// Zero-length call after actual data.
 	{
-		FlSha1Context ctx;
-		FlSha1CreateHash(&ctx);
-		FlSha1HashData(&ctx, sizeof(data) - 1, data);
-		FlSha1HashData(&ctx, 0, data);
+		FlSha1Context hashContext;
+		FlSha1CreateHash(&hashContext);
+		FlSha1HashData(&hashContext, sizeof(data) - 1, data);
+		FlSha1HashData(&hashContext, 0, data);
 		uint8_t digest[FL_SHA1_DIGEST_SIZE];
-		FlSha1FinishHash(&ctx, digest);
+		FlSha1FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, expected, FL_SHA1_DIGEST_SIZE) == 0, "FlSha1UtZeroLengthChunkNoEffect_After");
 	}
 
 	// Zero-length call in the middle of actual data.
 	{
-		FlSha1Context ctx;
-		FlSha1CreateHash(&ctx);
-		FlSha1HashData(&ctx, 1, data);
-		FlSha1HashData(&ctx, 0, data);
-		FlSha1HashData(&ctx, sizeof(data) - 2, data + 1);
+		FlSha1Context hashContext;
+		FlSha1CreateHash(&hashContext);
+		FlSha1HashData(&hashContext, 1, data);
+		FlSha1HashData(&hashContext, 0, data);
+		FlSha1HashData(&hashContext, sizeof(data) - 2, data + 1);
 		uint8_t digest[FL_SHA1_DIGEST_SIZE];
-		FlSha1FinishHash(&ctx, digest);
+		FlSha1FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, expected, FL_SHA1_DIGEST_SIZE) == 0, "FlSha1UtZeroLengthChunkNoEffect_Middle");
 	}
 }
@@ -382,20 +382,20 @@ static void FlSha1UtContextIsolation(_Inout_ size_t* testCount, _Inout_ size_t* 
 	FlSha1Compute(sizeof(dataB) - 1, dataB, expectedB);
 
 	// Interleave byte-by-byte updates to both contexts.
-	FlSha1Context ctxA;
-	FlSha1Context ctxB;
-	FlSha1CreateHash(&ctxA);
-	FlSha1CreateHash(&ctxB);
+	FlSha1Context hashContextA;
+	FlSha1Context hashContextB;
+	FlSha1CreateHash(&hashContextA);
+	FlSha1CreateHash(&hashContextB);
 	for (size_t n = sizeof(dataA) - 1, i = 0; i < n; i++)
 	{
-		FlSha1HashData(&ctxA, 1, dataA + i);
-		FlSha1HashData(&ctxB, 1, dataB + i);
+		FlSha1HashData(&hashContextA, 1, dataA + i);
+		FlSha1HashData(&hashContextB, 1, dataB + i);
 	}
 
 	uint8_t digestA[FL_SHA1_DIGEST_SIZE];
 	uint8_t digestB[FL_SHA1_DIGEST_SIZE];
-	FlSha1FinishHash(&ctxA, digestA);
-	FlSha1FinishHash(&ctxB, digestB);
+	FlSha1FinishHash(&hashContextA, digestA);
+	FlSha1FinishHash(&hashContextB, digestB);
 	FL_UT_CHECK(memcmp(digestA, expectedA, FL_SHA1_DIGEST_SIZE) == 0, "FlSha1UtContextIsolation_A");
 	FL_UT_CHECK(memcmp(digestB, expectedB, FL_SHA1_DIGEST_SIZE) == 0, "FlSha1UtContextIsolation_B");
 }

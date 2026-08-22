@@ -141,10 +141,10 @@ static const uint8_t FL_SHA256_UT_EXPECTED_64KIB_FF_BYTES[FL_SHA256_DIGEST_SIZE]
 // ---------------------------------------------------------------------------
 static void FlSha256Compute(_In_ size_t dataSize, _In_reads_bytes_(dataSize) const void* data, _Out_writes_bytes_all_(FL_SHA256_DIGEST_SIZE) uint8_t* digest)
 {
-	FlSha256Context ctx;
-	FlSha256CreateHash(&ctx);
-	FlSha256HashData(&ctx, dataSize, data);
-	FlSha256FinishHash(&ctx, digest);
+	FlSha256Context hashContext;
+	FlSha256CreateHash(&hashContext);
+	FlSha256HashData(&hashContext, dataSize, data);
+	FlSha256FinishHash(&hashContext, digest);
 }
 
 // ---------------------------------------------------------------------------
@@ -227,12 +227,12 @@ static void FlSha256UtSanttuTestData(_Inout_ size_t* testCount, _Inout_ size_t* 
 static void FlSha256Ut64KiBZeroBytes(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const uint8_t zeroByte = 0x00;
-	FlSha256Context ctx;
-	FlSha256CreateHash(&ctx);
+	FlSha256Context hashContext;
+	FlSha256CreateHash(&hashContext);
 	for (size_t i = 0; i < 65536; i++)
-		FlSha256HashData(&ctx, 1, &zeroByte);
+		FlSha256HashData(&hashContext, 1, &zeroByte);
 	uint8_t digest[FL_SHA256_DIGEST_SIZE];
-	FlSha256FinishHash(&ctx, digest);
+	FlSha256FinishHash(&hashContext, digest);
 	FL_UT_CHECK(memcmp(digest, FL_SHA256_UT_EXPECTED_64KIB_ZERO_BYTES, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256Ut64KiBZeroBytes");
 }
 
@@ -240,12 +240,12 @@ static void FlSha256Ut64KiBZeroBytes(_Inout_ size_t* testCount, _Inout_ size_t* 
 static void FlSha256Ut64KiBFfBytes(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const uint8_t ffByte = 0xFF;
-	FlSha256Context ctx;
-	FlSha256CreateHash(&ctx);
+	FlSha256Context hashContext;
+	FlSha256CreateHash(&hashContext);
 	for (size_t i = 0; i < 65536; i++)
-		FlSha256HashData(&ctx, 1, &ffByte);
+		FlSha256HashData(&hashContext, 1, &ffByte);
 	uint8_t digest[FL_SHA256_DIGEST_SIZE];
-	FlSha256FinishHash(&ctx, digest);
+	FlSha256FinishHash(&hashContext, digest);
 	FL_UT_CHECK(memcmp(digest, FL_SHA256_UT_EXPECTED_64KIB_FF_BYTES, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256Ut64KiBFfBytes");
 }
 
@@ -258,35 +258,35 @@ static void FlSha256UtStreamingEquality(_Inout_ size_t* testCount, _Inout_ size_
 
 	// Split 1 + remainder.
 	{
-		FlSha256Context ctx;
-		FlSha256CreateHash(&ctx);
-		FlSha256HashData(&ctx, 1, data);
-		FlSha256HashData(&ctx, sizeof(data) - 2, data + 1);
+		FlSha256Context hashContext;
+		FlSha256CreateHash(&hashContext);
+		FlSha256HashData(&hashContext, 1, data);
+		FlSha256HashData(&hashContext, sizeof(data) - 2, data + 1);
 		uint8_t digest[FL_SHA256_DIGEST_SIZE];
-		FlSha256FinishHash(&ctx, digest);
+		FlSha256FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, wholeDigest, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256UtStreamingEquality_1_rest");
 	}
 
 	// Split at midpoint.
 	{
-		size_t mid = (sizeof(data) - 1) / 2;
-		FlSha256Context ctx;
-		FlSha256CreateHash(&ctx);
-		FlSha256HashData(&ctx, mid, data);
-		FlSha256HashData(&ctx, sizeof(data) - 1 - mid, data + mid);
+		size_t midpoint = (sizeof(data) - 1) / 2;
+		FlSha256Context hashContext;
+		FlSha256CreateHash(&hashContext);
+		FlSha256HashData(&hashContext, midpoint, data);
+		FlSha256HashData(&hashContext, sizeof(data) - 1 - midpoint, data + midpoint);
 		uint8_t digest[FL_SHA256_DIGEST_SIZE];
-		FlSha256FinishHash(&ctx, digest);
+		FlSha256FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, wholeDigest, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256UtStreamingEquality_mid");
 	}
 
 	// One byte at a time.
 	{
-		FlSha256Context ctx;
-		FlSha256CreateHash(&ctx);
+		FlSha256Context hashContext;
+		FlSha256CreateHash(&hashContext);
 		for (size_t n = sizeof(data) - 1, i = 0; i < n; i++)
-			FlSha256HashData(&ctx, 1, data + i);
+			FlSha256HashData(&hashContext, 1, data + i);
 		uint8_t digest[FL_SHA256_DIGEST_SIZE];
-		FlSha256FinishHash(&ctx, digest);
+		FlSha256FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, wholeDigest, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256UtStreamingEquality_1x43");
 	}
 
@@ -297,12 +297,12 @@ static void FlSha256UtStreamingEquality(_Inout_ size_t* testCount, _Inout_ size_
 		FlSha256Compute(sizeof(shortData) - 1, shortData, expectedShort);
 		for (size_t n = sizeof(shortData) - 1, splitAt = 1; splitAt < n; splitAt++)
 		{
-			FlSha256Context ctx;
-			FlSha256CreateHash(&ctx);
-			FlSha256HashData(&ctx, splitAt, shortData);
-			FlSha256HashData(&ctx, n - splitAt, shortData + splitAt);
+			FlSha256Context hashContext;
+			FlSha256CreateHash(&hashContext);
+			FlSha256HashData(&hashContext, splitAt, shortData);
+			FlSha256HashData(&hashContext, n - splitAt, shortData + splitAt);
 			uint8_t digest[FL_SHA256_DIGEST_SIZE];
-			FlSha256FinishHash(&ctx, digest);
+			FlSha256FinishHash(&hashContext, digest);
 			FL_UT_CHECK(memcmp(digest, expectedShort, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256UtStreamingEquality_AllSplits");
 		}
 	}
@@ -317,35 +317,35 @@ static void FlSha256UtZeroLengthChunkNoEffect(_Inout_ size_t* testCount, _Inout_
 
 	// Zero-length call before actual data.
 	{
-		FlSha256Context ctx;
-		FlSha256CreateHash(&ctx);
-		FlSha256HashData(&ctx, 0, data);
-		FlSha256HashData(&ctx, sizeof(data) - 1, data);
+		FlSha256Context hashContext;
+		FlSha256CreateHash(&hashContext);
+		FlSha256HashData(&hashContext, 0, data);
+		FlSha256HashData(&hashContext, sizeof(data) - 1, data);
 		uint8_t digest[FL_SHA256_DIGEST_SIZE];
-		FlSha256FinishHash(&ctx, digest);
+		FlSha256FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, expected, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256UtZeroLengthChunkNoEffect_Before");
 	}
 
 	// Zero-length call after actual data.
 	{
-		FlSha256Context ctx;
-		FlSha256CreateHash(&ctx);
-		FlSha256HashData(&ctx, sizeof(data) - 1, data);
-		FlSha256HashData(&ctx, 0, data);
+		FlSha256Context hashContext;
+		FlSha256CreateHash(&hashContext);
+		FlSha256HashData(&hashContext, sizeof(data) - 1, data);
+		FlSha256HashData(&hashContext, 0, data);
 		uint8_t digest[FL_SHA256_DIGEST_SIZE];
-		FlSha256FinishHash(&ctx, digest);
+		FlSha256FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, expected, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256UtZeroLengthChunkNoEffect_After");
 	}
 
 	// Zero-length call in the middle of actual data.
 	{
-		FlSha256Context ctx;
-		FlSha256CreateHash(&ctx);
-		FlSha256HashData(&ctx, 1, data);
-		FlSha256HashData(&ctx, 0, data);
-		FlSha256HashData(&ctx, sizeof(data) - 2, data + 1);
+		FlSha256Context hashContext;
+		FlSha256CreateHash(&hashContext);
+		FlSha256HashData(&hashContext, 1, data);
+		FlSha256HashData(&hashContext, 0, data);
+		FlSha256HashData(&hashContext, sizeof(data) - 2, data + 1);
 		uint8_t digest[FL_SHA256_DIGEST_SIZE];
-		FlSha256FinishHash(&ctx, digest);
+		FlSha256FinishHash(&hashContext, digest);
 		FL_UT_CHECK(memcmp(digest, expected, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256UtZeroLengthChunkNoEffect_Middle");
 	}
 }
@@ -392,20 +392,20 @@ static void FlSha256UtContextIsolation(_Inout_ size_t* testCount, _Inout_ size_t
 	FlSha256Compute(sizeof(dataB) - 1, dataB, expectedB);
 
 	// Interleave byte-by-byte updates to both contexts.
-	FlSha256Context ctxA;
-	FlSha256Context ctxB;
-	FlSha256CreateHash(&ctxA);
-	FlSha256CreateHash(&ctxB);
+	FlSha256Context hashContextA;
+	FlSha256Context hashContextB;
+	FlSha256CreateHash(&hashContextA);
+	FlSha256CreateHash(&hashContextB);
 	for (size_t n = sizeof(dataA) - 1, i = 0; i < n; i++)
 	{
-		FlSha256HashData(&ctxA, 1, dataA + i);
-		FlSha256HashData(&ctxB, 1, dataB + i);
+		FlSha256HashData(&hashContextA, 1, dataA + i);
+		FlSha256HashData(&hashContextB, 1, dataB + i);
 	}
 
 	uint8_t digestA[FL_SHA256_DIGEST_SIZE];
 	uint8_t digestB[FL_SHA256_DIGEST_SIZE];
-	FlSha256FinishHash(&ctxA, digestA);
-	FlSha256FinishHash(&ctxB, digestB);
+	FlSha256FinishHash(&hashContextA, digestA);
+	FlSha256FinishHash(&hashContextB, digestB);
 	FL_UT_CHECK(memcmp(digestA, expectedA, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256UtContextIsolation_A");
 	FL_UT_CHECK(memcmp(digestB, expectedB, FL_SHA256_DIGEST_SIZE) == 0, "FlSha256UtContextIsolation_B");
 }

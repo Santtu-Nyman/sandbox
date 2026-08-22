@@ -158,6 +158,7 @@
     <ClInclude Include="include\FlSha256Hmac.h" />
     <ClInclude Include="include\FlUnicode.h" />
     <ClInclude Include="include\FlUuid.h" />
+    <ClInclude Include="include\FlVirtualHeap.h" />
     <ClInclude Include="include\FlWin32CommandLine.h" />
     <ClInclude Include="include\FlWin32FilePath.h" />
     <ClInclude Include="ut\FlUt.h" />
@@ -175,6 +176,7 @@
     <ClCompile Include="source\FlSha256Hmac.c" />
     <ClCompile Include="source\FlUnicode.c" />
     <ClCompile Include="source\FlUuid.c" />
+    <ClCompile Include="source\FlVirtualHeap.c" />
     <ClCompile Include="source\FlWin32CommandLine.c" />
     <ClCompile Include="source\FlWin32FilePath.c" />
     <ClCompile Include="ut\FlAes256Ut.c" />
@@ -190,6 +192,7 @@
     <ClCompile Include="ut\FlUnicodeUt.c" />
     <ClCompile Include="ut\FlUtMain.c" />
     <ClCompile Include="ut\FlUuidUt.c" />
+    <ClCompile Include="ut\FlVirtualHeapUt.c" />
     <ClCompile Include="ut\FlWin32CommandLineUt.c" />
     <ClCompile Include="ut\FlWin32FilePathUt.c" />
   </ItemGroup>

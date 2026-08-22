@@ -71,41 +71,41 @@
 // ---------------------------------------------------------------------------
 
 // Vector 0: ASCII "Hello"
-static const uint8_t FlUtf8V0[]    = { 0x48, 0x65, 0x6C, 0x6C, 0x6F };
-static const WCHAR   FlUtf16LeV0[] = { 0x0048, 0x0065, 0x006C, 0x006C, 0x006F };
-static const WCHAR   FlUtf16BeV0[] = { 0x4800, 0x6500, 0x6C00, 0x6C00, 0x6F00 };
+static const uint8_t flUtf8V0[]    = { 0x48, 0x65, 0x6C, 0x6C, 0x6F };
+static const WCHAR   flUtf16LeV0[] = { 0x0048, 0x0065, 0x006C, 0x006C, 0x006F };
+static const WCHAR   flUtf16BeV0[] = { 0x4800, 0x6500, 0x6C00, 0x6C00, 0x6F00 };
 
 // Vector 1: U+00E9 (é, 2-byte) + U+4E16 (世, 3-byte) + U+20AC (€, 3-byte)
-static const uint8_t FlUtf8V1[]    = { 0xC3, 0xA9, 0xE4, 0xB8, 0x96, 0xE2, 0x82, 0xAC };
-static const WCHAR   FlUtf16LeV1[] = { 0x00E9, 0x4E16, 0x20AC };
-static const WCHAR   FlUtf16BeV1[] = { 0xE900, 0x164E, 0xAC20 };
+static const uint8_t flUtf8V1[]    = { 0xC3, 0xA9, 0xE4, 0xB8, 0x96, 0xE2, 0x82, 0xAC };
+static const WCHAR   flUtf16LeV1[] = { 0x00E9, 0x4E16, 0x20AC };
+static const WCHAR   flUtf16BeV1[] = { 0xE900, 0x164E, 0xAC20 };
 
 // Vector 2: U+1F600 (😀, 4-byte UTF-8 -> surrogate pair D83D DE00)
-static const uint8_t FlUtf8V2[]    = { 0xF0, 0x9F, 0x98, 0x80 };
-static const WCHAR   FlUtf16LeV2[] = { 0xD83D, 0xDE00 };
-static const WCHAR   FlUtf16BeV2[] = { 0x3DD8, 0x00DE };
+static const uint8_t flUtf8V2[]    = { 0xF0, 0x9F, 0x98, 0x80 };
+static const WCHAR   flUtf16LeV2[] = { 0xD83D, 0xDE00 };
+static const WCHAR   flUtf16BeV2[] = { 0x3DD8, 0x00DE };
 
 // Vector 3: U+10FFFF (maximum valid code point, -> surrogate pair DBFF DFFF)
-static const uint8_t FlUtf8V3[]    = { 0xF4, 0x8F, 0xBF, 0xBF };
-static const WCHAR   FlUtf16LeV3[] = { 0xDBFF, 0xDFFF };
-static const WCHAR   FlUtf16BeV3[] = { 0xFFDB, 0xFFDF };
+static const uint8_t flUtf8V3[]    = { 0xF4, 0x8F, 0xBF, 0xBF };
+static const WCHAR   flUtf16LeV3[] = { 0xDBFF, 0xDFFF };
+static const WCHAR   flUtf16BeV3[] = { 0xFFDB, 0xFFDF };
 
 // Vector 4: mixed — 'A' + U+20AC + 'B' + U+1F600 + 'C'
-static const uint8_t FlUtf8V4[]    = { 0x41, 0xE2, 0x82, 0xAC, 0x42, 0xF0, 0x9F, 0x98, 0x80, 0x43 };
-static const WCHAR   FlUtf16LeV4[] = { 0x0041, 0x20AC, 0x0042, 0xD83D, 0xDE00, 0x0043 };
-static const WCHAR   FlUtf16BeV4[] = { 0x4100, 0xAC20, 0x4200, 0x3DD8, 0x00DE, 0x4300 };
+static const uint8_t flUtf8V4[]    = { 0x41, 0xE2, 0x82, 0xAC, 0x42, 0xF0, 0x9F, 0x98, 0x80, 0x43 };
+static const WCHAR   flUtf16LeV4[] = { 0x0041, 0x20AC, 0x0042, 0xD83D, 0xDE00, 0x0043 };
+static const WCHAR   flUtf16BeV4[] = { 0x4100, 0xAC20, 0x4200, 0x3DD8, 0x00DE, 0x4300 };
 
 // UTF-32 code point arrays corresponding to the five encode vectors.
-static const int FlUtf32V0[] = { 0x00000048, 0x00000065, 0x0000006C, 0x0000006C, 0x0000006F };
-static const int FlUtf32V1[] = { 0x000000E9, 0x00004E16, 0x000020AC };
-static const int FlUtf32V2[] = { 0x0001F600 };
-static const int FlUtf32V3[] = { 0x0010FFFF };
-static const int FlUtf32V4[] = { 0x00000041, 0x000020AC, 0x00000042, 0x0001F600, 0x00000043 };
+static const int flUtf32V0[] = { 0x00000048, 0x00000065, 0x0000006C, 0x0000006C, 0x0000006F };
+static const int flUtf32V1[] = { 0x000000E9, 0x00004E16, 0x000020AC };
+static const int flUtf32V2[] = { 0x0001F600 };
+static const int flUtf32V3[] = { 0x0010FFFF };
+static const int flUtf32V4[] = { 0x00000041, 0x000020AC, 0x00000042, 0x0001F600, 0x00000043 };
 
 // Lengths
-static const size_t FlUtf8Len[]    = { 5, 8, 4, 4, 10 }; // byte counts
-static const size_t FlUtf16Len[]   = { 5, 3, 2, 2,  6 }; // WCHAR counts
-static const size_t FlUtf32Len[]   = { 5, 3, 1, 1,  5 }; // int element counts
+static const size_t flUtf8Len[]    = { 5, 8, 4, 4, 10 }; // byte counts
+static const size_t flUtf16Len[]   = { 5, 3, 2, 2,  6 }; // WCHAR counts
+static const size_t flUtf32Len[]   = { 5, 3, 1, 1,  5 }; // int element counts
 
 // ---------------------------------------------------------------------------
 // UTF-8 -> UTF-16 LE tests
@@ -114,39 +114,39 @@ static const size_t FlUtf32Len[]   = { 5, 3, 1, 1,  5 }; // int element counts
 // ASCII "Hello": 5 one-byte sequences -> 5 WCHARs, return 5.
 static void FlUnicodeUtAsciiToUtf16Le(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	WCHAR buf[5];
-	size_t n = FlConvertUtf8ToUtf16(FlUtf8Len[0], (const char*)FlUtf8V0, 5, buf);
-	FL_UT_CHECK(n == FlUtf16Len[0] && memcmp(buf, FlUtf16LeV0, FlUtf16Len[0] * sizeof(WCHAR)) == 0,
+	WCHAR outputBuffer[5];
+	size_t outputCount = FlConvertUtf8ToUtf16(flUtf8Len[0], (const char*)flUtf8V0, 5, outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf16Len[0] && memcmp(outputBuffer, flUtf16LeV0, flUtf16Len[0] * sizeof(WCHAR)) == 0,
 	            "FlUnicodeUtAsciiToUtf16Le");
 }
 
 // Two-byte (U+00E9) and three-byte (U+4E16, U+20AC) sequences -> BMP WCHARs.
 static void FlUnicodeUtBmpToUtf16Le(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	WCHAR buf[3];
-	size_t n = FlConvertUtf8ToUtf16(FlUtf8Len[1], (const char*)FlUtf8V1, 3, buf);
-	FL_UT_CHECK(n == FlUtf16Len[1] && memcmp(buf, FlUtf16LeV1, FlUtf16Len[1] * sizeof(WCHAR)) == 0,
+	WCHAR outputBuffer[3];
+	size_t outputCount = FlConvertUtf8ToUtf16(flUtf8Len[1], (const char*)flUtf8V1, 3, outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf16Len[1] && memcmp(outputBuffer, flUtf16LeV1, flUtf16Len[1] * sizeof(WCHAR)) == 0,
 	            "FlUnicodeUtBmpToUtf16Le");
 }
 
 // Four-byte sequences -> surrogate pairs: U+1F600 and U+10FFFF.
 static void FlUnicodeUtSurrogateToUtf16Le(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	WCHAR buf2[2], buf3[2];
-	size_t n2 = FlConvertUtf8ToUtf16(FlUtf8Len[2], (const char*)FlUtf8V2, 2, buf2);
-	size_t n3 = FlConvertUtf8ToUtf16(FlUtf8Len[3], (const char*)FlUtf8V3, 2, buf3);
+	WCHAR outputBuffer2[2], outputBuffer3[2];
+	size_t n2 = FlConvertUtf8ToUtf16(flUtf8Len[2], (const char*)flUtf8V2, 2, outputBuffer2);
+	size_t n3 = FlConvertUtf8ToUtf16(flUtf8Len[3], (const char*)flUtf8V3, 2, outputBuffer3);
 	FL_UT_CHECK(
-	    n2 == FlUtf16Len[2] && memcmp(buf2, FlUtf16LeV2, FlUtf16Len[2] * sizeof(WCHAR)) == 0 &&
-	    n3 == FlUtf16Len[3] && memcmp(buf3, FlUtf16LeV3, FlUtf16Len[3] * sizeof(WCHAR)) == 0,
+	    n2 == flUtf16Len[2] && memcmp(outputBuffer2, flUtf16LeV2, flUtf16Len[2] * sizeof(WCHAR)) == 0 &&
+	    n3 == flUtf16Len[3] && memcmp(outputBuffer3, flUtf16LeV3, flUtf16Len[3] * sizeof(WCHAR)) == 0,
 	    "FlUnicodeUtSurrogateToUtf16Le");
 }
 
 // Mixed content: ASCII + 3-byte + ASCII + surrogate + ASCII -> 6 WCHARs.
 static void FlUnicodeUtMixedToUtf16Le(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	WCHAR buf[6];
-	size_t n = FlConvertUtf8ToUtf16(FlUtf8Len[4], (const char*)FlUtf8V4, 6, buf);
-	FL_UT_CHECK(n == FlUtf16Len[4] && memcmp(buf, FlUtf16LeV4, FlUtf16Len[4] * sizeof(WCHAR)) == 0,
+	WCHAR outputBuffer[6];
+	size_t outputCount = FlConvertUtf8ToUtf16(flUtf8Len[4], (const char*)flUtf8V4, 6, outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf16Len[4] && memcmp(outputBuffer, flUtf16LeV4, flUtf16Len[4] * sizeof(WCHAR)) == 0,
 	            "FlUnicodeUtMixedToUtf16Le");
 }
 
@@ -157,30 +157,30 @@ static void FlUnicodeUtMixedToUtf16Le(_Inout_ size_t* testCount, _Inout_ size_t*
 // Five ASCII WCHARs -> "Hello" UTF-8 bytes.
 static void FlUnicodeUtAsciiToUtf8(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	uint8_t buf[5];
-	size_t n = FlConvertUtf16ToUtf8(FlUtf16Len[0], FlUtf16LeV0, 5, (char*)buf);
-	FL_UT_CHECK(n == FlUtf8Len[0] && memcmp(buf, FlUtf8V0, FlUtf8Len[0]) == 0,
+	uint8_t outputBuffer[5];
+	size_t outputCount = FlConvertUtf16ToUtf8(flUtf16Len[0], flUtf16LeV0, 5, (char*)outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf8Len[0] && memcmp(outputBuffer, flUtf8V0, flUtf8Len[0]) == 0,
 	            "FlUnicodeUtAsciiToUtf8");
 }
 
 // BMP WCHARs -> 2-byte and 3-byte UTF-8 sequences.
 static void FlUnicodeUtBmpToUtf8(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	uint8_t buf[8];
-	size_t n = FlConvertUtf16ToUtf8(FlUtf16Len[1], FlUtf16LeV1, 8, (char*)buf);
-	FL_UT_CHECK(n == FlUtf8Len[1] && memcmp(buf, FlUtf8V1, FlUtf8Len[1]) == 0,
+	uint8_t outputBuffer[8];
+	size_t outputCount = FlConvertUtf16ToUtf8(flUtf16Len[1], flUtf16LeV1, 8, (char*)outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf8Len[1] && memcmp(outputBuffer, flUtf8V1, flUtf8Len[1]) == 0,
 	            "FlUnicodeUtBmpToUtf8");
 }
 
 // Surrogate pairs -> four-byte UTF-8: U+1F600 and U+10FFFF.
 static void FlUnicodeUtSurrogateToUtf8(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	uint8_t buf2[4], buf3[4];
-	size_t n2 = FlConvertUtf16ToUtf8(FlUtf16Len[2], FlUtf16LeV2, 4, (char*)buf2);
-	size_t n3 = FlConvertUtf16ToUtf8(FlUtf16Len[3], FlUtf16LeV3, 4, (char*)buf3);
+	uint8_t outputBuffer2[4], outputBuffer3[4];
+	size_t n2 = FlConvertUtf16ToUtf8(flUtf16Len[2], flUtf16LeV2, 4, (char*)outputBuffer2);
+	size_t n3 = FlConvertUtf16ToUtf8(flUtf16Len[3], flUtf16LeV3, 4, (char*)outputBuffer3);
 	FL_UT_CHECK(
-	    n2 == FlUtf8Len[2] && memcmp(buf2, FlUtf8V2, FlUtf8Len[2]) == 0 &&
-	    n3 == FlUtf8Len[3] && memcmp(buf3, FlUtf8V3, FlUtf8Len[3]) == 0,
+	    n2 == flUtf8Len[2] && memcmp(outputBuffer2, flUtf8V2, flUtf8Len[2]) == 0 &&
+	    n3 == flUtf8Len[3] && memcmp(outputBuffer3, flUtf8V3, flUtf8Len[3]) == 0,
 	    "FlUnicodeUtSurrogateToUtf8");
 }
 
@@ -208,12 +208,12 @@ static void FlUnicodeUtInvalidUtf8(_Inout_ size_t* testCount, _Inout_ size_t* fa
 {
 	static const uint8_t badFF[] = { 0xFF };
 	static const uint8_t bad80[] = { 0x80 };
-	WCHAR bufFF[1], buf80[1];
-	size_t nFF = FlConvertUtf8ToUtf16(1, (const char*)badFF, 1, bufFF);
-	size_t n80 = FlConvertUtf8ToUtf16(1, (const char*)bad80, 1, buf80);
+	WCHAR outputBufferFF[1], outputBuffer80[1];
+	size_t nFF = FlConvertUtf8ToUtf16(1, (const char*)badFF, 1, outputBufferFF);
+	size_t n80 = FlConvertUtf8ToUtf16(1, (const char*)bad80, 1, outputBuffer80);
 	FL_UT_CHECK(
-	    nFF == 1 && bufFF[0] == 0xFFFD &&
-	    n80 == 1 && buf80[0] == 0xFFFD,
+	    nFF == 1 && outputBufferFF[0] == 0xFFFD &&
+	    n80 == 1 && outputBuffer80[0] == 0xFFFD,
 	    "FlUnicodeUtInvalidUtf8");
 }
 
@@ -224,12 +224,12 @@ static void FlUnicodeUtLoneSurrogate(_Inout_ size_t* testCount, _Inout_ size_t* 
 	static const WCHAR loneHigh[] = { 0xD83D };
 	static const WCHAR loneLow[]  = { 0xDE00 };
 	static const uint8_t expectedFFFD[] = { 0xEF, 0xBF, 0xBD };
-	uint8_t bufHigh[3], bufLow[3];
-	size_t nHigh = FlConvertUtf16ToUtf8(1, loneHigh, 3, (char*)bufHigh);
-	size_t nLow  = FlConvertUtf16ToUtf8(1, loneLow,  3, (char*)bufLow);
+	uint8_t outputBufferHigh[3], outputBufferLow[3];
+	size_t nHigh = FlConvertUtf16ToUtf8(1, loneHigh, 3, (char*)outputBufferHigh);
+	size_t nLow  = FlConvertUtf16ToUtf8(1, loneLow,  3, (char*)outputBufferLow);
 	FL_UT_CHECK(
-	    nHigh == 3 && memcmp(bufHigh, expectedFFFD, 3) == 0 &&
-	    nLow  == 3 && memcmp(bufLow,  expectedFFFD, 3) == 0,
+	    nHigh == 3 && memcmp(outputBufferHigh, expectedFFFD, 3) == 0 &&
+	    nLow  == 3 && memcmp(outputBufferLow,  expectedFFFD, 3) == 0,
 	    "FlUnicodeUtLoneSurrogate");
 }
 
@@ -242,9 +242,9 @@ static void FlUnicodeUtRoundTripLe(_Inout_ size_t* testCount, _Inout_ size_t* fa
 {
 	WCHAR   intermediate[6];
 	uint8_t result[10];
-	size_t nWide = FlConvertUtf8ToUtf16(FlUtf8Len[4], (const char*)FlUtf8V4, 6, intermediate);
+	size_t nWide = FlConvertUtf8ToUtf16(flUtf8Len[4], (const char*)flUtf8V4, 6, intermediate);
 	size_t nUtf8 = FlConvertUtf16ToUtf8(nWide, intermediate, 10, (char*)result);
-	FL_UT_CHECK(nUtf8 == FlUtf8Len[4] && memcmp(result, FlUtf8V4, FlUtf8Len[4]) == 0,
+	FL_UT_CHECK(nUtf8 == flUtf8Len[4] && memcmp(result, flUtf8V4, flUtf8Len[4]) == 0,
 	            "FlUnicodeUtRoundTripLe");
 }
 
@@ -255,39 +255,39 @@ static void FlUnicodeUtRoundTripLe(_Inout_ size_t* testCount, _Inout_ size_t* fa
 // ASCII "Hello": five one-byte sequences -> five code points, return 5.
 static void FlUnicodeUtAsciiToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	int buf[5];
-	size_t n = FlConvertUtf8ToUtf32(FlUtf8Len[0], (const char*)FlUtf8V0, 5, buf);
-	FL_UT_CHECK(n == FlUtf32Len[0] && memcmp(buf, FlUtf32V0, FlUtf32Len[0] * sizeof(int)) == 0,
+	int outputBuffer[5];
+	size_t outputCount = FlConvertUtf8ToUtf32(flUtf8Len[0], (const char*)flUtf8V0, 5, outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf32Len[0] && memcmp(outputBuffer, flUtf32V0, flUtf32Len[0] * sizeof(int)) == 0,
 	            "FlUnicodeUtAsciiToUtf32");
 }
 
 // Two-byte (U+00E9) and three-byte (U+4E16, U+20AC) sequences -> BMP code points.
 static void FlUnicodeUtBmpToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	int buf[3];
-	size_t n = FlConvertUtf8ToUtf32(FlUtf8Len[1], (const char*)FlUtf8V1, 3, buf);
-	FL_UT_CHECK(n == FlUtf32Len[1] && memcmp(buf, FlUtf32V1, FlUtf32Len[1] * sizeof(int)) == 0,
+	int outputBuffer[3];
+	size_t outputCount = FlConvertUtf8ToUtf32(flUtf8Len[1], (const char*)flUtf8V1, 3, outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf32Len[1] && memcmp(outputBuffer, flUtf32V1, flUtf32Len[1] * sizeof(int)) == 0,
 	            "FlUnicodeUtBmpToUtf32");
 }
 
 // Four-byte sequences -> supplementary code points: U+1F600 and U+10FFFF.
 static void FlUnicodeUtSupplementaryToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	int buf2[1], buf3[1];
-	size_t n2 = FlConvertUtf8ToUtf32(FlUtf8Len[2], (const char*)FlUtf8V2, 1, buf2);
-	size_t n3 = FlConvertUtf8ToUtf32(FlUtf8Len[3], (const char*)FlUtf8V3, 1, buf3);
+	int outputBuffer2[1], outputBuffer3[1];
+	size_t n2 = FlConvertUtf8ToUtf32(flUtf8Len[2], (const char*)flUtf8V2, 1, outputBuffer2);
+	size_t n3 = FlConvertUtf8ToUtf32(flUtf8Len[3], (const char*)flUtf8V3, 1, outputBuffer3);
 	FL_UT_CHECK(
-	    n2 == FlUtf32Len[2] && memcmp(buf2, FlUtf32V2, FlUtf32Len[2] * sizeof(int)) == 0 &&
-	    n3 == FlUtf32Len[3] && memcmp(buf3, FlUtf32V3, FlUtf32Len[3] * sizeof(int)) == 0,
+	    n2 == flUtf32Len[2] && memcmp(outputBuffer2, flUtf32V2, flUtf32Len[2] * sizeof(int)) == 0 &&
+	    n3 == flUtf32Len[3] && memcmp(outputBuffer3, flUtf32V3, flUtf32Len[3] * sizeof(int)) == 0,
 	    "FlUnicodeUtSupplementaryToUtf32");
 }
 
 // Mixed content: ASCII + BMP + ASCII + supplementary + ASCII -> 5 code points.
 static void FlUnicodeUtMixedToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	int buf[5];
-	size_t n = FlConvertUtf8ToUtf32(FlUtf8Len[4], (const char*)FlUtf8V4, 5, buf);
-	FL_UT_CHECK(n == FlUtf32Len[4] && memcmp(buf, FlUtf32V4, FlUtf32Len[4] * sizeof(int)) == 0,
+	int outputBuffer[5];
+	size_t outputCount = FlConvertUtf8ToUtf32(flUtf8Len[4], (const char*)flUtf8V4, 5, outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf32Len[4] && memcmp(outputBuffer, flUtf32V4, flUtf32Len[4] * sizeof(int)) == 0,
 	            "FlUnicodeUtMixedToUtf32");
 }
 
@@ -298,39 +298,39 @@ static void FlUnicodeUtMixedToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* f
 // Five ASCII code points -> "Hello" UTF-8 bytes.
 static void FlUnicodeUtAsciiFromUtf32ToUtf8(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	uint8_t buf[5];
-	size_t n = FlConvertUtf32ToUtf8(FlUtf32Len[0], FlUtf32V0, 5, (char*)buf);
-	FL_UT_CHECK(n == FlUtf8Len[0] && memcmp(buf, FlUtf8V0, FlUtf8Len[0]) == 0,
+	uint8_t outputBuffer[5];
+	size_t outputCount = FlConvertUtf32ToUtf8(flUtf32Len[0], flUtf32V0, 5, (char*)outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf8Len[0] && memcmp(outputBuffer, flUtf8V0, flUtf8Len[0]) == 0,
 	            "FlUnicodeUtAsciiFromUtf32ToUtf8");
 }
 
 // BMP code points -> 2-byte and 3-byte UTF-8 sequences.
 static void FlUnicodeUtBmpFromUtf32ToUtf8(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	uint8_t buf[8];
-	size_t n = FlConvertUtf32ToUtf8(FlUtf32Len[1], FlUtf32V1, 8, (char*)buf);
-	FL_UT_CHECK(n == FlUtf8Len[1] && memcmp(buf, FlUtf8V1, FlUtf8Len[1]) == 0,
+	uint8_t outputBuffer[8];
+	size_t outputCount = FlConvertUtf32ToUtf8(flUtf32Len[1], flUtf32V1, 8, (char*)outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf8Len[1] && memcmp(outputBuffer, flUtf8V1, flUtf8Len[1]) == 0,
 	            "FlUnicodeUtBmpFromUtf32ToUtf8");
 }
 
 // Supplementary code points -> four-byte UTF-8: U+1F600 and U+10FFFF.
 static void FlUnicodeUtSupplementaryFromUtf32ToUtf8(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	uint8_t buf2[4], buf3[4];
-	size_t n2 = FlConvertUtf32ToUtf8(FlUtf32Len[2], FlUtf32V2, 4, (char*)buf2);
-	size_t n3 = FlConvertUtf32ToUtf8(FlUtf32Len[3], FlUtf32V3, 4, (char*)buf3);
+	uint8_t outputBuffer2[4], outputBuffer3[4];
+	size_t n2 = FlConvertUtf32ToUtf8(flUtf32Len[2], flUtf32V2, 4, (char*)outputBuffer2);
+	size_t n3 = FlConvertUtf32ToUtf8(flUtf32Len[3], flUtf32V3, 4, (char*)outputBuffer3);
 	FL_UT_CHECK(
-	    n2 == FlUtf8Len[2] && memcmp(buf2, FlUtf8V2, FlUtf8Len[2]) == 0 &&
-	    n3 == FlUtf8Len[3] && memcmp(buf3, FlUtf8V3, FlUtf8Len[3]) == 0,
+	    n2 == flUtf8Len[2] && memcmp(outputBuffer2, flUtf8V2, flUtf8Len[2]) == 0 &&
+	    n3 == flUtf8Len[3] && memcmp(outputBuffer3, flUtf8V3, flUtf8Len[3]) == 0,
 	    "FlUnicodeUtSupplementaryFromUtf32ToUtf8");
 }
 
 // Mixed content: ASCII + BMP + ASCII + supplementary + ASCII -> 10 bytes.
 static void FlUnicodeUtMixedFromUtf32ToUtf8(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	uint8_t buf[10];
-	size_t n = FlConvertUtf32ToUtf8(FlUtf32Len[4], FlUtf32V4, 10, (char*)buf);
-	FL_UT_CHECK(n == FlUtf8Len[4] && memcmp(buf, FlUtf8V4, FlUtf8Len[4]) == 0,
+	uint8_t outputBuffer[10];
+	size_t outputCount = FlConvertUtf32ToUtf8(flUtf32Len[4], flUtf32V4, 10, (char*)outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf8Len[4] && memcmp(outputBuffer, flUtf8V4, flUtf8Len[4]) == 0,
 	            "FlUnicodeUtMixedFromUtf32ToUtf8");
 }
 
@@ -341,39 +341,39 @@ static void FlUnicodeUtMixedFromUtf32ToUtf8(_Inout_ size_t* testCount, _Inout_ s
 // Five ASCII code points -> five ASCII WCHARs.
 static void FlUnicodeUtAsciiFromUtf32ToUtf16(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	WCHAR buf[5];
-	size_t n = FlConvertUtf32ToUtf16(FlUtf32Len[0], FlUtf32V0, 5, buf);
-	FL_UT_CHECK(n == FlUtf16Len[0] && memcmp(buf, FlUtf16LeV0, FlUtf16Len[0] * sizeof(WCHAR)) == 0,
+	WCHAR outputBuffer[5];
+	size_t outputCount = FlConvertUtf32ToUtf16(flUtf32Len[0], flUtf32V0, 5, outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf16Len[0] && memcmp(outputBuffer, flUtf16LeV0, flUtf16Len[0] * sizeof(WCHAR)) == 0,
 	            "FlUnicodeUtAsciiFromUtf32ToUtf16");
 }
 
 // BMP code points -> BMP WCHARs.
 static void FlUnicodeUtBmpFromUtf32ToUtf16(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	WCHAR buf[3];
-	size_t n = FlConvertUtf32ToUtf16(FlUtf32Len[1], FlUtf32V1, 3, buf);
-	FL_UT_CHECK(n == FlUtf16Len[1] && memcmp(buf, FlUtf16LeV1, FlUtf16Len[1] * sizeof(WCHAR)) == 0,
+	WCHAR outputBuffer[3];
+	size_t outputCount = FlConvertUtf32ToUtf16(flUtf32Len[1], flUtf32V1, 3, outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf16Len[1] && memcmp(outputBuffer, flUtf16LeV1, flUtf16Len[1] * sizeof(WCHAR)) == 0,
 	            "FlUnicodeUtBmpFromUtf32ToUtf16");
 }
 
 // Supplementary code points -> surrogate pairs: U+1F600 and U+10FFFF.
 static void FlUnicodeUtSupplementaryFromUtf32ToUtf16(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	WCHAR buf2[2], buf3[2];
-	size_t n2 = FlConvertUtf32ToUtf16(FlUtf32Len[2], FlUtf32V2, 2, buf2);
-	size_t n3 = FlConvertUtf32ToUtf16(FlUtf32Len[3], FlUtf32V3, 2, buf3);
+	WCHAR outputBuffer2[2], outputBuffer3[2];
+	size_t n2 = FlConvertUtf32ToUtf16(flUtf32Len[2], flUtf32V2, 2, outputBuffer2);
+	size_t n3 = FlConvertUtf32ToUtf16(flUtf32Len[3], flUtf32V3, 2, outputBuffer3);
 	FL_UT_CHECK(
-	    n2 == FlUtf16Len[2] && memcmp(buf2, FlUtf16LeV2, FlUtf16Len[2] * sizeof(WCHAR)) == 0 &&
-	    n3 == FlUtf16Len[3] && memcmp(buf3, FlUtf16LeV3, FlUtf16Len[3] * sizeof(WCHAR)) == 0,
+	    n2 == flUtf16Len[2] && memcmp(outputBuffer2, flUtf16LeV2, flUtf16Len[2] * sizeof(WCHAR)) == 0 &&
+	    n3 == flUtf16Len[3] && memcmp(outputBuffer3, flUtf16LeV3, flUtf16Len[3] * sizeof(WCHAR)) == 0,
 	    "FlUnicodeUtSupplementaryFromUtf32ToUtf16");
 }
 
 // Mixed content: 5 code points -> 6 WCHARs (supplementary character expands to surrogate pair).
 static void FlUnicodeUtMixedFromUtf32ToUtf16(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	WCHAR buf[6];
-	size_t n = FlConvertUtf32ToUtf16(FlUtf32Len[4], FlUtf32V4, 6, buf);
-	FL_UT_CHECK(n == FlUtf16Len[4] && memcmp(buf, FlUtf16LeV4, FlUtf16Len[4] * sizeof(WCHAR)) == 0,
+	WCHAR outputBuffer[6];
+	size_t outputCount = FlConvertUtf32ToUtf16(flUtf32Len[4], flUtf32V4, 6, outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf16Len[4] && memcmp(outputBuffer, flUtf16LeV4, flUtf16Len[4] * sizeof(WCHAR)) == 0,
 	            "FlUnicodeUtMixedFromUtf32ToUtf16");
 }
 
@@ -384,39 +384,39 @@ static void FlUnicodeUtMixedFromUtf32ToUtf16(_Inout_ size_t* testCount, _Inout_ 
 // Five ASCII WCHARs -> five ASCII code points.
 static void FlUnicodeUtAsciiFromUtf16ToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	int buf[5];
-	size_t n = FlConvertUtf16ToUtf32(FlUtf16Len[0], FlUtf16LeV0, 5, buf);
-	FL_UT_CHECK(n == FlUtf32Len[0] && memcmp(buf, FlUtf32V0, FlUtf32Len[0] * sizeof(int)) == 0,
+	int outputBuffer[5];
+	size_t outputCount = FlConvertUtf16ToUtf32(flUtf16Len[0], flUtf16LeV0, 5, outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf32Len[0] && memcmp(outputBuffer, flUtf32V0, flUtf32Len[0] * sizeof(int)) == 0,
 	            "FlUnicodeUtAsciiFromUtf16ToUtf32");
 }
 
 // BMP WCHARs -> BMP code points.
 static void FlUnicodeUtBmpFromUtf16ToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	int buf[3];
-	size_t n = FlConvertUtf16ToUtf32(FlUtf16Len[1], FlUtf16LeV1, 3, buf);
-	FL_UT_CHECK(n == FlUtf32Len[1] && memcmp(buf, FlUtf32V1, FlUtf32Len[1] * sizeof(int)) == 0,
+	int outputBuffer[3];
+	size_t outputCount = FlConvertUtf16ToUtf32(flUtf16Len[1], flUtf16LeV1, 3, outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf32Len[1] && memcmp(outputBuffer, flUtf32V1, flUtf32Len[1] * sizeof(int)) == 0,
 	            "FlUnicodeUtBmpFromUtf16ToUtf32");
 }
 
 // Surrogate pairs -> supplementary code points: D83D DE00 -> U+1F600, DBFF DFFF -> U+10FFFF.
 static void FlUnicodeUtSurrogateFromUtf16ToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	int buf2[1], buf3[1];
-	size_t n2 = FlConvertUtf16ToUtf32(FlUtf16Len[2], FlUtf16LeV2, 1, buf2);
-	size_t n3 = FlConvertUtf16ToUtf32(FlUtf16Len[3], FlUtf16LeV3, 1, buf3);
+	int outputBuffer2[1], outputBuffer3[1];
+	size_t n2 = FlConvertUtf16ToUtf32(flUtf16Len[2], flUtf16LeV2, 1, outputBuffer2);
+	size_t n3 = FlConvertUtf16ToUtf32(flUtf16Len[3], flUtf16LeV3, 1, outputBuffer3);
 	FL_UT_CHECK(
-	    n2 == FlUtf32Len[2] && memcmp(buf2, FlUtf32V2, FlUtf32Len[2] * sizeof(int)) == 0 &&
-	    n3 == FlUtf32Len[3] && memcmp(buf3, FlUtf32V3, FlUtf32Len[3] * sizeof(int)) == 0,
+	    n2 == flUtf32Len[2] && memcmp(outputBuffer2, flUtf32V2, flUtf32Len[2] * sizeof(int)) == 0 &&
+	    n3 == flUtf32Len[3] && memcmp(outputBuffer3, flUtf32V3, flUtf32Len[3] * sizeof(int)) == 0,
 	    "FlUnicodeUtSurrogateFromUtf16ToUtf32");
 }
 
 // Mixed content: 6 WCHARs (including a surrogate pair) -> 5 code points.
 static void FlUnicodeUtMixedFromUtf16ToUtf32(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	int buf[5];
-	size_t n = FlConvertUtf16ToUtf32(FlUtf16Len[4], FlUtf16LeV4, 5, buf);
-	FL_UT_CHECK(n == FlUtf32Len[4] && memcmp(buf, FlUtf32V4, FlUtf32Len[4] * sizeof(int)) == 0,
+	int outputBuffer[5];
+	size_t outputCount = FlConvertUtf16ToUtf32(flUtf16Len[4], flUtf16LeV4, 5, outputBuffer);
+	FL_UT_CHECK(outputCount == flUtf32Len[4] && memcmp(outputBuffer, flUtf32V4, flUtf32Len[4] * sizeof(int)) == 0,
 	            "FlUnicodeUtMixedFromUtf16ToUtf32");
 }
 
@@ -447,9 +447,9 @@ static void FlUnicodeUtInvalidUtf8ToUtf32(_Inout_ size_t* testCount, _Inout_ siz
 {
 	static const uint8_t badFF[]         = { 0xFF };
 	static const int     expectedFFFD[1] = { 0x0000FFFD };
-	int buf[1];
-	size_t n = FlConvertUtf8ToUtf32(1, (const char*)badFF, 1, buf);
-	FL_UT_CHECK(n == 1 && memcmp(buf, expectedFFFD, sizeof(int)) == 0,
+	int outputBuffer[1];
+	size_t outputCount = FlConvertUtf8ToUtf32(1, (const char*)badFF, 1, outputBuffer);
+	FL_UT_CHECK(outputCount == 1 && memcmp(outputBuffer, expectedFFFD, sizeof(int)) == 0,
 	            "FlUnicodeUtInvalidUtf8ToUtf32");
 }
 
@@ -478,28 +478,28 @@ static void FlUnicodeUtLoneSurrogateToUtf32(_Inout_ size_t* testCount, _Inout_ s
 	static const WCHAR loneHigh[1]     = { 0xD83D };
 	static const WCHAR loneLow[1]      = { 0xDE00 };
 	static const int   expectedFFFD[1] = { 0x0000FFFD };
-	int bufHigh[1], bufLow[1];
-	size_t nHigh = FlConvertUtf16ToUtf32(1, loneHigh, 1, bufHigh);
-	size_t nLow  = FlConvertUtf16ToUtf32(1, loneLow,  1, bufLow);
+	int outputBufferHigh[1], outputBufferLow[1];
+	size_t nHigh = FlConvertUtf16ToUtf32(1, loneHigh, 1, outputBufferHigh);
+	size_t nLow  = FlConvertUtf16ToUtf32(1, loneLow,  1, outputBufferLow);
 	FL_UT_CHECK(
-	    nHigh == 1 && memcmp(bufHigh, expectedFFFD, sizeof(int)) == 0 &&
-	    nLow  == 1 && memcmp(bufLow,  expectedFFFD, sizeof(int)) == 0,
+	    nHigh == 1 && memcmp(outputBufferHigh, expectedFFFD, sizeof(int)) == 0 &&
+	    nLow  == 1 && memcmp(outputBufferLow,  expectedFFFD, sizeof(int)) == 0,
 	    "FlUnicodeUtLoneSurrogateToUtf32");
 }
 
-// Passing 0 for the output buffer length returns the required element count
+// Passing 0 for the output outputBufferfer length returns the required element count
 // without writing any output, for each of the four UTF-32 conversion functions.
 static void FlUnicodeUtUtf32BufferQuery(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	size_t nUtf8ToUtf32  = FlConvertUtf8ToUtf32(FlUtf8Len[4], (const char*)FlUtf8V4, 0, NULL);
-	size_t nUtf32ToUtf8  = FlConvertUtf32ToUtf8(FlUtf32Len[4], FlUtf32V4, 0, NULL);
-	size_t nUtf32ToUtf16 = FlConvertUtf32ToUtf16(FlUtf32Len[4], FlUtf32V4, 0, NULL);
-	size_t nUtf16ToUtf32 = FlConvertUtf16ToUtf32(FlUtf16Len[4], FlUtf16LeV4, 0, NULL);
+	size_t nUtf8ToUtf32  = FlConvertUtf8ToUtf32(flUtf8Len[4], (const char*)flUtf8V4, 0, NULL);
+	size_t nUtf32ToUtf8  = FlConvertUtf32ToUtf8(flUtf32Len[4], flUtf32V4, 0, NULL);
+	size_t nUtf32ToUtf16 = FlConvertUtf32ToUtf16(flUtf32Len[4], flUtf32V4, 0, NULL);
+	size_t nUtf16ToUtf32 = FlConvertUtf16ToUtf32(flUtf16Len[4], flUtf16LeV4, 0, NULL);
 	FL_UT_CHECK(
-	    nUtf8ToUtf32  == FlUtf32Len[4] &&
-	    nUtf32ToUtf8  == FlUtf8Len[4] &&
-	    nUtf32ToUtf16 == FlUtf16Len[4] &&
-	    nUtf16ToUtf32 == FlUtf32Len[4],
+	    nUtf8ToUtf32  == flUtf32Len[4] &&
+	    nUtf32ToUtf8  == flUtf8Len[4] &&
+	    nUtf32ToUtf16 == flUtf16Len[4] &&
+	    nUtf16ToUtf32 == flUtf32Len[4],
 	    "FlUnicodeUtUtf32BufferQuery");
 }
 
@@ -512,9 +512,9 @@ static void FlUnicodeUtRoundTripUtf8Utf32(_Inout_ size_t* testCount, _Inout_ siz
 {
 	int     intermediate[5];
 	uint8_t result[10];
-	size_t nUtf32 = FlConvertUtf8ToUtf32(FlUtf8Len[4], (const char*)FlUtf8V4, 5, intermediate);
+	size_t nUtf32 = FlConvertUtf8ToUtf32(flUtf8Len[4], (const char*)flUtf8V4, 5, intermediate);
 	size_t nUtf8  = FlConvertUtf32ToUtf8(nUtf32, intermediate, 10, (char*)result);
-	FL_UT_CHECK(nUtf8 == FlUtf8Len[4] && memcmp(result, FlUtf8V4, FlUtf8Len[4]) == 0,
+	FL_UT_CHECK(nUtf8 == flUtf8Len[4] && memcmp(result, flUtf8V4, flUtf8Len[4]) == 0,
 	            "FlUnicodeUtRoundTripUtf8Utf32");
 }
 
@@ -523,9 +523,9 @@ static void FlUnicodeUtRoundTripUtf16Utf32(_Inout_ size_t* testCount, _Inout_ si
 {
 	int   intermediate[5];
 	WCHAR result[6];
-	size_t nUtf32 = FlConvertUtf16ToUtf32(FlUtf16Len[4], FlUtf16LeV4, 5, intermediate);
+	size_t nUtf32 = FlConvertUtf16ToUtf32(flUtf16Len[4], flUtf16LeV4, 5, intermediate);
 	size_t nUtf16 = FlConvertUtf32ToUtf16(nUtf32, intermediate, 6, result);
-	FL_UT_CHECK(nUtf16 == FlUtf16Len[4] && memcmp(result, FlUtf16LeV4, FlUtf16Len[4] * sizeof(WCHAR)) == 0,
+	FL_UT_CHECK(nUtf16 == flUtf16Len[4] && memcmp(result, flUtf16LeV4, flUtf16Len[4] * sizeof(WCHAR)) == 0,
 	            "FlUnicodeUtRoundTripUtf16Utf32");
 }
 
@@ -1576,7 +1576,7 @@ void FlUnicodeUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 	FlUnicodeUtSurrogateFromUtf16ToUtf32(testCount, failCount);
 	FlUnicodeUtMixedFromUtf16ToUtf32(testCount, failCount);
 
-	// UTF-32 conversion — empty, invalid, buffer query, round-trips
+	// UTF-32 conversion — empty, invalid, outputBufferfer query, round-trips
 	FlUnicodeUtEmptyInputUtf32(testCount, failCount);
 	FlUnicodeUtInvalidUtf8ToUtf32(testCount, failCount);
 	FlUnicodeUtOutOfRangeUtf32CodePoint(testCount, failCount);

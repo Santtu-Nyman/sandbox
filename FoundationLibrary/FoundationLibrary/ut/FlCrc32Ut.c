@@ -109,26 +109,26 @@ static void FlCrc32UtStreamingEquality(_Inout_ size_t* testCount, _Inout_ size_t
 
 	// Split 1 + 8.
 	{
-		uint32_t ctx = FlCrc32Create();
-		ctx = FlCrc32Data(ctx, 1, data);
-		ctx = FlCrc32Data(ctx, 8, data + 1);
-		FL_UT_CHECK(FlCrc32Finish(ctx) == wholeResult, "FlCrc32UtStreamingEquality_1_8");
+		uint32_t crc32State = FlCrc32Create();
+		crc32State = FlCrc32Data(crc32State, 1, data);
+		crc32State = FlCrc32Data(crc32State, 8, data + 1);
+		FL_UT_CHECK(FlCrc32Finish(crc32State) == wholeResult, "FlCrc32UtStreamingEquality_1_8");
 	}
 
 	// Split 5 + 4.
 	{
-		uint32_t ctx = FlCrc32Create();
-		ctx = FlCrc32Data(ctx, 5, data);
-		ctx = FlCrc32Data(ctx, 4, data + 5);
-		FL_UT_CHECK(FlCrc32Finish(ctx) == wholeResult, "FlCrc32UtStreamingEquality_5_4");
+		uint32_t crc32State = FlCrc32Create();
+		crc32State = FlCrc32Data(crc32State, 5, data);
+		crc32State = FlCrc32Data(crc32State, 4, data + 5);
+		FL_UT_CHECK(FlCrc32Finish(crc32State) == wholeResult, "FlCrc32UtStreamingEquality_5_4");
 	}
 
 	// One byte at a time.
 	{
-		uint32_t ctx = FlCrc32Create();
+		uint32_t crc32State = FlCrc32Create();
 		for (size_t n = sizeof data, i = 0; i < n; i++)
-			ctx = FlCrc32Data(ctx, 1, data + i);
-		FL_UT_CHECK(FlCrc32Finish(ctx) == wholeResult, "FlCrc32UtStreamingEquality_1x9");
+			crc32State = FlCrc32Data(crc32State, 1, data + i);
+		FL_UT_CHECK(FlCrc32Finish(crc32State) == wholeResult, "FlCrc32UtStreamingEquality_1x9");
 	}
 
 	// Split at every possible position within a 4-byte input.
@@ -137,10 +137,10 @@ static void FlCrc32UtStreamingEquality(_Inout_ size_t* testCount, _Inout_ size_t
 		uint32_t expectedShort = FlCrc32Compute(sizeof shortData, shortData);
 		for (size_t n = sizeof shortData, splitAt = 1; splitAt < n; splitAt++)
 		{
-			uint32_t ctx = FlCrc32Create();
-			ctx = FlCrc32Data(ctx, splitAt, shortData);
-			ctx = FlCrc32Data(ctx, n - splitAt, shortData + splitAt);
-			FL_UT_CHECK(FlCrc32Finish(ctx) == expectedShort, "FlCrc32UtStreamingEquality_AllSplits");
+			uint32_t crc32State = FlCrc32Create();
+			crc32State = FlCrc32Data(crc32State, splitAt, shortData);
+			crc32State = FlCrc32Data(crc32State, n - splitAt, shortData + splitAt);
+			FL_UT_CHECK(FlCrc32Finish(crc32State) == expectedShort, "FlCrc32UtStreamingEquality_AllSplits");
 		}
 	}
 }
@@ -153,27 +153,27 @@ static void FlCrc32UtZeroLengthChunkNoEffect(_Inout_ size_t* testCount, _Inout_ 
 
 	// Zero-length call before actual data.
 	{
-		uint32_t ctx = FlCrc32Create();
-		ctx = FlCrc32Data(ctx, 0, data);
-		ctx = FlCrc32Data(ctx, sizeof data, data);
-		FL_UT_CHECK(FlCrc32Finish(ctx) == expected, "FlCrc32UtZeroLengthChunkNoEffect_Before");
+		uint32_t crc32State = FlCrc32Create();
+		crc32State = FlCrc32Data(crc32State, 0, data);
+		crc32State = FlCrc32Data(crc32State, sizeof data, data);
+		FL_UT_CHECK(FlCrc32Finish(crc32State) == expected, "FlCrc32UtZeroLengthChunkNoEffect_Before");
 	}
 
 	// Zero-length call after actual data.
 	{
-		uint32_t ctx = FlCrc32Create();
-		ctx = FlCrc32Data(ctx, sizeof data, data);
-		ctx = FlCrc32Data(ctx, 0, data);
-		FL_UT_CHECK(FlCrc32Finish(ctx) == expected, "FlCrc32UtZeroLengthChunkNoEffect_After");
+		uint32_t crc32State = FlCrc32Create();
+		crc32State = FlCrc32Data(crc32State, sizeof data, data);
+		crc32State = FlCrc32Data(crc32State, 0, data);
+		FL_UT_CHECK(FlCrc32Finish(crc32State) == expected, "FlCrc32UtZeroLengthChunkNoEffect_After");
 	}
 
 	// Zero-length call in the middle of actual data.
 	{
-		uint32_t ctx = FlCrc32Create();
-		ctx = FlCrc32Data(ctx, 4, data);
-		ctx = FlCrc32Data(ctx, 0, data);
-		ctx = FlCrc32Data(ctx, 5, data + 4);
-		FL_UT_CHECK(FlCrc32Finish(ctx) == expected, "FlCrc32UtZeroLengthChunkNoEffect_Middle");
+		uint32_t crc32State = FlCrc32Create();
+		crc32State = FlCrc32Data(crc32State, 4, data);
+		crc32State = FlCrc32Data(crc32State, 0, data);
+		crc32State = FlCrc32Data(crc32State, 5, data + 4);
+		FL_UT_CHECK(FlCrc32Finish(crc32State) == expected, "FlCrc32UtZeroLengthChunkNoEffect_Middle");
 	}
 }
 
@@ -211,16 +211,16 @@ static void FlCrc32UtContextIsolation(_Inout_ size_t* testCount, _Inout_ size_t*
 	uint32_t expectedB = FlCrc32Compute(sizeof dataB, dataB);
 
 	// Interleave byte-by-byte updates to both contexts.
-	uint32_t ctxA = FlCrc32Create();
-	uint32_t ctxB = FlCrc32Create();
+	uint32_t crc32StateA = FlCrc32Create();
+	uint32_t crc32StateB = FlCrc32Create();
 	for (size_t n = sizeof dataA, i = 0; i < n; i++)
 	{
-		ctxA = FlCrc32Data(ctxA, 1, dataA + i);
-		ctxB = FlCrc32Data(ctxB, 1, dataB + i);
+		crc32StateA = FlCrc32Data(crc32StateA, 1, dataA + i);
+		crc32StateB = FlCrc32Data(crc32StateB, 1, dataB + i);
 	}
 
-	FL_UT_CHECK(FlCrc32Finish(ctxA) == expectedA, "FlCrc32UtContextIsolation_A");
-	FL_UT_CHECK(FlCrc32Finish(ctxB) == expectedB, "FlCrc32UtContextIsolation_B");
+	FL_UT_CHECK(FlCrc32Finish(crc32StateA) == expectedA, "FlCrc32UtContextIsolation_A");
+	FL_UT_CHECK(FlCrc32Finish(crc32StateB) == expectedB, "FlCrc32UtContextIsolation_B");
 }
 
 // All 256 distinct byte values must each produce a non-zero and unique CRC32.
@@ -283,20 +283,20 @@ static void FlCrc32Ut1024ZeroBytes(_Inout_ size_t* testCount, _Inout_ size_t* fa
 static void FlCrc32Ut64KiBZeroBytes(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const uint8_t zeroByte = 0x00;
-	uint32_t ctx = FlCrc32Create();
+	uint32_t crc32State = FlCrc32Create();
 	for (size_t i = 0; i < 65536; i++)
-		ctx = FlCrc32Data(ctx, 1, &zeroByte);
-	FL_UT_CHECK(FlCrc32Finish(ctx) == FL_CRC32_UT_EXPECTED_64KIB_ZERO_BYTES, "FlCrc32Ut64KiBZeroBytes");
+		crc32State = FlCrc32Data(crc32State, 1, &zeroByte);
+	FL_UT_CHECK(FlCrc32Finish(crc32State) == FL_CRC32_UT_EXPECTED_64KIB_ZERO_BYTES, "FlCrc32Ut64KiBZeroBytes");
 }
 
 // CRC32 of 64 KiB of 0xFF bytes must be 0xDEAB7E4E.
 static void FlCrc32Ut64KiBFfBytes(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	static const uint8_t ffByte = 0xFF;
-	uint32_t ctx = FlCrc32Create();
+	uint32_t crc32State = FlCrc32Create();
 	for (size_t i = 0; i < 65536; i++)
-		ctx = FlCrc32Data(ctx, 1, &ffByte);
-	FL_UT_CHECK(FlCrc32Finish(ctx) == FL_CRC32_UT_EXPECTED_64KIB_FF_BYTES, "FlCrc32Ut64KiBFfBytes");
+		crc32State = FlCrc32Data(crc32State, 1, &ffByte);
+	FL_UT_CHECK(FlCrc32Finish(crc32State) == FL_CRC32_UT_EXPECTED_64KIB_FF_BYTES, "FlCrc32Ut64KiBFfBytes");
 }
 
 void FlCrc32UtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount)

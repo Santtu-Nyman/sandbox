@@ -36,6 +36,8 @@ extern "C" {
 #define WIN32_LEAN_AND_MEAN
 #include "FlWin32CommandLine.h"
 #include "FlUnicode.h"
+#include <limits.h>
+#include <assert.h>
 
 #define FL_LOCAL_IS_POSITIVE_POWER_OF_2(N)  (((N) - 1) < ((N) ^ ((N) - 1)))
 
@@ -661,17 +663,17 @@ HRESULT FlWin32CommandLineToArgumentsUtf8(_In_ _Null_terminated_ const WCHAR* wi
 	return S_OK;
 }
 
-WCHAR** FlCommandLineToArgvW(_In_ _Null_terminated_ const WCHAR* win32CommandLine, _Out_ int* argumentCountAddress)
+_Success_(return != NULL) WCHAR** FlCommandLineToArgvW(_In_ _Null_terminated_ const WCHAR* win32CommandLine, _Out_ int* argumentCountAddress)
 {
-	const size_t intMax = (size_t)(~((unsigned int)0) >> 1);
 	size_t requiredBufferSize = 0;
 	size_t argumentCount = 0;
 	HRESULT error = FlWin32CommandLineToArgumentsUtf16(win32CommandLine, 0, NULL, &requiredBufferSize, &argumentCount);
+	assert(HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER) == E_NOT_SUFFICIENT_BUFFER);
 	if (error != HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
 	{
-		if (error == HRESULT_FROM_WIN32(ERROR_OUTOFMEMORY))
+		if (FAILED(error) && HRESULT_FACILITY(error) == FACILITY_WIN32)
 		{
-			SetLastError(ERROR_OUTOFMEMORY);
+			SetLastError(HRESULT_CODE(error));
 		}
 		else
 		{
@@ -680,7 +682,7 @@ WCHAR** FlCommandLineToArgvW(_In_ _Null_terminated_ const WCHAR* win32CommandLin
 		*argumentCountAddress = 0;
 		return NULL;
 	}
-	if (argumentCount > intMax)
+	if (argumentCount > INT_MAX)
 	{
 		SetLastError(ERROR_INVALID_PARAMETER);
 		*argumentCountAddress = 0;
@@ -698,9 +700,9 @@ WCHAR** FlCommandLineToArgvW(_In_ _Null_terminated_ const WCHAR* win32CommandLin
 	error = FlWin32CommandLineToArgumentsUtf16(win32CommandLine, bufferSize, argumentTableBuffer, &requiredBufferSize, &argumentCount);
 	if (FAILED(error))
 	{
-		if (error == HRESULT_FROM_WIN32(ERROR_OUTOFMEMORY))
+		if (HRESULT_FACILITY(error) == FACILITY_WIN32)
 		{
-			SetLastError(ERROR_OUTOFMEMORY);
+			SetLastError(HRESULT_CODE(error));
 		}
 		else
 		{

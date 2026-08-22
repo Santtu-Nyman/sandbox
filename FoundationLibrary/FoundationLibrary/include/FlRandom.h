@@ -2,6 +2,8 @@
 	Santtu S. Nyman's random byte generator library.
 
 	Version history
+		version 1.0.0 2026-05-03
+			Added more entropy source for seeding RNG.
 		version 1.0.0 2024-05-17
 			First public version.
 

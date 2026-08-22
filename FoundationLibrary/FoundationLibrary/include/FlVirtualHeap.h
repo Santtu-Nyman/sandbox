@@ -34,22 +34,175 @@ extern "C" {
 #endif // __cplusplus
 
 #include <stddef.h>
+#include <stdint.h>
 #include "flHRESULT.h"
 #include "FlSAL.h"
 
+// Minimum alignment in bytes for all heap allocations.
 #define FL_VIRTUAL_HEAP_ALIGNMENT 0x10
 
-HRESULT FlVirtualHeapCreate(_Out_ void** _In_ heap, _In_ int flags, _In_ size_t size);
+// Evaluates to non-zero when N is a positive power of 2.
+#define FL_VIRTUAL_HEAP_IS_POSITIVE_POWER_OF_2(N) (((N) - 1) < ((N) ^ ((N) - 1)))
 
-_Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapAllocate(_In_ void* heap, _In_ size_t size);
+// Rounds N up to the nearest multiple of P, where P must be a power of 2.
+#define FL_VIRTUAL_HEAP_ROUND_UP_TO_POWER_OF_2(N, P) (((N) + ((P) - 1)) & ~((P) - 1))
 
-void FlVirtualHeapFree(_In_ void* heap, _Pre_maybenull_ _Post_invalid_ void* allocation);
+typedef struct FLVirtualHeapNode
+{
+	struct FLVirtualHeapNode* left;
+	struct FLVirtualHeapNode* right;
+	size_t subtreeMax;
+	uint32_t height;
+	uint32_t padding_;
+} FLVirtualHeapNode;
 
-_Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapReAllocate(_In_ void* heap, _Pre_maybenull_ _Post_invalid_ void* allocation, _In_ size_t size);
+typedef struct FLVirtualHeap
+{
+	FLVirtualHeapNode* treeRoot;
+	size_t regionSize;
+	size_t allocationGranularity;
+} FLVirtualHeap;
 
-#ifdef _DEBUG
-void FlVirtualHeapDebugValidate(_In_ void* heap);
-#endif // _DEBUG
+HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _In_ size_t size);
+/*
+	Procedure:
+			FlVirtualHeapCreate
+
+		Description:
+			This procedure creates a new heap that can be used by other Fl heap functions.
+			The function reserves and commits space in the virtual address space and
+			initializes the heap base structure.
+
+		Parameters:
+			heap:
+				Pointer to a variable that will receive the heap base address on success.
+				Set to NULL on failure.
+				The entire heap is located inside a continuous block of memory and the
+				returned heap base address points into the beginning od this continuous block.
+
+			size:
+				Minimum total size in bytes for the heap backing memory.
+				The function uses at least this many bytes of virtual address space for the heap.
+				If this value is zero the then heuristic value based on total system RAM is used.
+
+		Return:
+			Returns S_OK on success.
+			Returns E_OUTOFMEMORY if the virtual memory reservation fails or if size
+			is too large to round up without overflow.
+*/
+
+void FlVirtualHeapDelete(_In_ FLVirtualHeap* heap);
+/*
+	Procedure:
+			FlVirtualHeapDelete
+
+		Description:
+			Destroys a heap that was previously created by FlVirtualHeapCreate.
+			The function releases the entire backing virtual address space reservation,
+			which decommits and frees all memory associated with the heap in a single
+			operation. After this call the heap pointer and any pointers to memory
+			allocated from the heap are invalid and must not be accessed.
+
+		Parameters:
+			heap:
+				The heap base address. Must have been returned by
+				a successful call to FlVirtualHeapCreate.
+
+		Return:
+			void.
+*/
+
+_Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapAllocate(_Inout_ FLVirtualHeap* heap, _In_ size_t size);
+/*
+	Procedure:
+			FlVirtualHeapAllocate
+
+		Description:
+			Allocates a block of memory from the given heap.
+			The returned pointer is aligned to FL_VIRTUAL_HEAP_ALIGNMENT bytes.
+			The memory can be freed using FlVirtualHeapFree or reallocated using
+			FlVirtualHeapReAllocate.
+			The memory will be allocated at the lowest possbile address.
+
+		Parameters:
+			heap:
+				The heap base address.
+
+			size:
+				The number of bytes to allocate. If zero, the function returns NULL.
+
+		Return:
+			If the function succeeds, the return value is a pointer to the allocated
+			memory block. If the function fails the return value is NULL.
+*/
+
+void FlVirtualHeapFree(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invalid_ void* allocation);
+/*
+	Procedure:
+			FlVirtualHeapFree
+
+		Description:
+			Frees a block of memory previously allocated from the given heap.
+			If allocation is NULL the function returns without performing any action.
+			The memory block must have been allocated with FlVirtualHeapAllocate
+			or FlVirtualHeapReAllocate.
+
+		Parameters:
+			heap:
+				The heap base address.
+
+			allocation:
+				A pointer to the memory block to be freed. May be NULL.
+
+		Return:
+			void.
+*/
+
+_Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapReAllocate(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invalid_ void* allocation, _In_ size_t size);
+/*
+	Procedure:
+			FlVirtualHeapReAllocate
+
+		Description:
+			Changes the size of a previously allocated memory block.
+			The function first tries to resize the block in place. If the block
+			cannot be resized in place it allocates a new block at lowest possbile address,
+			copies the data and frees the old block.
+			If allocation is NULL the function behaves like FlVirtualHeapAllocate.
+			If size is zero the function frees the block and returns NULL.
+			The memory can be freed using FlVirtualHeapFree.
+
+		Parameters:
+			heap:
+				The heap base address.
+
+			allocation:
+				A pointer to the memory block to be reallocated. May be NULL.
+
+			size:
+				The number of bytes to allocate.
+
+		Return:
+			If the function succeeds, the return value is a pointer to the reallocated
+			memory block. If the function fails the return value is NULL and the original
+			allocation remains valid and unchanged.
+*/
+
+int FlVirtualHeapValidate(_In_ FLVirtualHeap* heap);
+/*
+	Procedure:
+			FlVirtualHeapValidate
+
+		Description:
+			Walks the entire node list and validates the heap structure.
+
+		Parameters:
+			heap:
+				The heap base address.
+
+		Return:
+			Returns non-zero if the heap structure is valid, zero otherwise.
+*/
 
 #ifdef __cplusplus
 }

@@ -51,7 +51,7 @@
 
 // The 52 characters that the implementation may produce, in the same order as
 // FlInternalRandomFileNameCharacterTable in FlRandomFileName.c.
-static const char FlRandomFileNameUtValidChars[52] = {
+static const char flRandomFileNameUtValidChars[52] = {
 	'0', '1',  '2', '3', '4', '5', '6', '7', '8', '9',
 	'A', 'B',  'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
 	'K', 'L',  'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
@@ -62,9 +62,9 @@ static const char FlRandomFileNameUtValidChars[52] = {
 
 static int FlRandomFileNameUtIsValidChar(char c)
 {
-	for (size_t i = 0; i < sizeof FlRandomFileNameUtValidChars; i++)
+	for (size_t i = 0; i < sizeof flRandomFileNameUtValidChars; i++)
 	{
-		if (c == FlRandomFileNameUtValidChars[i])
+		if (c == flRandomFileNameUtValidChars[i])
 			return 1;
 	}
 	return 0;
@@ -80,9 +80,9 @@ static void FlRandomFileNameUtWideReturnValue(_Inout_ size_t* testCount, _Inout_
 	int allCorrect = 1;
 	for (int i = 0; i < 64; i++)
 	{
-		WCHAR buf[FL_RANDOM_FILE_NAME_LENGTH];
-		size_t len = FlCreateRandomFileName(buf);
-		if (len != FL_RANDOM_FILE_NAME_LENGTH)
+		WCHAR nameBuffer[FL_RANDOM_FILE_NAME_LENGTH];
+		size_t nameLength = FlCreateRandomFileName(nameBuffer);
+		if (nameLength != FL_RANDOM_FILE_NAME_LENGTH)
 			allCorrect = 0;
 	}
 	FL_UT_CHECK(allCorrect, "FlRandomFileNameUtWideReturnValue");
@@ -96,10 +96,10 @@ static void FlRandomFileNameUtWideLength(_Inout_ size_t* testCount, _Inout_ size
 	int allCorrect = 1;
 	for (int i = 0; i < 64; i++)
 	{
-		WCHAR buf[FL_RANDOM_FILE_NAME_LENGTH + 1];
-		buf[FL_RANDOM_FILE_NAME_LENGTH] = L'\0';
-		size_t len = FlCreateRandomFileName(buf);
-		if (len != FL_RANDOM_FILE_NAME_LENGTH)
+		WCHAR nameBuffer[FL_RANDOM_FILE_NAME_LENGTH + 1];
+		nameBuffer[FL_RANDOM_FILE_NAME_LENGTH] = L'\0';
+		size_t nameLength = FlCreateRandomFileName(nameBuffer);
+		if (nameLength != FL_RANDOM_FILE_NAME_LENGTH)
 		{
 			allCorrect = 0;
 			break;
@@ -107,7 +107,7 @@ static void FlRandomFileNameUtWideLength(_Inout_ size_t* testCount, _Inout_ size
 		// All FL_RANDOM_FILE_NAME_LENGTH positions must be filled (non-zero).
 		for (size_t j = 0; j < FL_RANDOM_FILE_NAME_LENGTH; j++)
 		{
-			if (buf[j] == L'\0')
+			if (nameBuffer[j] == L'\0')
 			{
 				allCorrect = 0;
 				break;
@@ -125,12 +125,12 @@ static void FlRandomFileNameUtWideValidChars(_Inout_ size_t* testCount, _Inout_ 
 	int allValid = 1;
 	for (int i = 0; i < 64; i++)
 	{
-		WCHAR buf[FL_RANDOM_FILE_NAME_LENGTH];
-		FlCreateRandomFileName(buf);
+		WCHAR nameBuffer[FL_RANDOM_FILE_NAME_LENGTH];
+		FlCreateRandomFileName(nameBuffer);
 		for (size_t j = 0; j < FL_RANDOM_FILE_NAME_LENGTH; j++)
 		{
 			// Every character must fit in ASCII range and be in the valid set.
-			if (buf[j] > 127 || !FlRandomFileNameUtIsValidChar((char)buf[j]))
+			if (nameBuffer[j] > 127 || !FlRandomFileNameUtIsValidChar((char)nameBuffer[j]))
 			{
 				allValid = 0;
 				break;
@@ -171,9 +171,9 @@ static void FlRandomFileNameUtUtf8ReturnValue(_Inout_ size_t* testCount, _Inout_
 	int allCorrect = 1;
 	for (int i = 0; i < 64; i++)
 	{
-		char buf[FL_RANDOM_FILE_NAME_LENGTH];
-		size_t len = FlCreateRandomFileNameUtf8(buf);
-		if (len != FL_RANDOM_FILE_NAME_LENGTH)
+		char nameBuffer[FL_RANDOM_FILE_NAME_LENGTH];
+		size_t nameLength = FlCreateRandomFileNameUtf8(nameBuffer);
+		if (nameLength != FL_RANDOM_FILE_NAME_LENGTH)
 			allCorrect = 0;
 	}
 	FL_UT_CHECK(allCorrect, "FlRandomFileNameUtUtf8ReturnValue");
@@ -185,17 +185,17 @@ static void FlRandomFileNameUtUtf8Length(_Inout_ size_t* testCount, _Inout_ size
 	int allCorrect = 1;
 	for (int i = 0; i < 64; i++)
 	{
-		char buf[FL_RANDOM_FILE_NAME_LENGTH + 1];
-		buf[FL_RANDOM_FILE_NAME_LENGTH] = '\0';
-		size_t len = FlCreateRandomFileNameUtf8(buf);
-		if (len != FL_RANDOM_FILE_NAME_LENGTH)
+		char nameBuffer[FL_RANDOM_FILE_NAME_LENGTH + 1];
+		nameBuffer[FL_RANDOM_FILE_NAME_LENGTH] = '\0';
+		size_t nameLength = FlCreateRandomFileNameUtf8(nameBuffer);
+		if (nameLength != FL_RANDOM_FILE_NAME_LENGTH)
 		{
 			allCorrect = 0;
 			break;
 		}
 		for (size_t j = 0; j < FL_RANDOM_FILE_NAME_LENGTH; j++)
 		{
-			if (buf[j] == '\0')
+			if (nameBuffer[j] == '\0')
 			{
 				allCorrect = 0;
 				break;
@@ -213,11 +213,11 @@ static void FlRandomFileNameUtUtf8ValidChars(_Inout_ size_t* testCount, _Inout_ 
 	int allValid = 1;
 	for (int i = 0; i < 64; i++)
 	{
-		char buf[FL_RANDOM_FILE_NAME_LENGTH];
-		FlCreateRandomFileNameUtf8(buf);
+		char nameBuffer[FL_RANDOM_FILE_NAME_LENGTH];
+		FlCreateRandomFileNameUtf8(nameBuffer);
 		for (size_t j = 0; j < FL_RANDOM_FILE_NAME_LENGTH; j++)
 		{
-			if (!FlRandomFileNameUtIsValidChar(buf[j]))
+			if (!FlRandomFileNameUtIsValidChar(nameBuffer[j]))
 			{
 				allValid = 0;
 				break;

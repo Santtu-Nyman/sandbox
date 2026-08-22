@@ -905,9 +905,9 @@ static const uint8_t FL_AES256_UT_GCM_TC18_TAG[FL_AES256_GCM_TAG_SIZE] =
 // Encrypting empty plaintext with empty AAD must produce the TC13 authentication tag.
 static void FlAes256UtGcmTc13Encrypt(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
-	uint8_t tag[FL_AES256_GCM_TAG_SIZE];
-	FlAes256GcmEncrypt(FL_AES256_UT_ALL_ZERO_KEY, FL_AES256_GCM_NONCE_SIZE, FL_AES256_UT_GCM_ALL_ZERO_NONCE, 0, NULL, 0, NULL, NULL, &tag[0]);
-	FL_UT_CHECK(memcmp(tag, FL_AES256_UT_GCM_TC13_TAG, FL_AES256_GCM_TAG_SIZE) == 0, "FlAes256UtGcmTc13Encrypt");
+	uint8_t authenticationTag[FL_AES256_GCM_TAG_SIZE];
+	FlAes256GcmEncrypt(FL_AES256_UT_ALL_ZERO_KEY, FL_AES256_GCM_NONCE_SIZE, FL_AES256_UT_GCM_ALL_ZERO_NONCE, 0, NULL, 0, NULL, NULL, &authenticationTag[0]);
+	FL_UT_CHECK(memcmp(authenticationTag, FL_AES256_UT_GCM_TC13_TAG, FL_AES256_GCM_TAG_SIZE) == 0, "FlAes256UtGcmTc13Encrypt");
 }
 
 // Decrypting with empty plaintext and the correct TC13 tag must succeed.
@@ -925,10 +925,10 @@ static void FlAes256UtGcmTc13Decrypt(_Inout_ size_t* testCount, _Inout_ size_t* 
 static void FlAes256UtGcmTc14Encrypt(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	uint8_t cipherText[FL_AES256_BLOCK_SIZE];
-	uint8_t tag[FL_AES256_GCM_TAG_SIZE];
-	FlAes256GcmEncrypt(FL_AES256_UT_ALL_ZERO_KEY, FL_AES256_GCM_NONCE_SIZE, FL_AES256_UT_GCM_ALL_ZERO_NONCE, 0, NULL, sizeof cipherText, FL_AES256_UT_ALL_ZERO_PLAIN_TEXT, &cipherText[0], &tag[0]);
+	uint8_t authenticationTag[FL_AES256_GCM_TAG_SIZE];
+	FlAes256GcmEncrypt(FL_AES256_UT_ALL_ZERO_KEY, FL_AES256_GCM_NONCE_SIZE, FL_AES256_UT_GCM_ALL_ZERO_NONCE, 0, NULL, sizeof cipherText, FL_AES256_UT_ALL_ZERO_PLAIN_TEXT, &cipherText[0], &authenticationTag[0]);
 	FL_UT_CHECK(memcmp(cipherText, FL_AES256_UT_GCM_TC14_CIPHER_TEXT, sizeof cipherText) == 0, "FlAes256UtGcmTc14EncryptCipherText");
-	FL_UT_CHECK(memcmp(tag, FL_AES256_UT_GCM_TC14_TAG, FL_AES256_GCM_TAG_SIZE) == 0, "FlAes256UtGcmTc14EncryptTag");
+	FL_UT_CHECK(memcmp(authenticationTag, FL_AES256_UT_GCM_TC14_TAG, FL_AES256_GCM_TAG_SIZE) == 0, "FlAes256UtGcmTc14EncryptTag");
 }
 
 // Decrypting the TC14 ciphertext with the correct tag must succeed and recover the plaintext.
@@ -948,10 +948,10 @@ static void FlAes256UtGcmTc14Decrypt(_Inout_ size_t* testCount, _Inout_ size_t* 
 static void FlAes256UtGcmTc15Encrypt(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	uint8_t cipherText[FL_AES256_BLOCK_SIZE * 4];
-	uint8_t tag[FL_AES256_GCM_TAG_SIZE];
-	FlAes256GcmEncrypt(FL_AES256_UT_GCM_TC15_KEY, FL_AES256_GCM_NONCE_SIZE, FL_AES256_UT_GCM_TC15_NONCE, 0, NULL, sizeof cipherText, FL_AES256_UT_GCM_TC15_PLAIN_TEXT, &cipherText[0], &tag[0]);
+	uint8_t authenticationTag[FL_AES256_GCM_TAG_SIZE];
+	FlAes256GcmEncrypt(FL_AES256_UT_GCM_TC15_KEY, FL_AES256_GCM_NONCE_SIZE, FL_AES256_UT_GCM_TC15_NONCE, 0, NULL, sizeof cipherText, FL_AES256_UT_GCM_TC15_PLAIN_TEXT, &cipherText[0], &authenticationTag[0]);
 	FL_UT_CHECK(memcmp(cipherText, FL_AES256_UT_GCM_TC15_CIPHER_TEXT, sizeof cipherText) == 0, "FlAes256UtGcmTc15EncryptCipherText");
-	FL_UT_CHECK(memcmp(tag, FL_AES256_UT_GCM_TC15_TAG, FL_AES256_GCM_TAG_SIZE) == 0, "FlAes256UtGcmTc15EncryptTag");
+	FL_UT_CHECK(memcmp(authenticationTag, FL_AES256_UT_GCM_TC15_TAG, FL_AES256_GCM_TAG_SIZE) == 0, "FlAes256UtGcmTc15EncryptTag");
 }
 
 // Decrypting the TC15 ciphertext with the correct tag must succeed and recover the plaintext.
@@ -971,10 +971,10 @@ static void FlAes256UtGcmTc15Decrypt(_Inout_ size_t* testCount, _Inout_ size_t* 
 static void FlAes256UtGcmTc16Encrypt(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	uint8_t cipherText[60];
-	uint8_t tag[FL_AES256_GCM_TAG_SIZE];
-	FlAes256GcmEncrypt(FL_AES256_UT_GCM_TC15_KEY, FL_AES256_GCM_NONCE_SIZE, FL_AES256_UT_GCM_TC15_NONCE, sizeof FL_AES256_UT_GCM_TC16_AAD, FL_AES256_UT_GCM_TC16_AAD, sizeof cipherText, FL_AES256_UT_GCM_TC16_PLAIN_TEXT, &cipherText[0], &tag[0]);
+	uint8_t authenticationTag[FL_AES256_GCM_TAG_SIZE];
+	FlAes256GcmEncrypt(FL_AES256_UT_GCM_TC15_KEY, FL_AES256_GCM_NONCE_SIZE, FL_AES256_UT_GCM_TC15_NONCE, sizeof FL_AES256_UT_GCM_TC16_AAD, FL_AES256_UT_GCM_TC16_AAD, sizeof cipherText, FL_AES256_UT_GCM_TC16_PLAIN_TEXT, &cipherText[0], &authenticationTag[0]);
 	FL_UT_CHECK(memcmp(cipherText, FL_AES256_UT_GCM_TC16_CIPHER_TEXT, sizeof cipherText) == 0, "FlAes256UtGcmTc16EncryptCipherText");
-	FL_UT_CHECK(memcmp(tag, FL_AES256_UT_GCM_TC16_TAG, FL_AES256_GCM_TAG_SIZE) == 0, "FlAes256UtGcmTc16EncryptTag");
+	FL_UT_CHECK(memcmp(authenticationTag, FL_AES256_UT_GCM_TC16_TAG, FL_AES256_GCM_TAG_SIZE) == 0, "FlAes256UtGcmTc16EncryptTag");
 }
 
 // Decrypting the TC16 ciphertext with the correct tag must succeed and recover the plaintext.
@@ -1006,10 +1006,10 @@ static void FlAes256UtGcmTamperedTagRejected(_Inout_ size_t* testCount, _Inout_ 
 static void FlAes256UtGcmRoundTrip(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	uint8_t cipherText[FL_AES256_BLOCK_SIZE * 4];
-	uint8_t tag[FL_AES256_GCM_TAG_SIZE];
+	uint8_t authenticationTag[FL_AES256_GCM_TAG_SIZE];
 	uint8_t recovered[FL_AES256_BLOCK_SIZE * 4];
-	FlAes256GcmEncrypt(FL_AES256_UT_GCM_TC15_KEY, FL_AES256_GCM_NONCE_SIZE, FL_AES256_UT_GCM_TC15_NONCE, 0, NULL, sizeof cipherText, FL_AES256_UT_GCM_TC15_PLAIN_TEXT, &cipherText[0], &tag[0]);
-	int result = FlAes256GcmDecrypt(FL_AES256_UT_GCM_TC15_KEY, FL_AES256_GCM_NONCE_SIZE, FL_AES256_UT_GCM_TC15_NONCE, 0, NULL, sizeof recovered, &cipherText[0], &recovered[0], &tag[0]);
+	FlAes256GcmEncrypt(FL_AES256_UT_GCM_TC15_KEY, FL_AES256_GCM_NONCE_SIZE, FL_AES256_UT_GCM_TC15_NONCE, 0, NULL, sizeof cipherText, FL_AES256_UT_GCM_TC15_PLAIN_TEXT, &cipherText[0], &authenticationTag[0]);
+	int result = FlAes256GcmDecrypt(FL_AES256_UT_GCM_TC15_KEY, FL_AES256_GCM_NONCE_SIZE, FL_AES256_UT_GCM_TC15_NONCE, 0, NULL, sizeof recovered, &cipherText[0], &recovered[0], &authenticationTag[0]);
 	FL_UT_CHECK(result == 1, "FlAes256UtGcmRoundTripResult");
 	FL_UT_CHECK(memcmp(recovered, FL_AES256_UT_GCM_TC15_PLAIN_TEXT, sizeof recovered) == 0, "FlAes256UtGcmRoundTripPlainText");
 }
@@ -1022,10 +1022,10 @@ static void FlAes256UtGcmRoundTrip(_Inout_ size_t* testCount, _Inout_ size_t* fa
 static void FlAes256UtGcmTc17Encrypt(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	uint8_t cipherText[60];
-	uint8_t tag[FL_AES256_GCM_TAG_SIZE];
-	FlAes256GcmEncrypt(FL_AES256_UT_GCM_TC15_KEY, sizeof FL_AES256_UT_GCM_TC17_NONCE, FL_AES256_UT_GCM_TC17_NONCE, sizeof FL_AES256_UT_GCM_TC16_AAD, FL_AES256_UT_GCM_TC16_AAD, sizeof cipherText, FL_AES256_UT_GCM_TC16_PLAIN_TEXT, &cipherText[0], &tag[0]);
+	uint8_t authenticationTag[FL_AES256_GCM_TAG_SIZE];
+	FlAes256GcmEncrypt(FL_AES256_UT_GCM_TC15_KEY, sizeof FL_AES256_UT_GCM_TC17_NONCE, FL_AES256_UT_GCM_TC17_NONCE, sizeof FL_AES256_UT_GCM_TC16_AAD, FL_AES256_UT_GCM_TC16_AAD, sizeof cipherText, FL_AES256_UT_GCM_TC16_PLAIN_TEXT, &cipherText[0], &authenticationTag[0]);
 	FL_UT_CHECK(memcmp(cipherText, FL_AES256_UT_GCM_TC17_CIPHER_TEXT, sizeof cipherText) == 0, "FlAes256UtGcmTc17EncryptCipherText");
-	FL_UT_CHECK(memcmp(tag, FL_AES256_UT_GCM_TC17_TAG, FL_AES256_GCM_TAG_SIZE) == 0, "FlAes256UtGcmTc17EncryptTag");
+	FL_UT_CHECK(memcmp(authenticationTag, FL_AES256_UT_GCM_TC17_TAG, FL_AES256_GCM_TAG_SIZE) == 0, "FlAes256UtGcmTc17EncryptTag");
 }
 
 // Decrypting TC17 ciphertext with the correct tag and 8-byte nonce must succeed.
@@ -1045,10 +1045,10 @@ static void FlAes256UtGcmTc17Decrypt(_Inout_ size_t* testCount, _Inout_ size_t* 
 static void FlAes256UtGcmTc18Encrypt(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 {
 	uint8_t cipherText[60];
-	uint8_t tag[FL_AES256_GCM_TAG_SIZE];
-	FlAes256GcmEncrypt(FL_AES256_UT_GCM_TC15_KEY, sizeof FL_AES256_UT_GCM_TC18_NONCE, FL_AES256_UT_GCM_TC18_NONCE, sizeof FL_AES256_UT_GCM_TC16_AAD, FL_AES256_UT_GCM_TC16_AAD, sizeof cipherText, FL_AES256_UT_GCM_TC16_PLAIN_TEXT, &cipherText[0], &tag[0]);
+	uint8_t authenticationTag[FL_AES256_GCM_TAG_SIZE];
+	FlAes256GcmEncrypt(FL_AES256_UT_GCM_TC15_KEY, sizeof FL_AES256_UT_GCM_TC18_NONCE, FL_AES256_UT_GCM_TC18_NONCE, sizeof FL_AES256_UT_GCM_TC16_AAD, FL_AES256_UT_GCM_TC16_AAD, sizeof cipherText, FL_AES256_UT_GCM_TC16_PLAIN_TEXT, &cipherText[0], &authenticationTag[0]);
 	FL_UT_CHECK(memcmp(cipherText, FL_AES256_UT_GCM_TC18_CIPHER_TEXT, sizeof cipherText) == 0, "FlAes256UtGcmTc18EncryptCipherText");
-	FL_UT_CHECK(memcmp(tag, FL_AES256_UT_GCM_TC18_TAG, FL_AES256_GCM_TAG_SIZE) == 0, "FlAes256UtGcmTc18EncryptTag");
+	FL_UT_CHECK(memcmp(authenticationTag, FL_AES256_UT_GCM_TC18_TAG, FL_AES256_GCM_TAG_SIZE) == 0, "FlAes256UtGcmTc18EncryptTag");
 }
 
 // Decrypting TC18 ciphertext with the correct tag and 60-byte nonce must succeed.
