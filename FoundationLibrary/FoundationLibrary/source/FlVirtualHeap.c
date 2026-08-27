@@ -33,7 +33,7 @@
 			[0 .. sizeof(FLVirtualHeap) - 1]
 				Heap descriptor.  Not treated as a block.
 
-			[sizeof(FLVirtualHeap) .. regionSize - EPILOGUE_SIZE - 1]
+			[sizeof(FLVirtualHeap) .. regionReservedSize - EPILOGUE_SIZE - 1]
 				User blocks.  Each block begins with an 8-byte header word:
 					bits [63..4]  block size (multiple of 16)
 					bit  [1]      PREV_ALLOCATED (previous block is allocated)
@@ -42,7 +42,7 @@
 				mirrors the header, and carry an FLVirtualHeapNode in the
 				first 32 bytes of their payload (block+8).
 
-			[regionSize - 16 .. regionSize - 1]
+			[regionReservedSize - 16 .. regionReservedSize - 1]
 				Epilogue sentinel: size=16, ALLOCATED=1.  Prevents forward
 				coalescing past the end of the region.
 
@@ -138,7 +138,7 @@ static void* FlVirtualHeapFirstBlock(const FLVirtualHeap* heap)
 
 static void* FlVirtualHeapEpilogueBlock(const FLVirtualHeap* heap)
 {
-	return (void*)((uintptr_t)heap + heap->regionSize - FL_VIRTUAL_HEAP_EPILOGUE_SIZE);
+	return (void*)((uintptr_t)heap + heap->regionCommittedSize - FL_VIRTUAL_HEAP_EPILOGUE_SIZE);
 }
 
 // Writes the header (and footer for free blocks) for a block.
@@ -407,17 +407,27 @@ _Success_(return != 0) static int FlVirtualHeapInternalGetSystemMemoryInformatio
 	return 1;
 }
 
-_Success_(return != NULL) static void* FlVirtualHeapInternalCommitMemory(_In_ size_t allocationGranularity, _In_ size_t commitSize)
+_Success_(return != NULL) static void* FlVirtualHeapInternalReserveMemory(_In_ size_t allocationGranularity, _In_ size_t reserveSize)
 {
 	assert(FL_VIRTUAL_HEAP_IS_POSITIVE_POWER_OF_2(allocationGranularity));
-	if (!allocationGranularity || !commitSize || (commitSize & (allocationGranularity - 1)))
+	if (!allocationGranularity || !reserveSize || (reserveSize & (allocationGranularity - 1)))
 	{
 		return NULL;
 	}
 	MEM_ADDRESS_REQUIREMENTS addressRequirements = { .LowestStartingAddress = NULL, .HighestEndingAddress = NULL, .Alignment = allocationGranularity };
 	MEM_EXTENDED_PARAMETER extendedParameter = { .Type = MemExtendedParameterAddressRequirements, .Pointer = &addressRequirements };
-	void* memory = VirtualAlloc2(NULL, NULL, commitSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, &extendedParameter, 1);
+	void* memory = VirtualAlloc2(NULL, NULL, reserveSize, MEM_RESERVE, PAGE_READWRITE, &extendedParameter, 1);
 	return memory;
+}
+
+_Success_(return != 0) static int FlVirtualHeapInternalCommitRange(_In_ void* address, _In_ size_t size)
+{
+	return VirtualAlloc(address, size, MEM_COMMIT, PAGE_READWRITE) != NULL;
+}
+
+_Success_(return != 0) static int FlVirtualHeapInternalDecommitRange(_In_ void* address, _In_ size_t size)
+{
+	return VirtualFree(address, size, MEM_DECOMMIT) != 0;
 }
 
 static void FlVirtualHeapInternalFreeMemory(_In_ void* address)
@@ -473,10 +483,10 @@ static size_t FlVirtualHeapInternalCalculateHeuristicMaximumHeapSize(
 
 // ---------- Public API ----------
 
-HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _In_ size_t size)
+__declspec(dllexport) HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _In_ size_t size)
 {
-	assert(FL_VIRTUAL_HEAP_DESCRIPTOR_SIZE == 24);
-	assert((FL_VIRTUAL_HEAP_DESCRIPTOR_SIZE & 0xF) == 8);
+	assert(FL_VIRTUAL_HEAP_DESCRIPTOR_SIZE == 40);
+	assert((FL_VIRTUAL_HEAP_DESCRIPTOR_SIZE & 0xF) == 0x8);
 	assert(FL_VIRTUAL_HEAP_MIN_BLOCK_SIZE == 48);
 	assert(FL_VIRTUAL_HEAP_EPILOGUE_SIZE == 8);
 	assert(sizeof(FLVirtualHeapNode) == 32);
@@ -507,14 +517,22 @@ HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _In_ size_t size)
 	}
 	size = FL_VIRTUAL_HEAP_ROUND_UP_TO_POWER_OF_2(size, allocationGranularity);
 
-	void* memory = FlVirtualHeapInternalCommitMemory(allocationGranularity, size);
+	void* memory = FlVirtualHeapInternalReserveMemory(allocationGranularity, size);
 	if (!memory)
 	{
 		return E_OUTOFMEMORY;
 	}
 
+	size_t committedSize = FL_VIRTUAL_HEAP_ROUND_UP_TO_POWER_OF_2(FL_VIRTUAL_HEAP_MIN_REGION_SIZE, allocationGranularity);
+	if (!FlVirtualHeapInternalCommitRange(memory, committedSize))
+	{
+		FlVirtualHeapInternalFreeMemory(memory);
+		return E_OUTOFMEMORY;
+	}
+
 	FLVirtualHeap* heapDescriptor = (FLVirtualHeap*)memory;
-	heapDescriptor->regionSize = size;
+	heapDescriptor->regionReservedSize = size;
+	heapDescriptor->regionCommittedSize = committedSize;
 	heapDescriptor->allocationGranularity = allocationGranularity;
 
 	void* firstBlock = FlVirtualHeapFirstBlock(heapDescriptor);
@@ -535,13 +553,124 @@ HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _In_ size_t size)
 	return S_OK;
 }
 
-void FlVirtualHeapDelete(_In_ FLVirtualHeap* heap)
+__declspec(dllexport) void FlVirtualHeapDelete(_In_ FLVirtualHeap* heap)
 {
 	assert(heap);
 	FlVirtualHeapInternalFreeMemory(heap);
 }
 
-_Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapAllocate(_Inout_ FLVirtualHeap* heap, _In_ size_t size)
+// Ensures at least additionalNeeded bytes of free space exist immediately
+// before the epilogue, committing more memory in allocationGranularity
+// increments if necessary. Returns non-zero on success, zero if doing so
+// would exceed regionReservedSize.
+static int FlVirtualHeapInternalGrow(_Inout_ FLVirtualHeap* heap, _In_ size_t additionalNeeded)
+{
+	void* oldEpilogue = FlVirtualHeapEpilogueBlock(heap);
+	size_t epilogueHeaderWord = *FlVirtualHeapHeaderAt(oldEpilogue);
+
+	void* trailingBlock;
+	size_t trailingSize;
+	size_t trailingPrevAllocatedFlag;
+	if (FlVirtualHeapIsPrevAllocated(epilogueHeaderWord))
+	{
+		trailingBlock = oldEpilogue;
+		trailingSize = 0;
+		trailingPrevAllocatedFlag = FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG;
+	}
+	else
+	{
+		size_t footerWord = *(size_t*)((uintptr_t)oldEpilogue - 8);
+		trailingSize = FlVirtualHeapBlockSize(footerWord);
+		trailingBlock = (void*)((uintptr_t)oldEpilogue - trailingSize);
+		trailingPrevAllocatedFlag = *FlVirtualHeapHeaderAt(trailingBlock) & FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG;
+	}
+
+	if (additionalNeeded <= trailingSize)
+	{
+		return 1;
+	}
+
+	size_t shortfall = additionalNeeded - trailingSize;
+	size_t growAmount = FL_VIRTUAL_HEAP_ROUND_UP_TO_POWER_OF_2(shortfall, heap->allocationGranularity);
+	if (growAmount > heap->regionReservedSize - heap->regionCommittedSize)
+	{
+		return 0;
+	}
+
+	void* commitAddress = (void*)((uintptr_t)heap + heap->regionCommittedSize);
+	if (!FlVirtualHeapInternalCommitRange(commitAddress, growAmount))
+	{
+		return 0;
+	}
+
+	if (trailingSize)
+	{
+		heap->treeRoot = AvlDelete(heap->treeRoot, FlVirtualHeapBlockNode(trailingBlock));
+	}
+	heap->regionCommittedSize += growAmount;
+
+	size_t newTrailingSize = trailingSize + growAmount;
+	FlVirtualHeapWriteFreeBlock(trailingBlock, newTrailingSize, trailingPrevAllocatedFlag);
+	FLVirtualHeapNode* trailingNode = FlVirtualHeapBlockNode(trailingBlock);
+	trailingNode->left = NULL;
+	trailingNode->right = NULL;
+	trailingNode->height = 1;
+	trailingNode->subtreeMax = newTrailingSize;
+	heap->treeRoot = AvlInsert(heap->treeRoot, trailingNode);
+
+	*(size_t*)FlVirtualHeapEpilogueBlock(heap) = FL_VIRTUAL_HEAP_ALLOCATED_FLAG;
+
+	return 1;
+}
+
+// Decommits trailing pages that are no longer needed after a free/shrink
+// operation leaves trailingFreeBlock as the last block before the epilogue,
+// keeping one allocationGranularity unit of headroom to avoid commit/
+// decommit churn under repeated allocation at the boundary.
+static void FlVirtualHeapInternalShrink(_Inout_ FLVirtualHeap* heap, _In_ void* trailingFreeBlock)
+{
+	size_t allocationGranularity = heap->allocationGranularity;
+	size_t headerWord = *FlVirtualHeapHeaderAt(trailingFreeBlock);
+	size_t prevAllocatedFlag = headerWord & FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG;
+	size_t trailingSize = FlVirtualHeapBlockSize(headerWord);
+	size_t trailingOffset = (uintptr_t)trailingFreeBlock - (uintptr_t)heap;
+
+	size_t committedFloor = FL_VIRTUAL_HEAP_ROUND_UP_TO_POWER_OF_2(FL_VIRTUAL_HEAP_MIN_REGION_SIZE, allocationGranularity);
+	// Smallest committed size that still fully backs the block and the
+	// epilogue after it, plus one allocation-granularity unit of headroom.
+	size_t target = FL_VIRTUAL_HEAP_ROUND_UP_TO_POWER_OF_2(trailingOffset + FL_VIRTUAL_HEAP_EPILOGUE_SIZE, allocationGranularity) + allocationGranularity;
+	if (target < committedFloor)
+	{
+		target = committedFloor;
+	}
+	if (target >= heap->regionCommittedSize)
+	{
+		return;
+	}
+
+	size_t decommitAmount = heap->regionCommittedSize - target;
+	void* decommitAddress = (void*)((uintptr_t)heap + target);
+	if (!FlVirtualHeapInternalDecommitRange(decommitAddress, decommitAmount))
+	{
+		return;
+	}
+
+	heap->regionCommittedSize = target;
+	size_t newTrailingSize = trailingSize - decommitAmount;
+
+	heap->treeRoot = AvlDelete(heap->treeRoot, FlVirtualHeapBlockNode(trailingFreeBlock));
+	FlVirtualHeapWriteFreeBlock(trailingFreeBlock, newTrailingSize, prevAllocatedFlag);
+	FLVirtualHeapNode* node = FlVirtualHeapBlockNode(trailingFreeBlock);
+	node->left = NULL;
+	node->right = NULL;
+	node->height = 1;
+	node->subtreeMax = newTrailingSize;
+	heap->treeRoot = AvlInsert(heap->treeRoot, node);
+
+	*(size_t*)FlVirtualHeapEpilogueBlock(heap) = FL_VIRTUAL_HEAP_ALLOCATED_FLAG;
+}
+
+__declspec(dllexport) _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapAllocate(_Inout_ FLVirtualHeap* heap, _In_ size_t size)
 {
 	assert(heap);
 
@@ -563,7 +692,15 @@ _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtu
 	FLVirtualHeapNode* fitNode = AvlFindFit(heap->treeRoot, need);
 	if (!fitNode)
 	{
-		return NULL;
+		if (!FlVirtualHeapInternalGrow(heap, need))
+		{
+			return NULL;
+		}
+		fitNode = AvlFindFit(heap->treeRoot, need);
+		if (!fitNode)
+		{
+			return NULL;
+		}
 	}
 
 	void* blockAddress = FlVirtualHeapNodeBlock(fitNode);
@@ -597,7 +734,7 @@ _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtu
 	return FlVirtualHeapBlockPayload(blockAddress);
 }
 
-void FlVirtualHeapFree(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invalid_ void* allocation)
+__declspec(dllexport) void FlVirtualHeapFree(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invalid_ void* allocation)
 {
 	assert(heap);
 
@@ -649,9 +786,14 @@ void FlVirtualHeapFree(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invali
 	node->subtreeMax = blockSize;
 	heap->treeRoot = AvlInsert(heap->treeRoot, node);
 	FlVirtualHeapSetNextPrevAllocated(blockAddress, blockSize, 0);
+
+	if ((uintptr_t)blockAddress + blockSize == (uintptr_t)FlVirtualHeapEpilogueBlock(heap))
+	{
+		FlVirtualHeapInternalShrink(heap, blockAddress);
+	}
 }
 
-_Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapReAllocate(
+__declspec(dllexport) _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapReAllocate(
 	_Inout_ FLVirtualHeap* heap,
 	_Pre_maybenull_ _Post_invalid_ void* allocation,
 	_In_ size_t size)
@@ -719,16 +861,35 @@ _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtu
 			tailNode->subtreeMax = remainder;
 			heap->treeRoot = AvlInsert(heap->treeRoot, tailNode);
 			FlVirtualHeapSetNextPrevAllocated(tailBlock, remainder, 0);
+
+			if ((uintptr_t)tailBlock + remainder == (uintptr_t)FlVirtualHeapEpilogueBlock(heap))
+			{
+				FlVirtualHeapInternalShrink(heap, tailBlock);
+			}
 		}
 		return allocation;
 	}
 
-	// Grow in place: absorb the immediately following free block.
+	// Grow in place: absorb the immediately following free block, growing the
+	// committed region first if that block (or the tail, if none exists yet)
+	// does not already reach far enough and it sits at the end of the heap.
 	void* nextBlock = (void*)((uintptr_t)blockAddress + blockSize);
 	size_t nextHeaderWord = *FlVirtualHeapHeaderAt(nextBlock);
+	size_t nextSize = FlVirtualHeapIsAllocated(nextHeaderWord) ? 0 : FlVirtualHeapBlockSize(nextHeaderWord);
+	if (blockSize + nextSize < need)
+	{
+		void* epilogueBlock = FlVirtualHeapEpilogueBlock(heap);
+		int atTail = nextSize
+			? ((uintptr_t)nextBlock + nextSize == (uintptr_t)epilogueBlock)
+			: ((uintptr_t)nextBlock == (uintptr_t)epilogueBlock);
+		if (atTail && FlVirtualHeapInternalGrow(heap, need - blockSize))
+		{
+			nextHeaderWord = *FlVirtualHeapHeaderAt(nextBlock);
+			nextSize = FlVirtualHeapBlockSize(nextHeaderWord);
+		}
+	}
 	if (!FlVirtualHeapIsAllocated(nextHeaderWord))
 	{
-		size_t nextSize = FlVirtualHeapBlockSize(nextHeaderWord);
 		size_t combinedSize = blockSize + nextSize;
 		if (combinedSize >= need)
 		{
@@ -772,18 +933,28 @@ int FlVirtualHeapValidate(_In_ FLVirtualHeap* heap)
 {
 	assert(heap);
 
-	if (heap->regionSize < FL_VIRTUAL_HEAP_MIN_REGION_SIZE)
+	if (heap->regionReservedSize < FL_VIRTUAL_HEAP_MIN_REGION_SIZE)
+	{
+		return 0;
+	}
+
+	size_t committedFloor = FL_VIRTUAL_HEAP_ROUND_UP_TO_POWER_OF_2(FL_VIRTUAL_HEAP_MIN_REGION_SIZE, heap->allocationGranularity);
+	if (!heap->regionCommittedSize ||
+		(heap->regionCommittedSize % heap->allocationGranularity) != 0 ||
+		heap->regionCommittedSize < committedFloor ||
+		heap->regionCommittedSize > heap->regionReservedSize)
 	{
 		return 0;
 	}
 
 	uintptr_t heapBase = (uintptr_t)heap;
-	uintptr_t regionEnd = heapBase + heap->regionSize;
+	uintptr_t regionEnd = heapBase + heap->regionCommittedSize;
 	uintptr_t epilogueAddress = regionEnd - FL_VIRTUAL_HEAP_EPILOGUE_SIZE;
 
 	// Linear walk: validate every block.
 	uintptr_t current = heapBase + FL_VIRTUAL_HEAP_DESCRIPTOR_SIZE;
 	int previousWasFree = 0;
+	size_t previousBlockSize = 0;
 	size_t freeBlockCount = 0;
 
 	while (current < regionEnd)
@@ -797,6 +968,13 @@ int FlVirtualHeapValidate(_In_ FLVirtualHeap* heap)
 		{
 			// Epilogue sentinel: only ALLOCATED flag is required; size bits are 0.
 			if (!isAllocated)
+			{
+				return 0;
+			}
+			// A free block directly before the epilogue must be smaller than
+			// two allocation-granularity units; anything at or above that
+			// should already have been decommitted by FlVirtualHeapInternalShrink.
+			if (previousWasFree && previousBlockSize >= 2 * heap->allocationGranularity)
 			{
 				return 0;
 			}
@@ -855,6 +1033,7 @@ int FlVirtualHeapValidate(_In_ FLVirtualHeap* heap)
 		}
 
 		previousWasFree = !isAllocated;
+		previousBlockSize = blockSize;
 		current += blockSize;
 	}
 

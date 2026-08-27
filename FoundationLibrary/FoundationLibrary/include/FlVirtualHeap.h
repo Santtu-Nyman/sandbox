@@ -59,19 +59,24 @@ typedef struct FLVirtualHeapNode
 typedef struct FLVirtualHeap
 {
 	FLVirtualHeapNode* treeRoot;
-	size_t regionSize;
+	size_t regionReservedSize;
+	size_t regionCommittedSize;
 	size_t allocationGranularity;
+	uint64_t padding_;
 } FLVirtualHeap;
 
-HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _In_ size_t size);
+__declspec(dllexport) HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _In_ size_t size);
 /*
 	Procedure:
 			FlVirtualHeapCreate
 
 		Description:
 			This procedure creates a new heap that can be used by other Fl heap functions.
-			The function reserves and commits space in the virtual address space and
-			initializes the heap base structure.
+			The function reserves the entire heap backing address range up front but only
+			commits a small initial amount of physical/page-file backed memory. Additional
+			memory is committed on demand, in allocation granularity increments, as
+			allocations require it, and trailing committed pages are decommitted again as
+			the heap shrinks. The function initializes the heap base structure.
 
 		Parameters:
 			heap:
@@ -81,8 +86,9 @@ HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _In_ size_t size);
 				returned heap base address points into the beginning od this continuous block.
 
 			size:
-				Minimum total size in bytes for the heap backing memory.
-				The function uses at least this many bytes of virtual address space for the heap.
+				Minimum total size in bytes of virtual address space reserved for the heap.
+				This is the maximum size the heap can grow to; it does not mean this many
+				bytes are committed up front.
 				If this value is zero the then heuristic value based on total system RAM is used.
 
 		Return:
@@ -91,7 +97,7 @@ HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _In_ size_t size);
 			is too large to round up without overflow.
 */
 
-void FlVirtualHeapDelete(_In_ FLVirtualHeap* heap);
+__declspec(dllexport) void FlVirtualHeapDelete(_In_ FLVirtualHeap* heap);
 /*
 	Procedure:
 			FlVirtualHeapDelete
@@ -112,7 +118,7 @@ void FlVirtualHeapDelete(_In_ FLVirtualHeap* heap);
 			void.
 */
 
-_Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapAllocate(_Inout_ FLVirtualHeap* heap, _In_ size_t size);
+__declspec(dllexport) _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapAllocate(_Inout_ FLVirtualHeap* heap, _In_ size_t size);
 /*
 	Procedure:
 			FlVirtualHeapAllocate
@@ -136,7 +142,7 @@ _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtu
 			memory block. If the function fails the return value is NULL.
 */
 
-void FlVirtualHeapFree(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invalid_ void* allocation);
+__declspec(dllexport) void FlVirtualHeapFree(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invalid_ void* allocation);
 /*
 	Procedure:
 			FlVirtualHeapFree
@@ -158,7 +164,7 @@ void FlVirtualHeapFree(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invali
 			void.
 */
 
-_Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapReAllocate(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invalid_ void* allocation, _In_ size_t size);
+__declspec(dllexport) _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapReAllocate(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invalid_ void* allocation, _In_ size_t size);
 /*
 	Procedure:
 			FlVirtualHeapReAllocate

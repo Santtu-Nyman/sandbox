@@ -32,8 +32,9 @@
 		FlVirtualHeapFree, FlVirtualHeapReAllocate, and FlVirtualHeapValidate.
 
 		Tests use only the public API (FLVirtualHeap* and the six functions).
-		The capacity-limit tests additionally read heap->regionSize, which is
-		a member of the public FLVirtualHeap struct.
+		The capacity-limit and commit/decommit tests additionally read
+		heap->regionReservedSize and heap->regionCommittedSize, which are
+		members of the public FLVirtualHeap struct.
 
 		Each test creates its own heap and validates the heap structure after
 		every mutating operation to catch any invariant violations early.
@@ -65,6 +66,15 @@ static void FlVirtualHeapUtCreateAndValidate(_Inout_ size_t* testCount, _Inout_ 
 	FL_UT_CHECK(heap != NULL, "FlVirtualHeapUtCreateAndValidate: heap non-null");
 	if (heap)
 	{
+		FL_UT_CHECK(FL_VIRTUAL_HEAP_IS_POSITIVE_POWER_OF_2(heap->allocationGranularity),
+			"FlVirtualHeapUtCreateAndValidate: allocation granularity is a power of 2");
+		FL_UT_CHECK(heap->regionReservedSize > 0 && (heap->regionReservedSize % heap->allocationGranularity) == 0,
+			"FlVirtualHeapUtCreateAndValidate: reserved size is a positive multiple of allocation granularity");
+		FL_UT_CHECK(heap->regionCommittedSize > 0 && (heap->regionCommittedSize % heap->allocationGranularity) == 0,
+			"FlVirtualHeapUtCreateAndValidate: committed size is a positive multiple of allocation granularity");
+		FL_UT_CHECK(heap->regionCommittedSize <= heap->regionReservedSize,
+			"FlVirtualHeapUtCreateAndValidate: committed size does not exceed reserved size");
+
 		FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtCreateAndValidate: validate");
 		FlVirtualHeapDelete(heap);
 	}
@@ -79,6 +89,39 @@ static void FlVirtualHeapUtCreateDefault(_Inout_ size_t* testCount, _Inout_ size
 	if (heap)
 	{
 		FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtCreateDefault: validate");
+		FlVirtualHeapDelete(heap);
+	}
+}
+
+// A reservation size that cannot possibly be satisfied must fail with E_OUTOFMEMORY
+// and must write NULL back through the output parameter, even though it started
+// pointing at a non-null sentinel value.
+static void FlVirtualHeapUtCreateOversizedFails(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = (FLVirtualHeap*)(uintptr_t)0xDEADBEEF;
+	HRESULT result = FlVirtualHeapCreate(&heap, SIZE_MAX);
+	FL_UT_CHECK(result == E_OUTOFMEMORY, "FlVirtualHeapUtCreateOversizedFails: create fails with E_OUTOFMEMORY");
+	FL_UT_CHECK(heap == NULL, "FlVirtualHeapUtCreateOversizedFails: heap set to NULL on failure");
+}
+
+// A size smaller than the minimum region size must be clamped up rather than rejected,
+// and the resulting heap must still be usable.
+static void FlVirtualHeapUtCreateTinySizeClamps(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = NULL;
+	HRESULT result = FlVirtualHeapCreate(&heap, 1);
+	FL_UT_CHECK(SUCCEEDED(result), "FlVirtualHeapUtCreateTinySizeClamps: create succeeded");
+	FL_UT_CHECK(heap != NULL, "FlVirtualHeapUtCreateTinySizeClamps: heap non-null");
+	if (heap)
+	{
+		FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtCreateTinySizeClamps: validate");
+		void* allocation = FlVirtualHeapAllocate(heap, 16);
+		FL_UT_CHECK(allocation != NULL, "FlVirtualHeapUtCreateTinySizeClamps: minimum allocation still fits");
+		if (allocation)
+		{
+			FlVirtualHeapFree(heap, allocation);
+		}
+		FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtCreateTinySizeClamps: final validate");
 		FlVirtualHeapDelete(heap);
 	}
 }
@@ -579,6 +622,115 @@ static void FlVirtualHeapUtReallocGrowInPlace(_Inout_ size_t* testCount, _Inout_
 	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtReallocGrowInPlace: final validate");
 	FlVirtualHeapDelete(heap);
 }
+
+// FlVirtualHeapReAllocate has its own copy of the overflow guard used by
+// FlVirtualHeapAllocate. SIZE_MAX must be rejected and the original block preserved.
+static void FlVirtualHeapUtReallocSizeOverflow(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = NULL;
+	FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_SMALL_HEAP_SIZE);
+	if (!heap)
+	{
+		return;
+	}
+	size_t allocationSize = 64;
+	uint8_t* allocation = (uint8_t*)FlVirtualHeapAllocate(heap, allocationSize);
+	FL_UT_CHECK(allocation != NULL, "FlVirtualHeapUtReallocSizeOverflow: alloc");
+	if (!allocation)
+	{
+		FlVirtualHeapDelete(heap);
+		return;
+	}
+	for (size_t i = 0; i < allocationSize; i++)
+	{
+		allocation[i] = (uint8_t)(i + 1);
+	}
+
+	void* result = FlVirtualHeapReAllocate(heap, allocation, SIZE_MAX);
+	FL_UT_CHECK(result == NULL, "FlVirtualHeapUtReallocSizeOverflow: SIZE_MAX returns NULL");
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtReallocSizeOverflow: validate");
+
+	int preserved = 1;
+	for (size_t i = 0; i < allocationSize; i++)
+	{
+		if (allocation[i] != (uint8_t)(i + 1))
+		{
+			preserved = 0;
+			break;
+		}
+	}
+	FL_UT_CHECK(preserved, "FlVirtualHeapUtReallocSizeOverflow: original data preserved");
+
+	FlVirtualHeapFree(heap, allocation);
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtReallocSizeOverflow: final validate");
+	FlVirtualHeapDelete(heap);
+}
+
+// Mirrors the block-layout constants documented in FlVirtualHeap.c, scoped to this test.
+#define FL_VIRTUAL_HEAP_UT_REALLOC_OOM_HEADER_SIZE   ((size_t)8)
+#define FL_VIRTUAL_HEAP_UT_REALLOC_OOM_EPILOGUE_SIZE ((size_t)8)
+#define FL_VIRTUAL_HEAP_UT_REALLOC_OOM_MIN_BLOCK     ((size_t)48)
+
+// Fill the heap exactly full with two blocks, A and B, then try to grow A by one byte.
+// In-place growth is blocked because B sits immediately after A and is allocated, and the
+// allocate-copy-free fallback is blocked because there is no free space anywhere. The call
+// must return NULL and leave A's pointer and data completely untouched.
+static void FlVirtualHeapUtReallocGrowFailsLeavesOriginalIntact(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = NULL;
+	FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_SMALL_HEAP_SIZE);
+	if (!heap)
+	{
+		return;
+	}
+
+	size_t usable = heap->regionReservedSize - sizeof(FLVirtualHeap) - FL_VIRTUAL_HEAP_UT_REALLOC_OOM_EPILOGUE_SIZE;
+	size_t largePayload = usable - FL_VIRTUAL_HEAP_UT_REALLOC_OOM_MIN_BLOCK - FL_VIRTUAL_HEAP_UT_REALLOC_OOM_HEADER_SIZE;
+	size_t minimumPayload = FL_VIRTUAL_HEAP_UT_REALLOC_OOM_MIN_BLOCK - FL_VIRTUAL_HEAP_UT_REALLOC_OOM_HEADER_SIZE;
+
+	uint8_t* allocationA = (uint8_t*)FlVirtualHeapAllocate(heap, largePayload);
+	FL_UT_CHECK(allocationA != NULL, "FlVirtualHeapUtReallocGrowFailsLeavesOriginalIntact: alloc A");
+	if (!allocationA)
+	{
+		FlVirtualHeapDelete(heap);
+		return;
+	}
+	for (size_t i = 0; i < largePayload; i++)
+	{
+		allocationA[i] = (uint8_t)(i & 0xFF);
+	}
+
+	void* allocationB = FlVirtualHeapAllocate(heap, minimumPayload);
+	FL_UT_CHECK(allocationB != NULL, "FlVirtualHeapUtReallocGrowFailsLeavesOriginalIntact: alloc B fills heap");
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtReallocGrowFailsLeavesOriginalIntact: validate while full");
+
+	void* result = FlVirtualHeapReAllocate(heap, allocationA, largePayload + 1);
+	FL_UT_CHECK(result == NULL, "FlVirtualHeapUtReallocGrowFailsLeavesOriginalIntact: grow past full returns NULL");
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtReallocGrowFailsLeavesOriginalIntact: validate after failed grow");
+
+	int preserved = 1;
+	for (size_t i = 0; i < largePayload; i++)
+	{
+		if (allocationA[i] != (uint8_t)(i & 0xFF))
+		{
+			preserved = 0;
+			break;
+		}
+	}
+	FL_UT_CHECK(preserved, "FlVirtualHeapUtReallocGrowFailsLeavesOriginalIntact: original data preserved");
+
+	if (allocationB)
+	{
+		FlVirtualHeapFree(heap, allocationB);
+	}
+	FlVirtualHeapFree(heap, allocationA);
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtReallocGrowFailsLeavesOriginalIntact: final validate");
+	FlVirtualHeapDelete(heap);
+}
+
+#undef FL_VIRTUAL_HEAP_UT_REALLOC_OOM_HEADER_SIZE
+#undef FL_VIRTUAL_HEAP_UT_REALLOC_OOM_EPILOGUE_SIZE
+#undef FL_VIRTUAL_HEAP_UT_REALLOC_OOM_MIN_BLOCK
 
 // ---------------------------------------------------------------------------
 // Overlap and failure tests
@@ -1201,6 +1353,11 @@ static void FlVirtualHeapUtFuzz(_Inout_ size_t* testCount, _Inout_ size_t* failC
 			}
 		}
 		FlVirtualHeapFree(heap, pointer);
+
+		if (!FlVirtualHeapValidate(heap))
+		{
+			allValidatesPassed = 0;
+		}
 	}
 
 	FL_UT_CHECK(allAllocsSucceeded, "FlVirtualHeapUtFuzz: no unexpected allocation failure");
@@ -1224,8 +1381,8 @@ static void FlVirtualHeapUtFuzz(_Inout_ size_t* testCount, _Inout_ size_t* failC
 #define FL_VIRTUAL_HEAP_UT_MIN_BLOCK_SIZE_CAP ((size_t)48)
 
 // Usable space for user blocks:
-//   usable = heap->regionSize - sizeof(FLVirtualHeap) - FL_VIRTUAL_HEAP_UT_EPILOGUE_SIZE_CAP
-// This is always a multiple of 16 because regionSize is page-aligned and
+//   usable = heap->regionReservedSize - sizeof(FLVirtualHeap) - FL_VIRTUAL_HEAP_UT_EPILOGUE_SIZE_CAP
+// This is always a multiple of 16 because regionReservedSize is page-aligned and
 // sizeof(FLVirtualHeap) + epilogue = 24 + 8 = 32 ≡ 0 (mod 16).
 //
 // Derived payload sizes (need(N) = max(round_up(N + 8, 16), 48)):
@@ -1245,7 +1402,7 @@ static void FlVirtualHeapUtAlmostFull(_Inout_ size_t* testCount, _Inout_ size_t*
 		return;
 	}
 
-	size_t usable = heap->regionSize - sizeof(FLVirtualHeap) - FL_VIRTUAL_HEAP_UT_EPILOGUE_SIZE_CAP;
+	size_t usable = heap->regionReservedSize - sizeof(FLVirtualHeap) - FL_VIRTUAL_HEAP_UT_EPILOGUE_SIZE_CAP;
 	size_t largePayload = usable - FL_VIRTUAL_HEAP_UT_MIN_BLOCK_SIZE_CAP - FL_VIRTUAL_HEAP_UT_BLOCK_HEADER_SIZE;
 	size_t minimumPayload = FL_VIRTUAL_HEAP_UT_MIN_BLOCK_SIZE_CAP - FL_VIRTUAL_HEAP_UT_BLOCK_HEADER_SIZE;
 	size_t overflowPayload = minimumPayload + 1;
@@ -1290,7 +1447,7 @@ static void FlVirtualHeapUtExactlyFull(_Inout_ size_t* testCount, _Inout_ size_t
 		return;
 	}
 
-	size_t usable = heap->regionSize - sizeof(FLVirtualHeap) - FL_VIRTUAL_HEAP_UT_EPILOGUE_SIZE_CAP;
+	size_t usable = heap->regionReservedSize - sizeof(FLVirtualHeap) - FL_VIRTUAL_HEAP_UT_EPILOGUE_SIZE_CAP;
 	size_t fullPayload = usable - FL_VIRTUAL_HEAP_UT_BLOCK_HEADER_SIZE;
 
 	// need(fullPayload) = usable = total usable bytes → heap exactly full after this.
@@ -1315,7 +1472,7 @@ static void FlVirtualHeapUtAllocatePastFull(_Inout_ size_t* testCount, _Inout_ s
 		return;
 	}
 
-	size_t usable = heap->regionSize - sizeof(FLVirtualHeap) - FL_VIRTUAL_HEAP_UT_EPILOGUE_SIZE_CAP;
+	size_t usable = heap->regionReservedSize - sizeof(FLVirtualHeap) - FL_VIRTUAL_HEAP_UT_EPILOGUE_SIZE_CAP;
 	size_t fullPayload = usable - FL_VIRTUAL_HEAP_UT_BLOCK_HEADER_SIZE;
 
 	void* fullAllocation = FlVirtualHeapAllocate(heap, fullPayload);
@@ -1350,6 +1507,330 @@ static void FlVirtualHeapUtAllocatePastFull(_Inout_ size_t* testCount, _Inout_ s
 #undef FL_VIRTUAL_HEAP_UT_BLOCK_HEADER_SIZE
 #undef FL_VIRTUAL_HEAP_UT_EPILOGUE_SIZE_CAP
 #undef FL_VIRTUAL_HEAP_UT_MIN_BLOCK_SIZE_CAP
+
+// ---------------------------------------------------------------------------
+// Commit / decommit behavior
+// ---------------------------------------------------------------------------
+
+// Large enough that the requested size cannot round down to a single
+// allocation-granularity unit, so the reserved and initial committed sizes
+// are guaranteed to differ.
+#define FL_VIRTUAL_HEAP_UT_LARGE_HEAP_SIZE ((size_t)0x1000000)
+
+// FlVirtualHeapCreate reserves the full requested size but must not commit
+// all of it up front; only a small initial amount should be committed.
+static void FlVirtualHeapUtCommittedSizeStartsSmall(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = NULL;
+	FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_LARGE_HEAP_SIZE);
+	if (!heap)
+	{
+		return;
+	}
+
+	FL_UT_CHECK(heap->regionCommittedSize > 0, "FlVirtualHeapUtCommittedSizeStartsSmall: committed size is non-zero");
+	FL_UT_CHECK(heap->regionCommittedSize < heap->regionReservedSize, "FlVirtualHeapUtCommittedSizeStartsSmall: committed size starts smaller than reserved size");
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtCommittedSizeStartsSmall: validate");
+	FlVirtualHeapDelete(heap);
+}
+
+// Allocating more than the initial committed prefix must transparently
+// commit additional memory and keep the heap usable and valid.
+static void FlVirtualHeapUtCommittedSizeGrows(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = NULL;
+	FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_LARGE_HEAP_SIZE);
+	if (!heap)
+	{
+		return;
+	}
+
+	size_t initialCommitted = heap->regionCommittedSize;
+	size_t bigPayload = initialCommitted + (heap->regionReservedSize - initialCommitted) / 2;
+
+	void* allocation = FlVirtualHeapAllocate(heap, bigPayload);
+	FL_UT_CHECK(allocation != NULL, "FlVirtualHeapUtCommittedSizeGrows: large alloc succeeds");
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtCommittedSizeGrows: validate after large alloc");
+	FL_UT_CHECK(heap->regionCommittedSize > initialCommitted, "FlVirtualHeapUtCommittedSizeGrows: committed size increased");
+	FL_UT_CHECK(heap->regionCommittedSize <= heap->regionReservedSize, "FlVirtualHeapUtCommittedSizeGrows: committed size does not exceed reserved size");
+
+	if (allocation)
+	{
+		memset(allocation, 0xA5, bigPayload);
+		FL_UT_CHECK(((unsigned char*)allocation)[0] == 0xA5 && ((unsigned char*)allocation)[bigPayload - 1] == 0xA5,
+			"FlVirtualHeapUtCommittedSizeGrows: newly committed memory is writable");
+		FlVirtualHeapFree(heap, allocation);
+	}
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtCommittedSizeGrows: final validate");
+	FlVirtualHeapDelete(heap);
+}
+
+// After a large block is freed, trailing committed pages that are no longer
+// needed must be decommitted again, though one allocation-granularity unit
+// of headroom is kept so the committed size need not return all the way to
+// the very first, pre-growth minimum.
+static void FlVirtualHeapUtCommittedSizeShrinksAfterFree(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = NULL;
+	FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_LARGE_HEAP_SIZE);
+	if (!heap)
+	{
+		return;
+	}
+
+	size_t initialCommitted = heap->regionCommittedSize;
+	size_t bigPayload = initialCommitted + (heap->regionReservedSize - initialCommitted) / 2;
+
+	void* allocation = FlVirtualHeapAllocate(heap, bigPayload);
+	FL_UT_CHECK(allocation != NULL, "FlVirtualHeapUtCommittedSizeShrinksAfterFree: large alloc succeeds");
+	if (!allocation)
+	{
+		FlVirtualHeapDelete(heap);
+		return;
+	}
+	size_t grownCommitted = heap->regionCommittedSize;
+	FL_UT_CHECK(grownCommitted > initialCommitted, "FlVirtualHeapUtCommittedSizeShrinksAfterFree: committed size grew");
+
+	FlVirtualHeapFree(heap, allocation);
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtCommittedSizeShrinksAfterFree: validate after free");
+	FL_UT_CHECK(heap->regionCommittedSize < grownCommitted, "FlVirtualHeapUtCommittedSizeShrinksAfterFree: committed size shrank after free");
+	FL_UT_CHECK(heap->regionCommittedSize >= initialCommitted, "FlVirtualHeapUtCommittedSizeShrinksAfterFree: committed size retains at least the initial floor plus headroom");
+
+	FlVirtualHeapDelete(heap);
+}
+
+// FlVirtualHeapInternalGrow is also called directly from FlVirtualHeapReAllocate's
+// grow-in-place branch (not just from FlVirtualHeapAllocate). Growing A well past the
+// space currently committed after it must transparently commit more memory, return the
+// same pointer, and preserve the original data.
+static void FlVirtualHeapUtReallocGrowTriggersCommit(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = NULL;
+	FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_LARGE_HEAP_SIZE);
+	if (!heap)
+	{
+		return;
+	}
+
+	size_t initialCommitted = heap->regionCommittedSize;
+	size_t originalSize = 64;
+	uint8_t* allocationA = (uint8_t*)FlVirtualHeapAllocate(heap, originalSize);
+	FL_UT_CHECK(allocationA != NULL, "FlVirtualHeapUtReallocGrowTriggersCommit: alloc A");
+	if (!allocationA)
+	{
+		FlVirtualHeapDelete(heap);
+		return;
+	}
+	for (size_t i = 0; i < originalSize; i++)
+	{
+		allocationA[i] = (uint8_t)(i + 1);
+	}
+
+	uint8_t* grown = (uint8_t*)FlVirtualHeapReAllocate(heap, allocationA, initialCommitted);
+	FL_UT_CHECK(grown != NULL, "FlVirtualHeapUtReallocGrowTriggersCommit: grew");
+	FL_UT_CHECK(grown == allocationA, "FlVirtualHeapUtReallocGrowTriggersCommit: same pointer (in-place)");
+	FL_UT_CHECK(heap->regionCommittedSize > initialCommitted, "FlVirtualHeapUtReallocGrowTriggersCommit: committed size increased");
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtReallocGrowTriggersCommit: validate");
+	if (grown)
+	{
+		int preserved = 1;
+		for (size_t i = 0; i < originalSize; i++)
+		{
+			if (grown[i] != (uint8_t)(i + 1))
+			{
+				preserved = 0;
+				break;
+			}
+		}
+		FL_UT_CHECK(preserved, "FlVirtualHeapUtReallocGrowTriggersCommit: data preserved");
+		FlVirtualHeapFree(heap, grown);
+	}
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtReallocGrowTriggersCommit: final validate");
+	FlVirtualHeapDelete(heap);
+}
+
+// Repeated allocate/free pairs that straddle the committed-size boundary
+// must keep working and keep the heap valid, whether or not the headroom
+// policy avoids a fresh commit/decommit on any given iteration.
+static void FlVirtualHeapUtBoundaryAllocFreeChurn(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = NULL;
+	FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_LARGE_HEAP_SIZE);
+	if (!heap)
+	{
+		return;
+	}
+
+	size_t straddlePayload = heap->regionCommittedSize;
+	int allSucceeded = 1;
+	int allValid = 1;
+	for (size_t i = 0; i < 64; i++)
+	{
+		void* allocation = FlVirtualHeapAllocate(heap, straddlePayload);
+		if (!allocation)
+		{
+			allSucceeded = 0;
+			break;
+		}
+		memset(allocation, (int)(i & 0xFF), straddlePayload);
+		FlVirtualHeapFree(heap, allocation);
+		if (!FlVirtualHeapValidate(heap))
+		{
+			allValid = 0;
+			break;
+		}
+	}
+
+	FL_UT_CHECK(allSucceeded, "FlVirtualHeapUtBoundaryAllocFreeChurn: every alloc succeeded");
+	FL_UT_CHECK(allValid, "FlVirtualHeapUtBoundaryAllocFreeChurn: heap valid after every iteration");
+	FlVirtualHeapDelete(heap);
+}
+
+#define FL_VIRTUAL_HEAP_UT_MULTI_PAGE_HEAP_SIZE          ((size_t)9 * 1024 * 1024)
+#define FL_VIRTUAL_HEAP_UT_MULTI_PAGE_GRANULARITY_LIMIT  ((size_t)4 * 1024 * 1024)
+#define FL_VIRTUAL_HEAP_UT_MULTI_PAGE_ALLOCATION_SIZE    ((size_t)8 * 1024 * 1024)
+
+// A single allocation that requires committing more than one allocation-
+// granularity unit at once (a multi-page commit) must succeed and leave the
+// heap valid, both while the allocation is live and after it is freed.
+static void FlVirtualHeapUtMultiPageCommitAllocation(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = NULL;
+	FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_MULTI_PAGE_HEAP_SIZE);
+	FL_UT_CHECK(heap != NULL, "FlVirtualHeapUtMultiPageCommitAllocation: create succeeded");
+	if (!heap)
+	{
+		return;
+	}
+
+	FL_UT_CHECK(heap->allocationGranularity <= FL_VIRTUAL_HEAP_UT_MULTI_PAGE_GRANULARITY_LIMIT,
+		"FlVirtualHeapUtMultiPageCommitAllocation: allocation granularity is at most 4 MiB");
+	FL_UT_CHECK(heap->regionCommittedSize <= 2 * heap->allocationGranularity,
+		"FlVirtualHeapUtMultiPageCommitAllocation: at most two granularity units are committed at create");
+
+	void* allocation = FlVirtualHeapAllocate(heap, FL_VIRTUAL_HEAP_UT_MULTI_PAGE_ALLOCATION_SIZE);
+	FL_UT_CHECK(allocation != NULL, "FlVirtualHeapUtMultiPageCommitAllocation: 8 MiB alloc succeeds");
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtMultiPageCommitAllocation: validate after alloc");
+	FL_UT_CHECK(heap->regionCommittedSize > FL_VIRTUAL_HEAP_UT_MULTI_PAGE_ALLOCATION_SIZE,
+		"FlVirtualHeapUtMultiPageCommitAllocation: committed memory exceeds 8 MiB after the allocation");
+
+	if (allocation)
+	{
+		FlVirtualHeapFree(heap, allocation);
+	}
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtMultiPageCommitAllocation: validate after free");
+	FL_UT_CHECK(heap->regionCommittedSize <= 2 * heap->allocationGranularity,
+		"FlVirtualHeapUtMultiPageCommitAllocation: at most two granularity units are committed after free");
+
+	FlVirtualHeapDelete(heap);
+}
+
+#undef FL_VIRTUAL_HEAP_UT_MULTI_PAGE_HEAP_SIZE
+#undef FL_VIRTUAL_HEAP_UT_MULTI_PAGE_GRANULARITY_LIMIT
+#undef FL_VIRTUAL_HEAP_UT_MULTI_PAGE_ALLOCATION_SIZE
+
+typedef struct FlVirtualHeapUtSlowFillNode
+{
+	struct FlVirtualHeapUtSlowFillNode* next;
+	struct FlVirtualHeapUtSlowFillNode* previous;
+	size_t allocationNumber;
+} FlVirtualHeapUtSlowFillNode;
+
+#define FL_VIRTUAL_HEAP_UT_SLOW_FILL_HEAP_SIZE          ((size_t)9 * 1024 * 1024)
+#define FL_VIRTUAL_HEAP_UT_SLOW_FILL_GRANULARITY_LIMIT  ((size_t)4 * 1024 * 1024)
+#define FL_VIRTUAL_HEAP_UT_SLOW_FILL_ITEM_SIZE          ((size_t)1024)
+
+// Slowly fills the heap one 1 KiB doubly linked list node at a time until it
+// can no longer satisfy a request, exercising many separate growth calls
+// across the heap's lifetime instead of a single large multi-page commit.
+// All nodes are then freed in reverse order of allocation.
+static void FlVirtualHeapUtSlowHeapFill(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = NULL;
+	FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_SLOW_FILL_HEAP_SIZE);
+	FL_UT_CHECK(heap != NULL, "FlVirtualHeapUtSlowHeapFill: create succeeded");
+	if (!heap)
+	{
+		return;
+	}
+
+	FL_UT_CHECK(heap->allocationGranularity <= FL_VIRTUAL_HEAP_UT_SLOW_FILL_GRANULARITY_LIMIT,
+		"FlVirtualHeapUtSlowHeapFill: allocation granularity is at most 4 MiB");
+	FL_UT_CHECK(heap->regionCommittedSize <= 2 * heap->allocationGranularity,
+		"FlVirtualHeapUtSlowHeapFill: at most two granularity units are committed at create");
+
+	FlVirtualHeapUtSlowFillNode* head = NULL;
+	FlVirtualHeapUtSlowFillNode* tail = NULL;
+	size_t allocationCount = 0;
+
+	for (;;)
+	{
+		FlVirtualHeapUtSlowFillNode* node = (FlVirtualHeapUtSlowFillNode*)FlVirtualHeapAllocate(heap, FL_VIRTUAL_HEAP_UT_SLOW_FILL_ITEM_SIZE);
+		if (!node)
+		{
+			break;
+		}
+		node->next = NULL;
+		node->previous = tail;
+		node->allocationNumber = allocationCount;
+		if (tail)
+		{
+			tail->next = node;
+		}
+		else
+		{
+			head = node;
+		}
+		tail = node;
+		allocationCount++;
+	}
+
+	FL_UT_CHECK(allocationCount > 0, "FlVirtualHeapUtSlowHeapFill: at least one node allocated before the heap filled");
+	FL_UT_CHECK(heap->regionCommittedSize > heap->regionReservedSize - heap->allocationGranularity,
+		"FlVirtualHeapUtSlowHeapFill: committed memory is within one granularity unit of the full reserved size after filling");
+
+	// Walk forward from head and check the recorded allocation numbers and
+	// link pointers are exactly what was written while filling the heap.
+	int listIntact = 1;
+	size_t expectedAllocationNumber = 0;
+	FlVirtualHeapUtSlowFillNode* expectedPrevious = NULL;
+	for (FlVirtualHeapUtSlowFillNode* node = head; node; node = node->next)
+	{
+		if (node->allocationNumber != expectedAllocationNumber || node->previous != expectedPrevious)
+		{
+			listIntact = 0;
+			break;
+		}
+		expectedPrevious = node;
+		expectedAllocationNumber++;
+	}
+	FL_UT_CHECK(listIntact && expectedAllocationNumber == allocationCount, "FlVirtualHeapUtSlowHeapFill: linked list intact after filling");
+	FL_UT_CHECK(tail != NULL && tail->next == NULL, "FlVirtualHeapUtSlowHeapFill: tail terminates the list");
+
+	// Free all nodes in reverse order of allocation.
+	size_t freeCount = 0;
+	FlVirtualHeapUtSlowFillNode* node = tail;
+	while (node)
+	{
+		FlVirtualHeapUtSlowFillNode* previous = node->previous;
+		FlVirtualHeapFree(heap, node);
+		freeCount++;
+		node = previous;
+	}
+	FL_UT_CHECK(freeCount == allocationCount, "FlVirtualHeapUtSlowHeapFill: freed exactly as many nodes as were allocated");
+
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtSlowHeapFill: validate after freeing all nodes");
+	FL_UT_CHECK(heap->regionCommittedSize <= 2 * heap->allocationGranularity,
+		"FlVirtualHeapUtSlowHeapFill: at most two granularity units are committed after freeing all nodes");
+
+	FlVirtualHeapDelete(heap);
+}
+
+#undef FL_VIRTUAL_HEAP_UT_SLOW_FILL_HEAP_SIZE
+#undef FL_VIRTUAL_HEAP_UT_SLOW_FILL_GRANULARITY_LIMIT
+#undef FL_VIRTUAL_HEAP_UT_SLOW_FILL_ITEM_SIZE
+
+#undef FL_VIRTUAL_HEAP_UT_LARGE_HEAP_SIZE
 
 // ---------------------------------------------------------------------------
 // Test suite entry point
@@ -1388,4 +1869,15 @@ void FlVirtualHeapUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 	FlVirtualHeapUtAlmostFull(testCount, failCount);
 	FlVirtualHeapUtExactlyFull(testCount, failCount);
 	FlVirtualHeapUtAllocatePastFull(testCount, failCount);
+	FlVirtualHeapUtCommittedSizeStartsSmall(testCount, failCount);
+	FlVirtualHeapUtCommittedSizeGrows(testCount, failCount);
+	FlVirtualHeapUtCommittedSizeShrinksAfterFree(testCount, failCount);
+	FlVirtualHeapUtBoundaryAllocFreeChurn(testCount, failCount);
+	FlVirtualHeapUtMultiPageCommitAllocation(testCount, failCount);
+	FlVirtualHeapUtSlowHeapFill(testCount, failCount);
+	FlVirtualHeapUtCreateOversizedFails(testCount, failCount);
+	FlVirtualHeapUtCreateTinySizeClamps(testCount, failCount);
+	FlVirtualHeapUtReallocSizeOverflow(testCount, failCount);
+	FlVirtualHeapUtReallocGrowFailsLeavesOriginalIntact(testCount, failCount);
+	FlVirtualHeapUtReallocGrowTriggersCommit(testCount, failCount);
 }
