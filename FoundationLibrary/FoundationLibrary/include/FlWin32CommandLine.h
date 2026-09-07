@@ -50,7 +50,7 @@ extern "C" {
 #include <Windows.h>
 #include <stddef.h>
 #include "FlSAL.h"
-#include "flHRESULT.h"
+#include "FlHRESULT.h"
 
 HRESULT FlWin32CommandLineToArgumentsUtf16(_In_ _Null_terminated_ const WCHAR* win32CommandLine, _In_ size_t bufferSize, _Out_writes_bytes_to_(bufferSize, *bufferRequiredAddress) WCHAR** argumentBuffer, _Out_ size_t* bufferRequiredAddress, _Out_ size_t* argumentCountAddress);
 /*
