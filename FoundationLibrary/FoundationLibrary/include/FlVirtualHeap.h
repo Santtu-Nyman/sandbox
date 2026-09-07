@@ -1,6 +1,10 @@
 /*
 	Virtual page backed heap implementation by Santtu S. Nyman.
 
+	Version history
+		version 0.9.0 2026-09-07
+			Initial version.
+
 	License:
 
 		This is free and unencumbered software released into the public domain.
@@ -26,6 +30,7 @@
 		ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 		OTHER DEALINGS IN THE SOFTWARE.
 */
+
 #ifndef FL_VIRTUAL_HEAP_H
 #define FL_VIRTUAL_HEAP_H
 
@@ -47,13 +52,25 @@ extern "C" {
 // Rounds N up to the nearest multiple of P, where P must be a power of 2.
 #define FL_VIRTUAL_HEAP_ROUND_UP_TO_POWER_OF_2(N, P) (((N) + ((P) - 1)) & ~((P) - 1))
 
+// Node of the red-black tree of free blocks. The node lives in the first 32
+// bytes of a free block's payload, so its address is always blockAddress + 8.
+//
+// The node carries no color field: a free block's header word holds the color
+// in its bit 2 (see FL_VIRTUAL_HEAP_RED_FLAG in FlVirtualHeap.c). Keeping the
+// color there is what makes room for parent, and the header word is loaded by
+// the augmentation code anyway, so reading a node's color and its own block
+// size costs a single load.
+//
+// The structure must stay exactly 32 bytes: FL_VIRTUAL_HEAP_MIN_BLOCK_SIZE is
+// 8 (header) + sizeof(FLVirtualHeapNode) + 8 (footer), and every block must be
+// large enough to hold a node so that any allocated block can be freed without
+// reallocating.
 typedef struct FLVirtualHeapNode
 {
 	struct FLVirtualHeapNode* left;
 	struct FLVirtualHeapNode* right;
+	struct FLVirtualHeapNode* parent;
 	size_t subtreeMax;
-	uint32_t height;
-	uint32_t padding_;
 } FLVirtualHeapNode;
 
 typedef struct FLVirtualHeap
@@ -65,7 +82,7 @@ typedef struct FLVirtualHeap
 	uint64_t padding_;
 } FLVirtualHeap;
 
-__declspec(dllexport) HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _In_ size_t size);
+HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _In_ size_t size);
 /*
 	Procedure:
 			FlVirtualHeapCreate
@@ -97,7 +114,7 @@ __declspec(dllexport) HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _I
 			is too large to round up without overflow.
 */
 
-__declspec(dllexport) void FlVirtualHeapDelete(_In_ FLVirtualHeap* heap);
+void FlVirtualHeapDelete(_In_ FLVirtualHeap* heap);
 /*
 	Procedure:
 			FlVirtualHeapDelete
@@ -118,7 +135,7 @@ __declspec(dllexport) void FlVirtualHeapDelete(_In_ FLVirtualHeap* heap);
 			void.
 */
 
-__declspec(dllexport) _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapAllocate(_Inout_ FLVirtualHeap* heap, _In_ size_t size);
+_Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapAllocate(_Inout_ FLVirtualHeap* heap, _In_ size_t size);
 /*
 	Procedure:
 			FlVirtualHeapAllocate
@@ -142,7 +159,7 @@ __declspec(dllexport) _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_A
 			memory block. If the function fails the return value is NULL.
 */
 
-__declspec(dllexport) void FlVirtualHeapFree(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invalid_ void* allocation);
+void FlVirtualHeapFree(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invalid_ void* allocation);
 /*
 	Procedure:
 			FlVirtualHeapFree
@@ -164,7 +181,7 @@ __declspec(dllexport) void FlVirtualHeapFree(_Inout_ FLVirtualHeap* heap, _Pre_m
 			void.
 */
 
-__declspec(dllexport) _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapReAllocate(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invalid_ void* allocation, _In_ size_t size);
+_Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapReAllocate(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invalid_ void* allocation, _In_ size_t size);
 /*
 	Procedure:
 			FlVirtualHeapReAllocate

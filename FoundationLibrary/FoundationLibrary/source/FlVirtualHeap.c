@@ -36,11 +36,18 @@
 			[sizeof(FLVirtualHeap) .. regionReservedSize - EPILOGUE_SIZE - 1]
 				User blocks.  Each block begins with an 8-byte header word:
 					bits [63..4]  block size (multiple of 16)
+					bit  [2]      RED (red-black tree color; free blocks only)
 					bit  [1]      PREV_ALLOCATED (previous block is allocated)
 					bit  [0]      ALLOCATED
 				Free blocks also have an 8-byte footer at block+size-8 that
 				mirrors the header, and carry an FLVirtualHeapNode in the
 				first 32 bytes of their payload (block+8).
+
+				The footer never carries the RED bit.  Recoloring a node is a
+				read-modify-write of the header word alone; the footer is only
+				ever read for its size (during backward coalescing), so
+				mirroring the color into it would cost a second store on every
+				recolor for no benefit.  Allocated blocks never set RED.
 
 			[regionReservedSize - 16 .. regionReservedSize - 1]
 				Epilogue sentinel: size=16, ALLOCATED=1.  Prevents forward
@@ -74,6 +81,9 @@
 #define FL_VIRTUAL_HEAP_SIZE_MASK           ((size_t)(~(size_t)0xF))
 #define FL_VIRTUAL_HEAP_ALLOCATED_FLAG      ((size_t)0x1)
 #define FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG ((size_t)0x2)
+#define FL_VIRTUAL_HEAP_RED_FLAG            ((size_t)0x4)
+#define FL_VIRTUAL_HEAP_NODE_BLACK          0
+#define FL_VIRTUAL_HEAP_NODE_RED            1
 #define FL_VIRTUAL_HEAP_MIN_BLOCK_SIZE      ((size_t)48)
 #define FL_VIRTUAL_HEAP_EPILOGUE_SIZE       ((size_t)8)
 #define FL_VIRTUAL_HEAP_DESCRIPTOR_SIZE     sizeof(FLVirtualHeap)
@@ -148,11 +158,13 @@ static void FlVirtualHeapWriteBlockHeader(void* blockAddress, size_t blockSize, 
 	*FlVirtualHeapHeaderAt(blockAddress) = headerWord;
 }
 
-static void FlVirtualHeapWriteFreeBlock(void* blockAddress, size_t blockSize, size_t prevAllocatedFlag)
+// Writes a free block's header and footer. flags may carry PREV_ALLOCATED and
+// RED; the footer is written without RED (see the layout note at the top of
+// this file), so a later recolor only has to touch the header.
+static void FlVirtualHeapWriteFreeBlock(void* blockAddress, size_t blockSize, size_t flags)
 {
-	size_t headerWord = blockSize | prevAllocatedFlag;
-	*FlVirtualHeapHeaderAt(blockAddress) = headerWord;
-	*FlVirtualHeapFooterAt(blockAddress, blockSize) = headerWord;
+	*FlVirtualHeapHeaderAt(blockAddress) = blockSize | flags;
+	*FlVirtualHeapFooterAt(blockAddress, blockSize) = blockSize | (flags & ~FL_VIRTUAL_HEAP_RED_FLAG);
 }
 
 // Updates the PREV_ALLOCATED flag in the next block's header.
@@ -162,29 +174,71 @@ static void FlVirtualHeapSetNextPrevAllocated(void* blockAddress, size_t blockSi
 	*nextHeader = (*nextHeader & ~FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG) | prevAllocatedFlag;
 }
 
-// ---------- AVL tree ----------
+// ---------- Red-black tree ----------
+//
+// The free blocks are kept in a standard (non-left-leaning) red-black tree,
+// ordered by block address, and augmented with subtreeMax (the largest block
+// size anywhere in the subtree) to answer best-address fitting queries in
+// FlRbFindFit without a linear scan.
+//
+// Nodes carry parent pointers, so both RB-INSERT-FIXUP and RB-DELETE-FIXUP are
+// the plain iterative CLRS algorithms and FlRbDelete needs no search phase at
+// all -- every caller already holds the node it wants removed, derived in O(1)
+// from a block address. Parent pointers also make the two operations the
+// coalescing fast paths depend on cheap:
+//
+//   FlRbReplaceNode              swap a node for another that belongs in the
+//                              exact same in-order slot, in O(1).
+//   FlRbRefreshAugmentationUpward  republish a changed block size to the
+//                              ancestors that can see it, stopping as soon as
+//                              one of them does not change.
+//
+// Neither performs a root-down search or a single rotation, which is what
+// makes coalescing in FlVirtualHeapFree nearly free.
+//
+// A node's identity *is* its memory address (FlVirtualHeapNodeBlock derives
+// the block address from the node's own pointer, not from stored data), so
+// FlRbDelete cannot use the textbook trick of copying the in-order successor's
+// key into the deleted node. The successor is physically relinked into the
+// removed node's position instead.
+//
+// The color lives in bit 2 of the node's block header word rather than in the
+// node, which is what leaves room for the parent pointer inside 32 bytes. The
+// header word is the same word FlRbNodeSelfSize reads, so a node's color and its
+// own block size come from a single load.
 
-static uint32_t AvlHeight(const FLVirtualHeapNode* node)
+static size_t* FlRbNodeHeaderAt(const FLVirtualHeapNode* node)
 {
-	return node ? node->height : 0;
+	return FlVirtualHeapHeaderAt(FlVirtualHeapNodeBlock(node));
 }
 
-static size_t AvlSubtreeMax(const FLVirtualHeapNode* node)
+static int FlRbIsRed(const FLVirtualHeapNode* node)
+{
+	return node != NULL && (*FlRbNodeHeaderAt(node) & FL_VIRTUAL_HEAP_RED_FLAG) != 0;
+}
+
+// color must be FL_VIRTUAL_HEAP_NODE_BLACK or FL_VIRTUAL_HEAP_NODE_RED.
+static void FlRbSetColor(FLVirtualHeapNode* node, int color)
+{
+	size_t* headerWord = FlRbNodeHeaderAt(node);
+	*headerWord = color ? (*headerWord | FL_VIRTUAL_HEAP_RED_FLAG) : (*headerWord & ~FL_VIRTUAL_HEAP_RED_FLAG);
+}
+
+static size_t FlRbSubtreeMax(const FLVirtualHeapNode* node)
 {
 	return node ? node->subtreeMax : 0;
 }
 
-static void AvlUpdate(FLVirtualHeapNode* node)
+static size_t FlRbNodeSelfSize(const FLVirtualHeapNode* node)
 {
-	uint32_t leftHeight = AvlHeight(node->left);
-	uint32_t rightHeight = AvlHeight(node->right);
-	node->height = 1 + (leftHeight > rightHeight ? leftHeight : rightHeight);
+	return FlVirtualHeapBlockSize(*FlRbNodeHeaderAt(node));
+}
 
-	void* blockAddress = FlVirtualHeapNodeBlock(node);
-	size_t selfSize = FlVirtualHeapBlockSize(*FlVirtualHeapHeaderAt(blockAddress));
-	size_t leftMax = AvlSubtreeMax(node->left);
-	size_t rightMax = AvlSubtreeMax(node->right);
-	size_t maxSize = selfSize;
+static void FlRbUpdateSubtreeMax(FLVirtualHeapNode* node)
+{
+	size_t maxSize = FlRbNodeSelfSize(node);
+	size_t leftMax = FlRbSubtreeMax(node->left);
+	size_t rightMax = FlRbSubtreeMax(node->right);
 	if (leftMax > maxSize)
 	{
 		maxSize = leftMax;
@@ -196,126 +250,473 @@ static void AvlUpdate(FLVirtualHeapNode* node)
 	node->subtreeMax = maxSize;
 }
 
-static FLVirtualHeapNode* AvlRotateRight(FLVirtualHeapNode* y)
+// Recomputes subtreeMax for node and every ancestor up to the root.
+// Unconditional: safe even when a node somewhere along the path had its
+// children replaced wholesale, as happens to the spliced-in successor in
+// FlRbDelete.
+static void FlRbRefreshAugmentationToRoot(FLVirtualHeapNode* node)
 {
-	FLVirtualHeapNode* x = y->left;
-	FLVirtualHeapNode* t2 = x->right;
-	x->right = y;
-	y->left = t2;
-	AvlUpdate(y);
-	AvlUpdate(x);
-	return x;
-}
-
-static FLVirtualHeapNode* AvlRotateLeft(FLVirtualHeapNode* x)
-{
-	FLVirtualHeapNode* y = x->right;
-	FLVirtualHeapNode* t2 = y->left;
-	y->left = x;
-	x->right = t2;
-	AvlUpdate(x);
-	AvlUpdate(y);
-	return y;
-}
-
-static int AvlBalance(const FLVirtualHeapNode* node)
-{
-	return (int)AvlHeight(node->left) - (int)AvlHeight(node->right);
-}
-
-static FLVirtualHeapNode* AvlRebalance(FLVirtualHeapNode* node)
-{
-	AvlUpdate(node);
-	int balance = AvlBalance(node);
-	if (balance > 1)
+	while (node)
 	{
-		if (AvlBalance(node->left) < 0)
+		FlRbUpdateSubtreeMax(node);
+		node = node->parent;
+	}
+}
+
+// Republishes a changed block size upwards, stopping at the first ancestor
+// whose subtreeMax does not change -- nothing above such a node can change
+// either, because subtreeMax depends on the ancestors' children only through
+// that value.
+//
+// Requires every node below `node` to already have a correct subtreeMax, which
+// holds for the callers that only resized one block in place or swapped one
+// node for another in the same slot. Typically stops after one or two levels,
+// since one block's size is rarely the maximum of a whole subtree.
+static void FlRbRefreshAugmentationUpward(FLVirtualHeapNode* node)
+{
+	while (node)
+	{
+		size_t previousSubtreeMax = node->subtreeMax;
+		FlRbUpdateSubtreeMax(node);
+		if (node->subtreeMax == previousSubtreeMax)
 		{
-			node->left = AvlRotateLeft(node->left);
+			return;
 		}
-		return AvlRotateRight(node);
+		node = node->parent;
 	}
-	if (balance < -1)
-	{
-		if (AvlBalance(node->right) > 0)
-		{
-			node->right = AvlRotateRight(node->right);
-		}
-		return AvlRotateLeft(node);
-	}
-	return node;
 }
 
-static FLVirtualHeapNode* AvlInsert(FLVirtualHeapNode* root, FLVirtualHeapNode* newNode)
+// Pure structural rotations: pointer surgery, parent relinking and subtreeMax
+// refresh only. Colors are never touched here; every call site assigns colors
+// explicitly, since the correct post-rotation colors differ between the
+// insert-fixup and delete-fixup call sites.
+//
+// A rotation never changes which nodes a subtree contains, only how they are
+// arranged, so the subtree root's subtreeMax is identical before and after.
+// Refreshing the two nodes that actually moved is therefore sufficient; no
+// ancestor can be affected by a rotation.
+static void FlRbRotateLeft(FLVirtualHeap* heap, FLVirtualHeapNode* h)
 {
-	if (!root)
+	FLVirtualHeapNode* x = h->right;
+	assert(x);
+	h->right = x->left;
+	if (x->left)
 	{
-		newNode->left = NULL;
-		newNode->right = NULL;
-		newNode->height = 1;
-		void* blockAddress = FlVirtualHeapNodeBlock(newNode);
-		newNode->subtreeMax = FlVirtualHeapBlockSize(*FlVirtualHeapHeaderAt(blockAddress));
-		return newNode;
+		x->left->parent = h;
 	}
-	void* rootBlock = FlVirtualHeapNodeBlock(root);
-	void* newBlock = FlVirtualHeapNodeBlock(newNode);
-	if ((uintptr_t)newBlock < (uintptr_t)rootBlock)
+	x->parent = h->parent;
+	if (!h->parent)
 	{
-		root->left = AvlInsert(root->left, newNode);
+		heap->treeRoot = x;
+	}
+	else if (h == h->parent->left)
+	{
+		h->parent->left = x;
 	}
 	else
 	{
-		root->right = AvlInsert(root->right, newNode);
+		h->parent->right = x;
 	}
-	return AvlRebalance(root);
+	x->left = h;
+	h->parent = x;
+	FlRbUpdateSubtreeMax(h);
+	FlRbUpdateSubtreeMax(x);
 }
 
-static FLVirtualHeapNode* AvlMinNode(FLVirtualHeapNode* node)
+static void FlRbRotateRight(FLVirtualHeap* heap, FLVirtualHeapNode* h)
 {
-	while (node->left)
+	FLVirtualHeapNode* x = h->left;
+	assert(x);
+	h->left = x->right;
+	if (x->right)
 	{
-		node = node->left;
+		x->right->parent = h;
 	}
-	return node;
-}
-
-static FLVirtualHeapNode* AvlDelete(FLVirtualHeapNode* root, FLVirtualHeapNode* target)
-{
-	if (!root)
+	x->parent = h->parent;
+	if (!h->parent)
 	{
-		return NULL;
+		heap->treeRoot = x;
 	}
-	void* rootBlock = FlVirtualHeapNodeBlock(root);
-	void* targetBlock = FlVirtualHeapNodeBlock(target);
-	if ((uintptr_t)targetBlock < (uintptr_t)rootBlock)
+	else if (h == h->parent->right)
 	{
-		root->left = AvlDelete(root->left, target);
-	}
-	else if ((uintptr_t)targetBlock > (uintptr_t)rootBlock)
-	{
-		root->right = AvlDelete(root->right, target);
+		h->parent->right = x;
 	}
 	else
 	{
-		if (!root->left)
-		{
-			return root->right;
-		}
-		if (!root->right)
-		{
-			return root->left;
-		}
-		FLVirtualHeapNode* successor = AvlMinNode(root->right);
-		root->right = AvlDelete(root->right, successor);
-		successor->left = root->left;
-		successor->right = root->right;
-		root = successor;
+		h->parent->left = x;
 	}
-	return AvlRebalance(root);
+	x->right = h;
+	h->parent = x;
+	FlRbUpdateSubtreeMax(h);
+	FlRbUpdateSubtreeMax(x);
+}
+
+// RB-INSERT-FIXUP. newNode has just been attached as a red leaf, so the only
+// possible violation is a red node with a red parent. Each iteration either
+// recolors the violation one level further up (case 1) or removes it outright
+// with at most two rotations (cases 2 and 3), which ends the loop.
+static void FlRbInsertFixup(FLVirtualHeap* heap, FLVirtualHeapNode* newNode)
+{
+	FLVirtualHeapNode* node = newNode;
+	while (FlRbIsRed(node->parent))
+	{
+		FLVirtualHeapNode* parent = node->parent;
+		FLVirtualHeapNode* grandParent = parent->parent;
+		// parent is red, so parent is not the root, so grandParent exists.
+		assert(grandParent);
+		if (parent == grandParent->left)
+		{
+			FLVirtualHeapNode* uncle = grandParent->right;
+			if (FlRbIsRed(uncle))
+			{
+				// Case 1: uncle red. Split the temporary 4-node by recoloring
+				// and continue from the grandparent.
+				FlRbSetColor(parent, FL_VIRTUAL_HEAP_NODE_BLACK);
+				FlRbSetColor(uncle, FL_VIRTUAL_HEAP_NODE_BLACK);
+				FlRbSetColor(grandParent, FL_VIRTUAL_HEAP_NODE_RED);
+				node = grandParent;
+			}
+			else
+			{
+				if (node == parent->right)
+				{
+					// Case 2: inner grandchild. One rotation reduces this to
+					// case 3.
+					node = parent;
+					FlRbRotateLeft(heap, node);
+					parent = node->parent;
+				}
+				// Case 3: outer grandchild, uncle black. The new subtree root
+				// is black, so the loop condition fails on the next test.
+				FlRbSetColor(parent, FL_VIRTUAL_HEAP_NODE_BLACK);
+				FlRbSetColor(grandParent, FL_VIRTUAL_HEAP_NODE_RED);
+				FlRbRotateRight(heap, grandParent);
+			}
+		}
+		else
+		{
+			FLVirtualHeapNode* uncle = grandParent->left;
+			if (FlRbIsRed(uncle))
+			{
+				FlRbSetColor(parent, FL_VIRTUAL_HEAP_NODE_BLACK);
+				FlRbSetColor(uncle, FL_VIRTUAL_HEAP_NODE_BLACK);
+				FlRbSetColor(grandParent, FL_VIRTUAL_HEAP_NODE_RED);
+				node = grandParent;
+			}
+			else
+			{
+				if (node == parent->left)
+				{
+					node = parent;
+					FlRbRotateRight(heap, node);
+					parent = node->parent;
+				}
+				FlRbSetColor(parent, FL_VIRTUAL_HEAP_NODE_BLACK);
+				FlRbSetColor(grandParent, FL_VIRTUAL_HEAP_NODE_RED);
+				FlRbRotateLeft(heap, grandParent);
+			}
+		}
+	}
+	// Case 1 can color the root red on its last iteration; this puts it back.
+	FlRbSetColor(heap->treeRoot, FL_VIRTUAL_HEAP_NODE_BLACK);
+}
+
+// Inserts newNode into the address-ordered tree. The caller must have written
+// newNode's block header already (FlRbNodeSelfSize reads it); every field of the
+// node itself is initialized here.
+static void FlRbInsert(_Inout_ FLVirtualHeap* heap, _Inout_ FLVirtualHeapNode* newNode)
+{
+	const void* newBlock = FlVirtualHeapNodeBlock(newNode);
+	size_t newSize = FlRbNodeSelfSize(newNode);
+
+	FLVirtualHeapNode* parent = NULL;
+	FLVirtualHeapNode* current = heap->treeRoot;
+	int insertLeft = 0;
+	while (current)
+	{
+		// An insertion can only ever raise an ancestor's subtreeMax, and the
+		// new block's size is known before the descent starts, so the
+		// augmentation is published on the way down. No second pass back up is
+		// needed, and the rotations in FlRbInsertFixup preserve subtree maxima.
+		if (current->subtreeMax < newSize)
+		{
+			current->subtreeMax = newSize;
+		}
+		parent = current;
+		insertLeft = (uintptr_t)newBlock < (uintptr_t)FlVirtualHeapNodeBlock(current);
+		current = insertLeft ? current->left : current->right;
+	}
+
+	newNode->left = NULL;
+	newNode->right = NULL;
+	newNode->parent = parent;
+	newNode->subtreeMax = newSize;
+	FlRbSetColor(newNode, FL_VIRTUAL_HEAP_NODE_RED);
+
+	if (!parent)
+	{
+		heap->treeRoot = newNode;
+	}
+	else if (insertLeft)
+	{
+		parent->left = newNode;
+	}
+	else
+	{
+		parent->right = newNode;
+	}
+
+	FlRbInsertFixup(heap, newNode);
+}
+
+// Replaces the subtree rooted at target with the subtree rooted at
+// replacement, which may be NULL. target's own child pointers are left alone.
+static void FlRbTransplant(FLVirtualHeap* heap, FLVirtualHeapNode* target, FLVirtualHeapNode* replacement)
+{
+	if (!target->parent)
+	{
+		heap->treeRoot = replacement;
+	}
+	else if (target == target->parent->left)
+	{
+		target->parent->left = replacement;
+	}
+	else
+	{
+		target->parent->right = replacement;
+	}
+	if (replacement)
+	{
+		replacement->parent = target->parent;
+	}
+}
+
+// RB-DELETE-FIXUP. node carries one extra unit of black and may be NULL, so
+// its parent is passed explicitly rather than relying on a nil sentinel. When
+// node is NULL its sibling is always a real node: a doubly-black NULL child
+// means the sibling's subtree has black-height at least one, and it also means
+// exactly one of nodeParent's children is NULL, so comparing node against
+// nodeParent->left still identifies the correct side.
+static void FlRbDeleteFixup(FLVirtualHeap* heap, FLVirtualHeapNode* node, FLVirtualHeapNode* nodeParent)
+{
+	while (node != heap->treeRoot && !FlRbIsRed(node))
+	{
+		assert(nodeParent);
+		if (node == nodeParent->left)
+		{
+			FLVirtualHeapNode* sibling = nodeParent->right;
+			assert(sibling);
+			if (FlRbIsRed(sibling))
+			{
+				// Case 1: red sibling, so nodeParent is provably black. Rotate
+				// the sibling up so the cases below face a black one.
+				FlRbSetColor(sibling, FL_VIRTUAL_HEAP_NODE_BLACK);
+				FlRbSetColor(nodeParent, FL_VIRTUAL_HEAP_NODE_RED);
+				FlRbRotateLeft(heap, nodeParent);
+				sibling = nodeParent->right;
+				assert(sibling);
+			}
+			if (!FlRbIsRed(sibling->left) && !FlRbIsRed(sibling->right))
+			{
+				// Case 2: both nephews black. Either nodeParent absorbs the
+				// deficiency by turning black or it propagates one level up.
+				FlRbSetColor(sibling, FL_VIRTUAL_HEAP_NODE_RED);
+				node = nodeParent;
+				nodeParent = node->parent;
+				continue;
+			}
+			if (!FlRbIsRed(sibling->right))
+			{
+				// Case 3: near nephew red, far nephew black. Rotating the near
+				// nephew up reduces this to case 4.
+				FlRbSetColor(sibling->left, FL_VIRTUAL_HEAP_NODE_BLACK);
+				FlRbSetColor(sibling, FL_VIRTUAL_HEAP_NODE_RED);
+				FlRbRotateRight(heap, sibling);
+				sibling = nodeParent->right;
+				assert(sibling);
+			}
+			// Case 4: far nephew red. Resolves the deficiency outright.
+			FlRbSetColor(sibling, FlRbIsRed(nodeParent) ? FL_VIRTUAL_HEAP_NODE_RED : FL_VIRTUAL_HEAP_NODE_BLACK);
+			FlRbSetColor(nodeParent, FL_VIRTUAL_HEAP_NODE_BLACK);
+			FlRbSetColor(sibling->right, FL_VIRTUAL_HEAP_NODE_BLACK);
+			FlRbRotateLeft(heap, nodeParent);
+			node = heap->treeRoot;
+			nodeParent = NULL;
+		}
+		else
+		{
+			FLVirtualHeapNode* sibling = nodeParent->left;
+			assert(sibling);
+			if (FlRbIsRed(sibling))
+			{
+				FlRbSetColor(sibling, FL_VIRTUAL_HEAP_NODE_BLACK);
+				FlRbSetColor(nodeParent, FL_VIRTUAL_HEAP_NODE_RED);
+				FlRbRotateRight(heap, nodeParent);
+				sibling = nodeParent->left;
+				assert(sibling);
+			}
+			if (!FlRbIsRed(sibling->left) && !FlRbIsRed(sibling->right))
+			{
+				FlRbSetColor(sibling, FL_VIRTUAL_HEAP_NODE_RED);
+				node = nodeParent;
+				nodeParent = node->parent;
+				continue;
+			}
+			if (!FlRbIsRed(sibling->left))
+			{
+				FlRbSetColor(sibling->right, FL_VIRTUAL_HEAP_NODE_BLACK);
+				FlRbSetColor(sibling, FL_VIRTUAL_HEAP_NODE_RED);
+				FlRbRotateLeft(heap, sibling);
+				sibling = nodeParent->left;
+				assert(sibling);
+			}
+			FlRbSetColor(sibling, FlRbIsRed(nodeParent) ? FL_VIRTUAL_HEAP_NODE_RED : FL_VIRTUAL_HEAP_NODE_BLACK);
+			FlRbSetColor(nodeParent, FL_VIRTUAL_HEAP_NODE_BLACK);
+			FlRbSetColor(sibling->left, FL_VIRTUAL_HEAP_NODE_BLACK);
+			FlRbRotateRight(heap, nodeParent);
+			node = heap->treeRoot;
+			nodeParent = NULL;
+		}
+	}
+	if (node)
+	{
+		FlRbSetColor(node, FL_VIRTUAL_HEAP_NODE_BLACK);
+	}
+}
+
+// Removes node from the tree. node must currently be in the tree.
+//
+// There is no search phase: every caller already holds the node, derived in
+// O(1) from a block address, so the only work is the splice plus the fixup.
+static void FlRbDelete(_Inout_ FLVirtualHeap* heap, _Inout_ FLVirtualHeapNode* node)
+{
+	assert(heap->treeRoot);
+
+	// replacement moves into the removed node's structural position and may be
+	// NULL; replacementParent is its parent afterwards, tracked separately
+	// because a NULL replacement cannot carry one.
+	FLVirtualHeapNode* replacement;
+	FLVirtualHeapNode* replacementParent;
+	int removedWasRed;
+
+	if (!node->left || !node->right)
+	{
+		removedWasRed = FlRbIsRed(node);
+		replacement = node->left ? node->left : node->right;
+		replacementParent = node->parent;
+		FlRbTransplant(heap, node, replacement);
+	}
+	else
+	{
+		// Two children: the in-order successor takes over the removed node's
+		// position, children and color. It is relinked physically rather than
+		// key-copied, because a node's identity is its own memory address.
+		FLVirtualHeapNode* successor = node->right;
+		while (successor->left)
+		{
+			successor = successor->left;
+		}
+		removedWasRed = FlRbIsRed(successor);
+		replacement = successor->right;
+		if (successor->parent == node)
+		{
+			replacementParent = successor;
+		}
+		else
+		{
+			replacementParent = successor->parent;
+			FlRbTransplant(heap, successor, successor->right);
+			successor->right = node->right;
+			successor->right->parent = successor;
+		}
+		FlRbTransplant(heap, node, successor);
+		successor->left = node->left;
+		successor->left->parent = successor;
+		FlRbSetColor(successor, FlRbIsRed(node) ? FL_VIRTUAL_HEAP_NODE_RED : FL_VIRTUAL_HEAP_NODE_BLACK);
+	}
+
+	// Every subtree from replacementParent up lost a node. The spliced-in
+	// successor above also inherited an entirely new pair of children, and it
+	// always lies on that path, so this pass must be the unconditional one:
+	// an early exit could stop below the successor and leave its stale
+	// subtreeMax in place.
+	FlRbRefreshAugmentationToRoot(replacementParent);
+
+	if (!removedWasRed)
+	{
+		FlRbDeleteFixup(heap, replacement, replacementParent);
+	}
+}
+
+// Puts newNode into oldNode's exact in-order slot, taking over its parent,
+// children and color, without a search and without a single rotation.
+//
+// Valid only when no other free block's address lies between the two blocks.
+// That is what the coalescing and splitting fast paths rely on: the block
+// replacing oldNode's block is carved out of it or directly adjacent to it,
+// with nothing free in between, so
+//     predecessor(oldNode) < newNode < oldNode < successor(oldNode)
+// (or the same with newNode above oldNode) and the address ordering holds
+// without moving anything.
+//
+// The caller passes newNodeSelfSize rather than letting this read the new
+// block's header, because the relink must happen BEFORE that block is written:
+// when a block is grown in place the tail left over from the absorbed block
+// starts as little as 16 bytes past it, so writing the tail's header would
+// overwrite the old node's right child pointer. Reading every field of oldNode
+// up front makes the two safe to overlap. Callers must therefore follow this
+// with the FlVirtualHeapWriteFreeBlock for newNode's block, carrying over
+// oldNode's color, which lives in a header word this never touches.
+static void FlRbReplaceNode(_Inout_ FLVirtualHeap* heap, _In_ const FLVirtualHeapNode* oldNode, _Inout_ FLVirtualHeapNode* newNode, _In_ size_t newNodeSelfSize)
+{
+	FLVirtualHeapNode* left = oldNode->left;
+	FLVirtualHeapNode* right = oldNode->right;
+	FLVirtualHeapNode* parent = oldNode->parent;
+
+	newNode->left = left;
+	newNode->right = right;
+	newNode->parent = parent;
+	if (left)
+	{
+		left->parent = newNode;
+	}
+	if (right)
+	{
+		right->parent = newNode;
+	}
+	if (!parent)
+	{
+		heap->treeRoot = newNode;
+	}
+	else if (parent->left == oldNode)
+	{
+		parent->left = newNode;
+	}
+	else
+	{
+		parent->right = newNode;
+	}
+
+	// Inlined FlRbUpdateSubtreeMax: the new block's header does not exist yet, so
+	// the self size comes from the caller rather than from FlRbNodeSelfSize.
+	size_t maxSize = newNodeSelfSize;
+	size_t leftMax = FlRbSubtreeMax(left);
+	size_t rightMax = FlRbSubtreeMax(right);
+	if (leftMax > maxSize)
+	{
+		maxSize = leftMax;
+	}
+	if (rightMax > maxSize)
+	{
+		maxSize = rightMax;
+	}
+	newNode->subtreeMax = maxSize;
+
+	FlRbRefreshAugmentationUpward(parent);
 }
 
 // Returns the lowest-address free block with size >= need, or NULL.
-static FLVirtualHeapNode* AvlFindFit(FLVirtualHeapNode* root, size_t need)
+static FLVirtualHeapNode* FlRbFindFit(FLVirtualHeapNode* root, size_t need)
 {
 	if (!root)
 	{
@@ -323,21 +724,19 @@ static FLVirtualHeapNode* AvlFindFit(FLVirtualHeapNode* root, size_t need)
 	}
 	if (root->left && root->left->subtreeMax >= need)
 	{
-		FLVirtualHeapNode* result = AvlFindFit(root->left, need);
+		FLVirtualHeapNode* result = FlRbFindFit(root->left, need);
 		if (result)
 		{
 			return result;
 		}
 	}
-	void* blockAddress = FlVirtualHeapNodeBlock(root);
-	size_t blockSize = FlVirtualHeapBlockSize(*FlVirtualHeapHeaderAt(blockAddress));
-	if (blockSize >= need)
+	if (FlRbNodeSelfSize(root) >= need)
 	{
 		return root;
 	}
 	if (root->right && root->right->subtreeMax >= need)
 	{
-		return AvlFindFit(root->right, need);
+		return FlRbFindFit(root->right, need);
 	}
 	return NULL;
 }
@@ -483,7 +882,7 @@ static size_t FlVirtualHeapInternalCalculateHeuristicMaximumHeapSize(
 
 // ---------- Public API ----------
 
-__declspec(dllexport) HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _In_ size_t size)
+HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _In_ size_t size)
 {
 	assert(FL_VIRTUAL_HEAP_DESCRIPTOR_SIZE == 40);
 	assert((FL_VIRTUAL_HEAP_DESCRIPTOR_SIZE & 0xF) == 0x8);
@@ -539,11 +938,13 @@ __declspec(dllexport) HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _I
 	void* epilogueBlock = FlVirtualHeapEpilogueBlock(heapDescriptor);
 	size_t spanningBlockSize = (uintptr_t)epilogueBlock - (uintptr_t)firstBlock;
 
+	// The spanning block is the whole tree: black root, no children. Its header
+	// was just written without FL_VIRTUAL_HEAP_RED_FLAG, so it is already black.
 	FlVirtualHeapWriteFreeBlock(firstBlock, spanningBlockSize, FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG);
 	FLVirtualHeapNode* spanningNode = FlVirtualHeapBlockNode(firstBlock);
 	spanningNode->left = NULL;
 	spanningNode->right = NULL;
-	spanningNode->height = 1;
+	spanningNode->parent = NULL;
 	spanningNode->subtreeMax = spanningBlockSize;
 	heapDescriptor->treeRoot = spanningNode;
 
@@ -553,7 +954,7 @@ __declspec(dllexport) HRESULT FlVirtualHeapCreate(_Out_ FLVirtualHeap** heap, _I
 	return S_OK;
 }
 
-__declspec(dllexport) void FlVirtualHeapDelete(_In_ FLVirtualHeap* heap)
+void FlVirtualHeapDelete(_In_ FLVirtualHeap* heap)
 {
 	assert(heap);
 	FlVirtualHeapInternalFreeMemory(heap);
@@ -570,19 +971,22 @@ static int FlVirtualHeapInternalGrow(_Inout_ FLVirtualHeap* heap, _In_ size_t ad
 
 	void* trailingBlock;
 	size_t trailingSize;
-	size_t trailingPrevAllocatedFlag;
+	size_t trailingPreservedFlags;
 	if (FlVirtualHeapIsPrevAllocated(epilogueHeaderWord))
 	{
 		trailingBlock = oldEpilogue;
 		trailingSize = 0;
-		trailingPrevAllocatedFlag = FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG;
+		trailingPreservedFlags = FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG;
 	}
 	else
 	{
 		size_t footerWord = *(size_t*)((uintptr_t)oldEpilogue - 8);
 		trailingSize = FlVirtualHeapBlockSize(footerWord);
 		trailingBlock = (void*)((uintptr_t)oldEpilogue - trailingSize);
-		trailingPrevAllocatedFlag = *FlVirtualHeapHeaderAt(trailingBlock) & FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG;
+		// The color comes along too: an existing trailing free block keeps its
+		// node, and therefore its color, across the growth.
+		trailingPreservedFlags = *FlVirtualHeapHeaderAt(trailingBlock) &
+			(FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG | FL_VIRTUAL_HEAP_RED_FLAG);
 	}
 
 	if (additionalNeeded <= trailingSize)
@@ -603,20 +1007,23 @@ static int FlVirtualHeapInternalGrow(_Inout_ FLVirtualHeap* heap, _In_ size_t ad
 		return 0;
 	}
 
-	if (trailingSize)
-	{
-		heap->treeRoot = AvlDelete(heap->treeRoot, FlVirtualHeapBlockNode(trailingBlock));
-	}
 	heap->regionCommittedSize += growAmount;
 
 	size_t newTrailingSize = trailingSize + growAmount;
-	FlVirtualHeapWriteFreeBlock(trailingBlock, newTrailingSize, trailingPrevAllocatedFlag);
-	FLVirtualHeapNode* trailingNode = FlVirtualHeapBlockNode(trailingBlock);
-	trailingNode->left = NULL;
-	trailingNode->right = NULL;
-	trailingNode->height = 1;
-	trailingNode->subtreeMax = newTrailingSize;
-	heap->treeRoot = AvlInsert(heap->treeRoot, trailingNode);
+	FlVirtualHeapWriteFreeBlock(trailingBlock, newTrailingSize, trailingPreservedFlags);
+	if (trailingSize)
+	{
+		// The trailing free block only got longer. Its address is unchanged, so
+		// its node keeps its slot in the address-ordered tree and only the
+		// subtreeMax augmentation needs republishing.
+		FlRbRefreshAugmentationUpward(FlVirtualHeapBlockNode(trailingBlock));
+	}
+	else
+	{
+		// There was no trailing free block; the newly committed space becomes
+		// one, starting where the old epilogue sentinel was.
+		FlRbInsert(heap, FlVirtualHeapBlockNode(trailingBlock));
+	}
 
 	*(size_t*)FlVirtualHeapEpilogueBlock(heap) = FL_VIRTUAL_HEAP_ALLOCATED_FLAG;
 
@@ -631,7 +1038,7 @@ static void FlVirtualHeapInternalShrink(_Inout_ FLVirtualHeap* heap, _In_ void* 
 {
 	size_t allocationGranularity = heap->allocationGranularity;
 	size_t headerWord = *FlVirtualHeapHeaderAt(trailingFreeBlock);
-	size_t prevAllocatedFlag = headerWord & FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG;
+	size_t preservedFlags = headerWord & (FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG | FL_VIRTUAL_HEAP_RED_FLAG);
 	size_t trailingSize = FlVirtualHeapBlockSize(headerWord);
 	size_t trailingOffset = (uintptr_t)trailingFreeBlock - (uintptr_t)heap;
 
@@ -658,19 +1065,15 @@ static void FlVirtualHeapInternalShrink(_Inout_ FLVirtualHeap* heap, _In_ void* 
 	heap->regionCommittedSize = target;
 	size_t newTrailingSize = trailingSize - decommitAmount;
 
-	heap->treeRoot = AvlDelete(heap->treeRoot, FlVirtualHeapBlockNode(trailingFreeBlock));
-	FlVirtualHeapWriteFreeBlock(trailingFreeBlock, newTrailingSize, prevAllocatedFlag);
-	FLVirtualHeapNode* node = FlVirtualHeapBlockNode(trailingFreeBlock);
-	node->left = NULL;
-	node->right = NULL;
-	node->height = 1;
-	node->subtreeMax = newTrailingSize;
-	heap->treeRoot = AvlInsert(heap->treeRoot, node);
+	// Only the trailing block's length changes; its address, and therefore its
+	// slot in the address-ordered tree and its color, stay as they are.
+	FlVirtualHeapWriteFreeBlock(trailingFreeBlock, newTrailingSize, preservedFlags);
+	FlRbRefreshAugmentationUpward(FlVirtualHeapBlockNode(trailingFreeBlock));
 
 	*(size_t*)FlVirtualHeapEpilogueBlock(heap) = FL_VIRTUAL_HEAP_ALLOCATED_FLAG;
 }
 
-__declspec(dllexport) _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapAllocate(_Inout_ FLVirtualHeap* heap, _In_ size_t size)
+_Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapAllocate(_Inout_ FLVirtualHeap* heap, _In_ size_t size)
 {
 	assert(heap);
 
@@ -689,14 +1092,14 @@ __declspec(dllexport) _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_A
 		need = FL_VIRTUAL_HEAP_MIN_BLOCK_SIZE;
 	}
 
-	FLVirtualHeapNode* fitNode = AvlFindFit(heap->treeRoot, need);
+	FLVirtualHeapNode* fitNode = FlRbFindFit(heap->treeRoot, need);
 	if (!fitNode)
 	{
 		if (!FlVirtualHeapInternalGrow(heap, need))
 		{
 			return NULL;
 		}
-		fitNode = AvlFindFit(heap->treeRoot, need);
+		fitNode = FlRbFindFit(heap->treeRoot, need);
 		if (!fitNode)
 		{
 			return NULL;
@@ -708,25 +1111,24 @@ __declspec(dllexport) _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_A
 	size_t blockSize = FlVirtualHeapBlockSize(headerWord);
 	size_t prevAllocatedFlag = headerWord & FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG;
 
-	heap->treeRoot = AvlDelete(heap->treeRoot, fitNode);
-
 	size_t remainder = blockSize - need;
 	if (remainder >= FL_VIRTUAL_HEAP_MIN_BLOCK_SIZE)
 	{
+		// The remainder is carved out of the block being handed out, so nothing
+		// free lies between the two and the tail's node belongs in exactly the
+		// slot the fit block's node occupies. Swapping it in costs no search
+		// and no rebalancing, unlike the delete plus insert it replaces.
 		void* tailBlock = (void*)((uintptr_t)blockAddress + need);
-		FlVirtualHeapWriteFreeBlock(tailBlock, remainder, FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG);
-		FLVirtualHeapNode* tailNode = FlVirtualHeapBlockNode(tailBlock);
-		tailNode->left = NULL;
-		tailNode->right = NULL;
-		tailNode->height = 1;
-		tailNode->subtreeMax = remainder;
-		heap->treeRoot = AvlInsert(heap->treeRoot, tailNode);
+		FlRbReplaceNode(heap, fitNode, FlVirtualHeapBlockNode(tailBlock), remainder);
+		FlVirtualHeapWriteFreeBlock(tailBlock, remainder,
+			FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG | (headerWord & FL_VIRTUAL_HEAP_RED_FLAG));
 		FlVirtualHeapSetNextPrevAllocated(tailBlock, remainder, 0);
 
 		FlVirtualHeapWriteBlockHeader(blockAddress, need, prevAllocatedFlag | FL_VIRTUAL_HEAP_ALLOCATED_FLAG);
 	}
 	else
 	{
+		FlRbDelete(heap, fitNode);
 		FlVirtualHeapWriteBlockHeader(blockAddress, blockSize, prevAllocatedFlag | FL_VIRTUAL_HEAP_ALLOCATED_FLAG);
 		FlVirtualHeapSetNextPrevAllocated(blockAddress, blockSize, FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG);
 	}
@@ -734,7 +1136,7 @@ __declspec(dllexport) _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_A
 	return FlVirtualHeapBlockPayload(blockAddress);
 }
 
-__declspec(dllexport) void FlVirtualHeapFree(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invalid_ void* allocation)
+void FlVirtualHeapFree(_Inout_ FLVirtualHeap* heap, _Pre_maybenull_ _Post_invalid_ void* allocation)
 {
 	assert(heap);
 
@@ -755,36 +1157,71 @@ __declspec(dllexport) void FlVirtualHeapFree(_Inout_ FLVirtualHeap* heap, _Pre_m
 	size_t blockSize = FlVirtualHeapBlockSize(headerWord);
 	size_t prevAllocatedFlag = headerWord & FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG;
 
-	// Coalesce forward: check next block.
+	// Look at both neighbours before touching the tree, so the four coalescing
+	// outcomes can each take the cheapest route into it. The block being freed
+	// is allocated and the two neighbours are adjacent to it, so no free block
+	// lies strictly between them: whatever the merged block turns out to be, it
+	// occupies the in-order slot of at most one existing tree node and there is
+	// never anything to reorder.
 	void* nextBlock = (void*)((uintptr_t)blockAddress + blockSize);
 	size_t nextHeaderWord = *FlVirtualHeapHeaderAt(nextBlock);
-	if (!FlVirtualHeapIsAllocated(nextHeaderWord))
-	{
-		size_t nextSize = FlVirtualHeapBlockSize(nextHeaderWord);
-		heap->treeRoot = AvlDelete(heap->treeRoot, FlVirtualHeapBlockNode(nextBlock));
-		blockSize += nextSize;
-	}
+	int nextIsFree = !FlVirtualHeapIsAllocated(nextHeaderWord);
 
-	// Coalesce backward: check previous block via PREV_ALLOCATED flag.
+	void* prevBlock = NULL;
+	size_t prevSize = 0;
 	if (!FlVirtualHeapIsPrevAllocated(headerWord))
 	{
 		size_t prevFooterWord = *((size_t*)((uintptr_t)blockAddress - 8));
-		size_t prevSize = FlVirtualHeapBlockSize(prevFooterWord);
-		void* prevBlock = (void*)((uintptr_t)blockAddress - prevSize);
-		size_t prevHeaderWord = *FlVirtualHeapHeaderAt(prevBlock);
-		prevAllocatedFlag = prevHeaderWord & FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG;
-		heap->treeRoot = AvlDelete(heap->treeRoot, FlVirtualHeapBlockNode(prevBlock));
-		blockSize += prevSize;
-		blockAddress = prevBlock;
+		prevSize = FlVirtualHeapBlockSize(prevFooterWord);
+		prevBlock = (void*)((uintptr_t)blockAddress - prevSize);
 	}
 
-	FlVirtualHeapWriteFreeBlock(blockAddress, blockSize, prevAllocatedFlag);
-	FLVirtualHeapNode* node = FlVirtualHeapBlockNode(blockAddress);
-	node->left = NULL;
-	node->right = NULL;
-	node->height = 1;
-	node->subtreeMax = blockSize;
-	heap->treeRoot = AvlInsert(heap->treeRoot, node);
+	if (prevBlock)
+	{
+		// Merging backward: the merged block starts at prevBlock, which is
+		// already in the tree at exactly that address. Its key does not change,
+		// only its size, so the tree structure is left completely untouched and
+		// only the subtreeMax augmentation has to be republished upwards.
+		if (nextIsFree)
+		{
+			// The block after this one disappears into the merge, so it is the
+			// one node that genuinely has to be removed. Do that first, while
+			// the tree still agrees with the block headers.
+			FlRbDelete(heap, FlVirtualHeapBlockNode(nextBlock));
+			blockSize += FlVirtualHeapBlockSize(nextHeaderWord);
+		}
+
+		blockSize += prevSize;
+		blockAddress = prevBlock;
+
+		// prevBlock's header must be read after the delete above: its fixup can
+		// recolor any node still in the tree, prevBlock's included, and that
+		// color has to survive this rewrite because the node is staying put.
+		size_t prevHeaderWord = *FlVirtualHeapHeaderAt(prevBlock);
+		FlVirtualHeapWriteFreeBlock(blockAddress, blockSize,
+			prevHeaderWord & (FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG | FL_VIRTUAL_HEAP_RED_FLAG));
+		FlRbRefreshAugmentationUpward(FlVirtualHeapBlockNode(blockAddress));
+	}
+	else if (nextIsFree)
+	{
+		// Merging forward only: the merged block starts at blockAddress and
+		// swallows nextBlock. Nothing free lies between the two, so the merged
+		// block's node belongs in precisely the slot nextBlock's node occupies
+		// and can be swapped in without any comparison or rotation.
+		const FLVirtualHeapNode* nextNode = FlVirtualHeapBlockNode(nextBlock);
+		blockSize += FlVirtualHeapBlockSize(nextHeaderWord);
+
+		FlRbReplaceNode(heap, nextNode, FlVirtualHeapBlockNode(blockAddress), blockSize);
+		FlVirtualHeapWriteFreeBlock(blockAddress, blockSize,
+			prevAllocatedFlag | (nextHeaderWord & FL_VIRTUAL_HEAP_RED_FLAG));
+	}
+	else
+	{
+		// No neighbour to merge with: a genuinely new free block.
+		FlVirtualHeapWriteFreeBlock(blockAddress, blockSize, prevAllocatedFlag);
+		FlRbInsert(heap, FlVirtualHeapBlockNode(blockAddress));
+	}
+
 	FlVirtualHeapSetNextPrevAllocated(blockAddress, blockSize, 0);
 
 	if ((uintptr_t)blockAddress + blockSize == (uintptr_t)FlVirtualHeapEpilogueBlock(heap))
@@ -793,7 +1230,7 @@ __declspec(dllexport) void FlVirtualHeapFree(_Inout_ FLVirtualHeap* heap, _Pre_m
 	}
 }
 
-__declspec(dllexport) _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapReAllocate(
+_Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_ALLOCATOR void* FlVirtualHeapReAllocate(
 	_Inout_ FLVirtualHeap* heap,
 	_Pre_maybenull_ _Post_invalid_ void* allocation,
 	_In_ size_t size)
@@ -845,21 +1282,24 @@ __declspec(dllexport) _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_A
 			void* nextBlock = (void*)((uintptr_t)blockAddress + blockSize);
 			size_t nextHeaderWord = *FlVirtualHeapHeaderAt(nextBlock);
 
+			FlVirtualHeapWriteBlockHeader(blockAddress, need, prevAllocatedFlag | FL_VIRTUAL_HEAP_ALLOCATED_FLAG);
+
 			if (!FlVirtualHeapIsAllocated(nextHeaderWord))
 			{
-				size_t nextSize = FlVirtualHeapBlockSize(nextHeaderWord);
-				heap->treeRoot = AvlDelete(heap->treeRoot, FlVirtualHeapBlockNode(nextBlock));
-				remainder += nextSize;
+				// The tail is adjacent to an already free block and absorbs it,
+				// with nothing free in between, so it inherits that block's slot.
+				const FLVirtualHeapNode* nextNode = FlVirtualHeapBlockNode(nextBlock);
+				remainder += FlVirtualHeapBlockSize(nextHeaderWord);
+				FlRbReplaceNode(heap, nextNode, FlVirtualHeapBlockNode(tailBlock), remainder);
+				FlVirtualHeapWriteFreeBlock(tailBlock, remainder,
+					FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG | (nextHeaderWord & FL_VIRTUAL_HEAP_RED_FLAG));
 			}
-
-			FlVirtualHeapWriteBlockHeader(blockAddress, need, prevAllocatedFlag | FL_VIRTUAL_HEAP_ALLOCATED_FLAG);
-			FlVirtualHeapWriteFreeBlock(tailBlock, remainder, FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG);
-			FLVirtualHeapNode* tailNode = FlVirtualHeapBlockNode(tailBlock);
-			tailNode->left = NULL;
-			tailNode->right = NULL;
-			tailNode->height = 1;
-			tailNode->subtreeMax = remainder;
-			heap->treeRoot = AvlInsert(heap->treeRoot, tailNode);
+			else
+			{
+				// A brand new free block in what was the middle of an allocation.
+				FlVirtualHeapWriteFreeBlock(tailBlock, remainder, FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG);
+				FlRbInsert(heap, FlVirtualHeapBlockNode(tailBlock));
+			}
 			FlVirtualHeapSetNextPrevAllocated(tailBlock, remainder, 0);
 
 			if ((uintptr_t)tailBlock + remainder == (uintptr_t)FlVirtualHeapEpilogueBlock(heap))
@@ -893,23 +1333,25 @@ __declspec(dllexport) _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_A
 		size_t combinedSize = blockSize + nextSize;
 		if (combinedSize >= need)
 		{
-			heap->treeRoot = AvlDelete(heap->treeRoot, FlVirtualHeapBlockNode(nextBlock));
 			size_t remainder = combinedSize - need;
 			if (remainder >= FL_VIRTUAL_HEAP_MIN_BLOCK_SIZE)
 			{
+				// The tail is what is left of nextBlock once the allocation has
+				// eaten into it, so it lies inside nextBlock's old extent and
+				// takes over its slot. Note the tail can start as little as 16
+				// bytes past nextBlock, overlapping its node -- which is why
+				// FlRbReplaceNode reads that node before this writes the tail.
+				const FLVirtualHeapNode* nextNode = FlVirtualHeapBlockNode(nextBlock);
 				void* tailBlock = (void*)((uintptr_t)blockAddress + need);
-				FlVirtualHeapWriteFreeBlock(tailBlock, remainder, FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG);
-				FLVirtualHeapNode* tailNode = FlVirtualHeapBlockNode(tailBlock);
-				tailNode->left = NULL;
-				tailNode->right = NULL;
-				tailNode->height = 1;
-				tailNode->subtreeMax = remainder;
-				heap->treeRoot = AvlInsert(heap->treeRoot, tailNode);
+				FlRbReplaceNode(heap, nextNode, FlVirtualHeapBlockNode(tailBlock), remainder);
+				FlVirtualHeapWriteFreeBlock(tailBlock, remainder,
+					FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG | (nextHeaderWord & FL_VIRTUAL_HEAP_RED_FLAG));
 				FlVirtualHeapSetNextPrevAllocated(tailBlock, remainder, 0);
 				FlVirtualHeapWriteBlockHeader(blockAddress, need, prevAllocatedFlag | FL_VIRTUAL_HEAP_ALLOCATED_FLAG);
 			}
 			else
 			{
+				FlRbDelete(heap, FlVirtualHeapBlockNode(nextBlock));
 				FlVirtualHeapWriteBlockHeader(blockAddress, combinedSize, prevAllocatedFlag | FL_VIRTUAL_HEAP_ALLOCATED_FLAG);
 				FlVirtualHeapSetNextPrevAllocated(blockAddress, combinedSize, FL_VIRTUAL_HEAP_PREV_ALLOCATED_FLAG);
 			}
@@ -927,6 +1369,29 @@ __declspec(dllexport) _Ret_maybenull_ _Post_writable_byte_size_(size) DECLSPEC_A
 	memcpy(newAllocation, allocation, copySize);
 	FlVirtualHeapFree(heap, allocation);
 	return newAllocation;
+}
+
+// Returns the black-height of the subtree rooted at node (the number of
+// black nodes on any root-to-null-leaf path, not counting node itself iff it
+// is red) if every such path has an equal count, or -1 if the subtree
+// violates that invariant.
+static long FlRbValidateBlackHeight(const FLVirtualHeapNode* node)
+{
+	if (!node)
+	{
+		return 0;
+	}
+	long leftHeight = FlRbValidateBlackHeight(node->left);
+	if (leftHeight < 0)
+	{
+		return -1;
+	}
+	long rightHeight = FlRbValidateBlackHeight(node->right);
+	if (rightHeight < 0 || rightHeight != leftHeight)
+	{
+		return -1;
+	}
+	return leftHeight + (FlRbIsRed(node) ? 0 : 1);
 }
 
 int FlVirtualHeapValidate(_In_ FLVirtualHeap* heap)
@@ -1016,11 +1481,18 @@ int FlVirtualHeapValidate(_In_ FLVirtualHeap* heap)
 			return 0;
 		}
 
+		// Only free blocks carry a red-black tree color.
+		if (isAllocated && (hdr & FL_VIRTUAL_HEAP_RED_FLAG))
+		{
+			return 0;
+		}
+
 		if (!isAllocated)
 		{
-			// Free block: header must equal footer.
+			// Free block: footer must mirror the header, except for the color
+			// bit, which the footer never carries.
 			size_t footer = *FlVirtualHeapFooterAt((void*)current, blockSize);
-			if (footer != hdr)
+			if (footer != (hdr & ~FL_VIRTUAL_HEAP_RED_FLAG))
 			{
 				return 0;
 			}
@@ -1042,7 +1514,7 @@ int FlVirtualHeapValidate(_In_ FLVirtualHeap* heap)
 		return 0;
 	}
 
-	// AVL tree walk: collect free blocks in address order and cross-check.
+	// Red-black tree walk: collect free blocks in address order and cross-check.
 	// Uses an iterative in-order traversal with a small stack.
 #define FL_VIRTUAL_HEAP_VALIDATE_STACK_SIZE 64
 	FLVirtualHeapNode* stack[FL_VIRTUAL_HEAP_VALIDATE_STACK_SIZE];
@@ -1091,8 +1563,8 @@ int FlVirtualHeapValidate(_In_ FLVirtualHeap* heap)
 
 		// subtreeMax must equal max of self, left, right.
 		size_t expectedMax = nodeBlockSize;
-		size_t leftMax = AvlSubtreeMax(treeNode->left);
-		size_t rightMax = AvlSubtreeMax(treeNode->right);
+		size_t leftMax = FlRbSubtreeMax(treeNode->left);
+		size_t rightMax = FlRbSubtreeMax(treeNode->right);
 		if (leftMax > expectedMax)
 		{
 			expectedMax = leftMax;
@@ -1106,9 +1578,18 @@ int FlVirtualHeapValidate(_In_ FLVirtualHeap* heap)
 			return 0;
 		}
 
-		// AVL balance factor must be in {-1, 0, 1}.
-		int balance = AvlBalance(treeNode);
-		if (balance < -1 || balance > 1)
+		// Parent links must agree with the child pointers in both directions.
+		if (treeNode->left && treeNode->left->parent != treeNode)
+		{
+			return 0;
+		}
+		if (treeNode->right && treeNode->right->parent != treeNode)
+		{
+			return 0;
+		}
+
+		// A red node cannot have a red child.
+		if (FlRbIsRed(treeNode) && (FlRbIsRed(treeNode->left) || FlRbIsRed(treeNode->right)))
 		{
 			return 0;
 		}
@@ -1119,8 +1600,19 @@ int FlVirtualHeapValidate(_In_ FLVirtualHeap* heap)
 	}
 #undef FL_VIRTUAL_HEAP_VALIDATE_STACK_SIZE
 
-	// Number of free blocks in the linear walk must match the AVL tree.
+	// Number of free blocks in the linear walk must match the red-black tree.
 	if (freeBlockCount != treeNodeCount)
+	{
+		return 0;
+	}
+
+	// The root must be black, must have no parent, and every root-to-null-leaf
+	// path must cross the same number of black nodes.
+	if (heap->treeRoot && (FlRbIsRed(heap->treeRoot) || heap->treeRoot->parent != NULL))
+	{
+		return 0;
+	}
+	if (FlRbValidateBlackHeight(heap->treeRoot) < 0)
 	{
 		return 0;
 	}

@@ -1371,6 +1371,264 @@ static void FlVirtualHeapUtFuzz(_Inout_ size_t* testCount, _Inout_ size_t* failC
 #undef FL_VIRTUAL_HEAP_UT_FUZZ_OP_COUNT
 
 // ---------------------------------------------------------------------------
+// Red-black tree deletion edge cases and additional stress coverage
+// ---------------------------------------------------------------------------
+
+// Exercises deletion from a 1-node, then 2-node, then 3-node free-block tree,
+// verifying the heap stays valid and every still-live block remains
+// independently allocatable at every step (catches a
+// structurally-valid-but-logically-lost block that FlVirtualHeapValidate
+// alone would not detect).
+static void FlVirtualHeapUtRootDeletionSmallTrees(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = NULL;
+	FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_SMALL_HEAP_SIZE);
+	if (!heap)
+	{
+		return;
+	}
+
+	// 1-node tree: free the sole allocation, deleting the wilderness tail
+	// node down to nothing and re-inserting the freed block as the sole node.
+	void* allocationA = FlVirtualHeapAllocate(heap, 64);
+	FL_UT_CHECK(allocationA != NULL, "FlVirtualHeapUtRootDeletionSmallTrees: alloc A");
+	FlVirtualHeapFree(heap, allocationA);
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtRootDeletionSmallTrees: validate after 1-node free");
+
+	// 3-node tree: five non-adjacent allocations, three freed at alternating
+	// positions so none coalesce, leaving three disjoint free blocks plus the
+	// wilderness tail node.
+	void* allocationB = FlVirtualHeapAllocate(heap, 64);
+	void* allocationC = FlVirtualHeapAllocate(heap, 64);
+	void* allocationD = FlVirtualHeapAllocate(heap, 64);
+	void* allocationE = FlVirtualHeapAllocate(heap, 64);
+	void* allocationF = FlVirtualHeapAllocate(heap, 64);
+	FL_UT_CHECK(allocationB && allocationC && allocationD && allocationE && allocationF,
+		"FlVirtualHeapUtRootDeletionSmallTrees: alloc B..F");
+	FlVirtualHeapFree(heap, allocationB);
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtRootDeletionSmallTrees: validate after freeing B");
+	FlVirtualHeapFree(heap, allocationD);
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtRootDeletionSmallTrees: validate after freeing D");
+	FlVirtualHeapFree(heap, allocationF);
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtRootDeletionSmallTrees: validate after freeing F (3 non-adjacent free blocks)");
+
+	// Confirm every freed block is still independently reusable, by
+	// allocating replacements of the exact freed size.
+	void* replacementB = FlVirtualHeapAllocate(heap, 64);
+	void* replacementD = FlVirtualHeapAllocate(heap, 64);
+	void* replacementF = FlVirtualHeapAllocate(heap, 64);
+	FL_UT_CHECK(replacementB && replacementD && replacementF,
+		"FlVirtualHeapUtRootDeletionSmallTrees: freed blocks remain independently allocatable");
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtRootDeletionSmallTrees: validate after replacements");
+
+	if (replacementB)
+	{
+		FlVirtualHeapFree(heap, replacementB);
+	}
+	if (replacementD)
+	{
+		FlVirtualHeapFree(heap, replacementD);
+	}
+	if (replacementF)
+	{
+		FlVirtualHeapFree(heap, replacementF);
+	}
+	FlVirtualHeapFree(heap, allocationC);
+	FlVirtualHeapFree(heap, allocationE);
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtRootDeletionSmallTrees: final validate");
+	FlVirtualHeapDelete(heap);
+}
+
+// Allocates many blocks with no intervening frees, isolating the insert-side
+// rebalancing (RbBalance) from any delete-side behavior. Every allocation
+// must succeed with no overlap and the heap must stay valid throughout.
+static void FlVirtualHeapUtInsertOnlyStress(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+#define FL_VIRTUAL_HEAP_UT_INSERT_ONLY_COUNT 200
+	FLVirtualHeap* heap = NULL;
+	FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_SMALL_HEAP_SIZE);
+	if (!heap)
+	{
+		return;
+	}
+
+	uint32_t rngState = 0x12345678;
+	int allValid = 1;
+	int allAllocated = 1;
+	void* previous = NULL;
+	for (int n = 0; n < FL_VIRTUAL_HEAP_UT_INSERT_ONLY_COUNT; n++)
+	{
+		uint32_t rng = FlVirtualHeapUtLcg(&rngState);
+		size_t size = (size_t)(rng % 32) + 1;
+		void* allocation = FlVirtualHeapAllocate(heap, size);
+		if (!allocation)
+		{
+			allAllocated = 0;
+			break;
+		}
+		if (previous && (uintptr_t)allocation <= (uintptr_t)previous)
+		{
+			allAllocated = 0;
+		}
+		previous = allocation;
+		if (!FlVirtualHeapValidate(heap))
+		{
+			allValid = 0;
+			break;
+		}
+	}
+	FL_UT_CHECK(allAllocated, "FlVirtualHeapUtInsertOnlyStress: all allocations succeeded at increasing addresses");
+	FL_UT_CHECK(allValid, "FlVirtualHeapUtInsertOnlyStress: heap valid after every allocation");
+	FlVirtualHeapDelete(heap);
+#undef FL_VIRTUAL_HEAP_UT_INSERT_ONLY_COUNT
+}
+
+// A larger-scale version of FlVirtualHeapUtFuzz (more operations, more
+// concurrently live allocations), reusing the same shadow-tracking approach,
+// to increase confidence in the red-black tree delete rewrite across a wider
+// range of tree shapes than the smaller fuzz test reaches.
+#define FL_VIRTUAL_HEAP_UT_LARGE_FUZZ_SHADOW_SIZE 128
+#define FL_VIRTUAL_HEAP_UT_LARGE_FUZZ_OP_COUNT    20000
+
+static void FlVirtualHeapUtLargeFuzz(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = NULL;
+	FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_SMALL_HEAP_SIZE);
+	if (!heap)
+	{
+		return;
+	}
+
+	FLVirtualHeapUtShadow shadow[FL_VIRTUAL_HEAP_UT_LARGE_FUZZ_SHADOW_SIZE];
+	size_t liveCount = 0;
+	uint32_t rngState = 0xC0FFEE01;
+	int allDataIntact = 1;
+	int allValidatesPassed = 1;
+
+	for (int operation = 0; operation < FL_VIRTUAL_HEAP_UT_LARGE_FUZZ_OP_COUNT; operation++)
+	{
+		uint32_t rng = FlVirtualHeapUtLcg(&rngState);
+		int opType;
+		if (liveCount == 0)
+		{
+			opType = 0;
+		}
+		else if (liveCount == FL_VIRTUAL_HEAP_UT_LARGE_FUZZ_SHADOW_SIZE)
+		{
+			opType = (rng % 10 < 5) ? 1 : 2;
+		}
+		else
+		{
+			uint32_t roll = rng % 10;
+			opType = (roll < 4) ? 0 : (roll < 7) ? 1 : 2;
+		}
+
+		if (opType == 0)
+		{
+			rng = FlVirtualHeapUtLcg(&rngState);
+			size_t allocSize = (size_t)(rng % 96) + 1;
+			rng = FlVirtualHeapUtLcg(&rngState);
+			uint8_t fillByte = (uint8_t)(rng & 0xFF);
+
+			void* allocation = FlVirtualHeapAllocate(heap, allocSize);
+			if (allocation)
+			{
+				memset(allocation, fillByte, allocSize);
+				shadow[liveCount].pointer = allocation;
+				shadow[liveCount].size = allocSize;
+				shadow[liveCount].fillByte = fillByte;
+				liveCount++;
+			}
+		}
+		else if (opType == 1)
+		{
+			rng = FlVirtualHeapUtLcg(&rngState);
+			size_t slotIndex = (size_t)(rng % liveCount);
+			uint8_t* pointer = (uint8_t*)shadow[slotIndex].pointer;
+			size_t slotSize = shadow[slotIndex].size;
+			uint8_t fillByte = shadow[slotIndex].fillByte;
+
+			for (size_t byteIndex = 0; byteIndex < slotSize; byteIndex++)
+			{
+				if (pointer[byteIndex] != fillByte)
+				{
+					allDataIntact = 0;
+					break;
+				}
+			}
+
+			FlVirtualHeapFree(heap, pointer);
+			shadow[slotIndex] = shadow[liveCount - 1];
+			liveCount--;
+		}
+		else
+		{
+			rng = FlVirtualHeapUtLcg(&rngState);
+			size_t slotIndex = (size_t)(rng % liveCount);
+			uint8_t* oldPointer = (uint8_t*)shadow[slotIndex].pointer;
+			size_t oldSize = shadow[slotIndex].size;
+			uint8_t oldFillByte = shadow[slotIndex].fillByte;
+
+			for (size_t byteIndex = 0; byteIndex < oldSize; byteIndex++)
+			{
+				if (oldPointer[byteIndex] != oldFillByte)
+				{
+					allDataIntact = 0;
+					break;
+				}
+			}
+
+			rng = FlVirtualHeapUtLcg(&rngState);
+			size_t newSize = (size_t)(rng % 96) + 1;
+			rng = FlVirtualHeapUtLcg(&rngState);
+			uint8_t newFillByte = (uint8_t)(rng & 0xFF);
+
+			void* newPointer = FlVirtualHeapReAllocate(heap, oldPointer, newSize);
+			if (newPointer)
+			{
+				size_t copySize = oldSize < newSize ? oldSize : newSize;
+				uint8_t* newBytes = (uint8_t*)newPointer;
+				for (size_t byteIndex = 0; byteIndex < copySize; byteIndex++)
+				{
+					if (newBytes[byteIndex] != oldFillByte)
+					{
+						allDataIntact = 0;
+						break;
+					}
+				}
+				memset(newPointer, newFillByte, newSize);
+				shadow[slotIndex].pointer = newPointer;
+				shadow[slotIndex].size = newSize;
+				shadow[slotIndex].fillByte = newFillByte;
+			}
+		}
+
+		if (!FlVirtualHeapValidate(heap))
+		{
+			allValidatesPassed = 0;
+			break;
+		}
+	}
+
+	for (size_t slotIndex = 0; slotIndex < liveCount; slotIndex++)
+	{
+		FlVirtualHeapFree(heap, shadow[slotIndex].pointer);
+		if (!FlVirtualHeapValidate(heap))
+		{
+			allValidatesPassed = 0;
+		}
+	}
+
+	FL_UT_CHECK(allDataIntact, "FlVirtualHeapUtLargeFuzz: data integrity preserved throughout");
+	FL_UT_CHECK(allValidatesPassed, "FlVirtualHeapUtLargeFuzz: heap valid after every operation");
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtLargeFuzz: final validate");
+	FlVirtualHeapDelete(heap);
+}
+
+#undef FL_VIRTUAL_HEAP_UT_LARGE_FUZZ_SHADOW_SIZE
+#undef FL_VIRTUAL_HEAP_UT_LARGE_FUZZ_OP_COUNT
+
+// ---------------------------------------------------------------------------
 // Heap capacity boundary tests
 // ---------------------------------------------------------------------------
 
@@ -1833,6 +2091,384 @@ static void FlVirtualHeapUtSlowHeapFill(_Inout_ size_t* testCount, _Inout_ size_
 #undef FL_VIRTUAL_HEAP_UT_LARGE_HEAP_SIZE
 
 // ---------------------------------------------------------------------------
+// Block header color bit and in-place tree update paths
+//
+// Free blocks carry their red-black tree color in bit 2 of their header word,
+// and the coalescing and splitting paths update the tree in place instead of
+// deleting and reinserting a node. These tests target the invariants those two
+// things depend on.
+// ---------------------------------------------------------------------------
+
+#define FL_VIRTUAL_HEAP_UT_COLOR_BIT       ((size_t)0x4)
+#define FL_VIRTUAL_HEAP_UT_ALLOCATED_BIT   ((size_t)0x1)
+#define FL_VIRTUAL_HEAP_UT_HEADER_SIZE     ((size_t)8)
+#define FL_VIRTUAL_HEAP_UT_EPILOGUE_BYTES  ((size_t)8)
+#define FL_VIRTUAL_HEAP_UT_SIZE_BITS_MASK  (~(size_t)0xF)
+
+// Walks every block in the heap and checks the header/footer rules the color
+// bit introduces: an allocated block never carries it, and a free block's
+// footer mirrors its header with the bit cleared. Returns non-zero if all
+// blocks are consistent.
+static int FlVirtualHeapUtCheckColorBitInvariants(_In_ const FLVirtualHeap* heap)
+{
+	uintptr_t heapBase = (uintptr_t)heap;
+	uintptr_t regionEnd = heapBase + heap->regionCommittedSize;
+	uintptr_t epilogueAddress = regionEnd - FL_VIRTUAL_HEAP_UT_EPILOGUE_BYTES;
+	uintptr_t current = heapBase + sizeof(FLVirtualHeap);
+
+	while (current < epilogueAddress)
+	{
+		size_t headerWord = *(const size_t*)current;
+		size_t blockSize = headerWord & FL_VIRTUAL_HEAP_UT_SIZE_BITS_MASK;
+		int isAllocated = (headerWord & FL_VIRTUAL_HEAP_UT_ALLOCATED_BIT) != 0;
+
+		if (!blockSize || current + blockSize > regionEnd)
+		{
+			return 0;
+		}
+		if (isAllocated)
+		{
+			// An allocated block has no node, so it must never be colored.
+			if (headerWord & FL_VIRTUAL_HEAP_UT_COLOR_BIT)
+			{
+				return 0;
+			}
+		}
+		else
+		{
+			size_t footerWord = *(const size_t*)(current + blockSize - FL_VIRTUAL_HEAP_UT_HEADER_SIZE);
+			if (footerWord != (headerWord & ~FL_VIRTUAL_HEAP_UT_COLOR_BIT))
+			{
+				return 0;
+			}
+		}
+		current += blockSize;
+	}
+
+	return current == epilogueAddress;
+}
+
+// Fragments the heap, then drives every block through allocate, free and
+// realloc while checking the color bit rules after each step. Any path that
+// forgot to carry a node's color across an in-place update, or that leaked the
+// color into a footer or into an allocated block, shows up here.
+static void FlVirtualHeapUtColorBitInvariants(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = NULL;
+	FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_SMALL_HEAP_SIZE);
+	if (!heap)
+	{
+		return;
+	}
+
+	void* allocations[24];
+	size_t allocationCount = sizeof(allocations) / sizeof(allocations[0]);
+	int allConsistent = 1;
+	int allValid = 1;
+
+	for (size_t i = 0; i < allocationCount; i++)
+	{
+		allocations[i] = FlVirtualHeapAllocate(heap, 40 + (i % 7) * 24);
+		allConsistent = allConsistent && FlVirtualHeapUtCheckColorBitInvariants(heap);
+		allValid = allValid && FlVirtualHeapValidate(heap);
+	}
+
+	// Free every third block: isolated free blocks, so the tree grows without
+	// any coalescing.
+	for (size_t i = 0; i < allocationCount; i += 3)
+	{
+		FlVirtualHeapFree(heap, allocations[i]);
+		allocations[i] = NULL;
+		allConsistent = allConsistent && FlVirtualHeapUtCheckColorBitInvariants(heap);
+		allValid = allValid && FlVirtualHeapValidate(heap);
+	}
+
+	// Realloc the survivors, which exercises the in-place shrink and grow
+	// splits against neighbours that are sometimes free and sometimes not.
+	for (size_t i = 0; i < allocationCount; i++)
+	{
+		if (allocations[i])
+		{
+			void* resized = FlVirtualHeapReAllocate(heap, allocations[i], 24 + (i % 5) * 40);
+			if (resized)
+			{
+				allocations[i] = resized;
+			}
+			allConsistent = allConsistent && FlVirtualHeapUtCheckColorBitInvariants(heap);
+			allValid = allValid && FlVirtualHeapValidate(heap);
+		}
+	}
+
+	for (size_t i = 0; i < allocationCount; i++)
+	{
+		if (allocations[i])
+		{
+			FlVirtualHeapFree(heap, allocations[i]);
+			allocations[i] = NULL;
+			allConsistent = allConsistent && FlVirtualHeapUtCheckColorBitInvariants(heap);
+			allValid = allValid && FlVirtualHeapValidate(heap);
+		}
+	}
+
+	FL_UT_CHECK(allConsistent, "FlVirtualHeapUtColorBitInvariants: header and footer color bits consistent throughout");
+	FL_UT_CHECK(allValid, "FlVirtualHeapUtColorBitInvariants: heap valid throughout");
+	FlVirtualHeapDelete(heap);
+}
+
+// Drives the forward-only, backward-only and both-sides coalescing paths at
+// many different positions in a long run of blocks. The position determines
+// where the affected node sits in the tree, so across the run each path is
+// exercised against nodes that are the root, leaves, internal nodes, red and
+// black -- which is what the in-place node replacement and the augmentation
+// refresh have to cope with without a rebalance.
+static void FlVirtualHeapUtCoalesceEveryTreePosition(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	int allValid = 1;
+	int allConsistent = 1;
+
+	// pattern 0: free the successor first, then the block itself -> forward only.
+	// pattern 1: free the block first, then its successor  -> backward only.
+	// pattern 2: free both neighbours first, then the block -> both sides.
+	for (int pattern = 0; pattern < 3; pattern++)
+	{
+		FLVirtualHeap* heap = NULL;
+		FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_SMALL_HEAP_SIZE);
+		if (!heap)
+		{
+			return;
+		}
+
+		void* allocations[32];
+		size_t allocationCount = sizeof(allocations) / sizeof(allocations[0]);
+		size_t liveCount = 0;
+		for (size_t i = 0; i < allocationCount; i++)
+		{
+			allocations[i] = FlVirtualHeapAllocate(heap, 64);
+			if (!allocations[i])
+			{
+				break;
+			}
+			liveCount++;
+		}
+		allValid = allValid && FlVirtualHeapValidate(heap);
+
+		// Walk the run in steps of three so each triple is independent: the
+		// blocks around the one being merged stay allocated and keep the
+		// merges from running into each other.
+		for (size_t i = 1; i + 1 < liveCount; i += 3)
+		{
+			if (pattern == 0)
+			{
+				FlVirtualHeapFree(heap, allocations[i + 1]);
+				allocations[i + 1] = NULL;
+				allValid = allValid && FlVirtualHeapValidate(heap);
+				FlVirtualHeapFree(heap, allocations[i]);
+				allocations[i] = NULL;
+			}
+			else if (pattern == 1)
+			{
+				FlVirtualHeapFree(heap, allocations[i]);
+				allocations[i] = NULL;
+				allValid = allValid && FlVirtualHeapValidate(heap);
+				FlVirtualHeapFree(heap, allocations[i + 1]);
+				allocations[i + 1] = NULL;
+			}
+			else
+			{
+				FlVirtualHeapFree(heap, allocations[i - 1]);
+				allocations[i - 1] = NULL;
+				allValid = allValid && FlVirtualHeapValidate(heap);
+				FlVirtualHeapFree(heap, allocations[i + 1]);
+				allocations[i + 1] = NULL;
+				allValid = allValid && FlVirtualHeapValidate(heap);
+				FlVirtualHeapFree(heap, allocations[i]);
+				allocations[i] = NULL;
+			}
+			allValid = allValid && FlVirtualHeapValidate(heap);
+			allConsistent = allConsistent && FlVirtualHeapUtCheckColorBitInvariants(heap);
+		}
+
+		for (size_t i = 0; i < liveCount; i++)
+		{
+			if (allocations[i])
+			{
+				FlVirtualHeapFree(heap, allocations[i]);
+				allValid = allValid && FlVirtualHeapValidate(heap);
+			}
+		}
+		allConsistent = allConsistent && FlVirtualHeapUtCheckColorBitInvariants(heap);
+		FlVirtualHeapDelete(heap);
+	}
+
+	FL_UT_CHECK(allValid, "FlVirtualHeapUtCoalesceEveryTreePosition: heap valid after every coalesce");
+	FL_UT_CHECK(allConsistent, "FlVirtualHeapUtCoalesceEveryTreePosition: color bits consistent after every coalesce");
+}
+
+// A coalesce grows one free block without moving it, so the largest-block-in-
+// subtree augmentation has to be republished up the tree. The refresh stops as
+// soon as an ancestor's value is unchanged; if it stopped one level too early
+// the tree would still validate, but the allocator would no longer be able to
+// find the grown block. This allocates a size that only the grown block can
+// satisfy, which is exactly what a lost augmentation update would break.
+static void FlVirtualHeapUtCoalesceRepublishesSubtreeMax(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = NULL;
+	FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_SMALL_HEAP_SIZE);
+	if (!heap)
+	{
+		return;
+	}
+
+	// A run of equal blocks: payload 56 gives need = 64.
+	void* allocations[16];
+	size_t allocationCount = sizeof(allocations) / sizeof(allocations[0]);
+	size_t liveCount = 0;
+	for (size_t i = 0; i < allocationCount; i++)
+	{
+		allocations[i] = FlVirtualHeapAllocate(heap, 56);
+		if (!allocations[i])
+		{
+			break;
+		}
+		liveCount++;
+	}
+	FL_UT_CHECK(liveCount == allocationCount, "FlVirtualHeapUtCoalesceRepublishesSubtreeMax: run allocated");
+
+	// The merged block will start where block 9 does; remember that before the
+	// scatter loop below drops the pointer.
+	void* mergedAddress = allocations[9];
+
+	// Scatter single free blocks of 64 bytes across the tree. They are all too
+	// small for the request below, so first fit has to reach the merged block.
+	for (size_t i = 1; i < liveCount; i += 2)
+	{
+		FlVirtualHeapFree(heap, allocations[i]);
+		allocations[i] = NULL;
+	}
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtCoalesceRepublishesSubtreeMax: validate after scatter");
+
+	// Merge blocks 9, 10 and 11 into one 192-byte block, high up the address
+	// order so it is not the tree root. Freeing 10 sees free neighbours on both
+	// sides, the path that removes one node and only refreshes the other.
+	FlVirtualHeapFree(heap, allocations[10]);
+	allocations[10] = NULL;
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtCoalesceRepublishesSubtreeMax: validate after merge");
+
+	// need(136) = 144, which no 64-byte block can hold but the 192-byte merged
+	// block can. A subtreeMax that was not republished makes this fail.
+	void* large = FlVirtualHeapAllocate(heap, 136);
+	FL_UT_CHECK(large != NULL, "FlVirtualHeapUtCoalesceRepublishesSubtreeMax: grown block is findable");
+	FL_UT_CHECK(large == mergedAddress, "FlVirtualHeapUtCoalesceRepublishesSubtreeMax: allocated out of the merged block");
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtCoalesceRepublishesSubtreeMax: validate after large alloc");
+
+	if (large)
+	{
+		FlVirtualHeapFree(heap, large);
+	}
+	for (size_t i = 0; i < liveCount; i++)
+	{
+		if (allocations[i])
+		{
+			FlVirtualHeapFree(heap, allocations[i]);
+		}
+	}
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtCoalesceRepublishesSubtreeMax: final validate");
+	FlVirtualHeapDelete(heap);
+}
+
+// Growing a block in place by the smallest possible step is the one case where
+// the leftover tail of the absorbed free block starts only 16 bytes past it,
+// so the tail's header word lands on top of the absorbed block's tree node.
+// The node has to be read before that write happens.
+//
+// Derived from need(N) = max(round_up(N + 8, 16), 48):
+//   need(40)  = 48,  need(56) = 64   -> growth of exactly 16 bytes
+//   need(120) = 128                  -> tail of 128 - 16 = 112, above the
+//                                       48-byte split threshold, so the tail
+//                                       survives as a free block
+static void FlVirtualHeapUtReallocGrowMinimumStepIntoFreeBlock(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
+{
+	FLVirtualHeap* heap = NULL;
+	FlVirtualHeapCreate(&heap, FL_VIRTUAL_HEAP_UT_SMALL_HEAP_SIZE);
+	if (!heap)
+	{
+		return;
+	}
+
+	// Allocate a few blocks first so the absorbed block's node has real
+	// children and a real parent, rather than being an only node.
+	void* padding[6];
+	for (size_t i = 0; i < 6; i++)
+	{
+		padding[i] = FlVirtualHeapAllocate(heap, 88);
+	}
+
+	void* allocationA = FlVirtualHeapAllocate(heap, 40);
+	void* allocationB = FlVirtualHeapAllocate(heap, 120);
+	void* guard = FlVirtualHeapAllocate(heap, 40);
+	FL_UT_CHECK(allocationA && allocationB && guard,
+		"FlVirtualHeapUtReallocGrowMinimumStepIntoFreeBlock: alloc A, B and guard");
+
+	// Free some padding so the tree holds several nodes around B's.
+	for (size_t i = 0; i < 6; i += 2)
+	{
+		FlVirtualHeapFree(heap, padding[i]);
+		padding[i] = NULL;
+	}
+
+	FlVirtualHeapFree(heap, allocationB);
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtReallocGrowMinimumStepIntoFreeBlock: validate after free B");
+
+	unsigned char pattern[40];
+	for (size_t i = 0; i < sizeof(pattern); i++)
+	{
+		pattern[i] = (unsigned char)(i * 7 + 3);
+	}
+	memcpy(allocationA, pattern, sizeof(pattern));
+
+	// Grows need from 48 to 64: the tail starts 16 bytes into B's old block,
+	// right on top of B's node.
+	void* grown = FlVirtualHeapReAllocate(heap, allocationA, 56);
+	FL_UT_CHECK(grown == allocationA, "FlVirtualHeapUtReallocGrowMinimumStepIntoFreeBlock: grew in place");
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtReallocGrowMinimumStepIntoFreeBlock: validate after grow");
+	FL_UT_CHECK(FlVirtualHeapUtCheckColorBitInvariants(heap),
+		"FlVirtualHeapUtReallocGrowMinimumStepIntoFreeBlock: color bits consistent after grow");
+
+	int dataIntact = grown && memcmp(grown, pattern, sizeof(pattern)) == 0;
+	FL_UT_CHECK(dataIntact, "FlVirtualHeapUtReallocGrowMinimumStepIntoFreeBlock: data preserved");
+
+	// The 112-byte tail must still be usable: need(104) = 112 fits it exactly.
+	void* tail = FlVirtualHeapAllocate(heap, 104);
+	FL_UT_CHECK(tail != NULL, "FlVirtualHeapUtReallocGrowMinimumStepIntoFreeBlock: tail still allocatable");
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtReallocGrowMinimumStepIntoFreeBlock: validate after tail alloc");
+
+	if (tail)
+	{
+		FlVirtualHeapFree(heap, tail);
+	}
+	if (grown)
+	{
+		FlVirtualHeapFree(heap, grown);
+	}
+	FlVirtualHeapFree(heap, guard);
+	for (size_t i = 0; i < 6; i++)
+	{
+		if (padding[i])
+		{
+			FlVirtualHeapFree(heap, padding[i]);
+		}
+	}
+	FL_UT_CHECK(FlVirtualHeapValidate(heap), "FlVirtualHeapUtReallocGrowMinimumStepIntoFreeBlock: final validate");
+	FlVirtualHeapDelete(heap);
+}
+
+#undef FL_VIRTUAL_HEAP_UT_COLOR_BIT
+#undef FL_VIRTUAL_HEAP_UT_ALLOCATED_BIT
+#undef FL_VIRTUAL_HEAP_UT_HEADER_SIZE
+#undef FL_VIRTUAL_HEAP_UT_EPILOGUE_BYTES
+#undef FL_VIRTUAL_HEAP_UT_SIZE_BITS_MASK
+
+// ---------------------------------------------------------------------------
 // Test suite entry point
 // ---------------------------------------------------------------------------
 
@@ -1880,4 +2516,11 @@ void FlVirtualHeapUtRun(_Inout_ size_t* testCount, _Inout_ size_t* failCount)
 	FlVirtualHeapUtReallocSizeOverflow(testCount, failCount);
 	FlVirtualHeapUtReallocGrowFailsLeavesOriginalIntact(testCount, failCount);
 	FlVirtualHeapUtReallocGrowTriggersCommit(testCount, failCount);
+	FlVirtualHeapUtRootDeletionSmallTrees(testCount, failCount);
+	FlVirtualHeapUtInsertOnlyStress(testCount, failCount);
+	FlVirtualHeapUtLargeFuzz(testCount, failCount);
+	FlVirtualHeapUtColorBitInvariants(testCount, failCount);
+	FlVirtualHeapUtCoalesceEveryTreePosition(testCount, failCount);
+	FlVirtualHeapUtCoalesceRepublishesSubtreeMax(testCount, failCount);
+	FlVirtualHeapUtReallocGrowMinimumStepIntoFreeBlock(testCount, failCount);
 }
